@@ -47538,8 +47538,8 @@ function createClaudeCliAgent(model, timeoutMs, env) {
     }).at(-1);
     if (!result) throw new Error(`Claude CLI exited with code ${code} without a result: ${stderr.trim().slice(-300)}`);
     if (result.is_error || result.subtype !== "success" || typeof result.result !== "string") {
-      const status = typeof result.api_error_status === "number" ? `HTTP ${result.api_error_status}` : String(result.subtype);
-      throw new Error(`Claude CLI failed (${status}): ${String(result.result ?? "").slice(0, 300)}`);
+      const status = typeof result.api_error_status === "number" ? ` (HTTP ${result.api_error_status})` : result.subtype === "success" ? "" : ` (${String(result.subtype)})`;
+      throw new Error(`Claude CLI failed${status}: ${String(result.result ?? "").slice(0, 300)}`);
     }
     return { output: result.result, cost: 0 };
   };
