@@ -1,0 +1,43 @@
+# Throwaway check: can a GitHub-hosted runner fetch YouTube the way the Cartoon Clips business does?
+name: youtube-spike
+on: push
+jobs:
+  spike:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3]
+    steps:
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Install yt-dlp 2026.08.19 and ffmpeg
+        run: |
+          pipx install "yt-dlp[default]==2026.08.19"
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+          yt-dlp --version; ffmpeg -version | head -1
+          curl -s https://ipinfo.io/json | jq '{ip, org, country}'
+      - name: Search official channels
+        id: search
+        continue-on-error: true
+        run: |
+          for q in "UCgPClNr5VSYC3syrDUIlzLw/search?query=Rick%20and%20Morty" "UC1MEMnZEDKqLPu-B-AHIsyw/search?query=Family%20Guy" "UCE5mQnNl8Q4H2qcv4ikaXeA/search?query=Futurama"; do
+            yt-dlp --flat-playlist -J --no-warnings --playlist-end 20 -- "https://www.youtube.com/channel/$q" > search.json 2> search.err || { tail -3 search.err; continue; }
+            id=$(jq -r '[.entries[] | select(.duration != null and .duration >= 120 and .duration <= 3600)][0].id // empty' search.json)
+            if [ -n "$id" ]; then echo "id=$id" >> "$GITHUB_OUTPUT"; jq -r --arg id "$id" '.entries[] | select(.id == $id) | "picked \(.id) \(.duration)s \(.title)"' search.json; exit 0; fi
+          done
+          exit 1
+      - name: Captions (json3, no download)
+        if: steps.search.outputs.id != ''
+        continue-on-error: true
+        run: |
+          yt-dlp --skip-download --write-subs --write-auto-subs --sub-langs en,en-orig,en-US --sub-format json3 -o captions --no-warnings -- "https://www.youtube.com/watch?v=${{ steps.search.outputs.id }}"
+          ls -la captions*
+      - name: Section download (60 s, H.264 HLS first)
+        if: steps.search.outputs.id != ''
+        continue-on-error: true
+        run: |
+          yt-dlp -f 'bv*[height<=1080][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=1080][vcodec^=avc1]+ba/b[height<=1080]' --download-sections '*30-90' --force-keyframes-at-cuts --merge-output-format mp4 -o 'section.%(ext)s' --no-warnings -- "https://www.youtube.com/watch?v=${{ steps.search.outputs.id }}"
+          ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json section.mp4
