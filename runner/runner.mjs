@@ -49625,7 +49625,7 @@ async function execute13({ input, config }, { youtube }) {
   if (!youtube) throw new ExecutionFailure("YouTube publish requires the youtube capability.");
   const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, outputKey } = readSettings3(config);
   const { job, file, cover, title, description, tags } = readJob2(input, setCover, maxHashtags);
-  await guard(() => youtube.verifyChannel(handle));
+  await guard(() => youtube.verifyChannel(handle, { studio: setCover }));
   const { videoId } = await guard(() => youtube.upload(handle, file, { title, description, tags, categoryId, madeForKids, containsSyntheticMedia }));
   const state = await guard(
     () => youtube.waitForProcessing(handle, videoId),
@@ -49704,7 +49704,7 @@ function boundTools(tools, signal, deadline) {
 }
 function boundYouTube(youtube, signal, deadline) {
   return {
-    verifyChannel: (handle) => runBounded(youtube.verifyChannel(handle), signal, deadline, Infinity),
+    verifyChannel: (handle, options) => runBounded(youtube.verifyChannel(handle, options), signal, deadline, Infinity),
     upload: (handle, file, metadata) => runBounded(youtube.upload(handle, file, metadata), signal, deadline, Infinity),
     waitForProcessing: (handle, videoId) => runBounded(youtube.waitForProcessing(handle, videoId), signal, deadline, Infinity),
     setCover: (handle, videoId, image) => runBounded(youtube.setCover(handle, videoId, image), signal, deadline, Infinity),
@@ -52997,9 +52997,9 @@ function callAuthoringTool(repository, agentConfigured, tool, input) {
 // apps/server/src/youtube/capability.ts
 function createYouTubeCapability({ api, studio, runDir }) {
   return {
-    async verifyChannel(handle) {
+    async verifyChannel(handle, options) {
       const result = await api.verifyChannel(handle);
-      await studio.checkChannelAccess(handle, result.channelId);
+      if (options?.studio !== false) await studio.checkChannelAccess(handle, result.channelId);
       return result;
     },
     upload: async (handle, file, metadata) => api.upload(handle, await resolveRunFile(runDir, file), metadata),
