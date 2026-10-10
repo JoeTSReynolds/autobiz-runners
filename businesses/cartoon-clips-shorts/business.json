@@ -1,0 +1,1526 @@
+{
+  "business": {
+    "id": "ed7654f3-0915-41d5-ac2d-990efcd69940",
+    "name": "Cartoon Clips Shorts",
+    "description": "Picks a cartoon, finds an official clip of it on one of the show's official YouTube channels, cuts its funniest ~50 s moment into a vertical Short with captions and a thumbnail, then publishes to @EpicVideoClips101.",
+    "status": "active",
+    "settings": {},
+    "workflow": {
+      "nodes": [
+        {
+          "id": "start",
+          "moduleId": "start",
+          "position": {
+            "x": 40,
+            "y": 667
+          },
+          "config": {}
+        },
+        {
+          "id": "pick-show",
+          "moduleId": "random",
+          "position": {
+            "x": 335,
+            "y": 667
+          },
+          "config": {
+            "options": [
+              "Family Guy",
+              "Rick and Morty",
+              "Futurama",
+              "American Dad",
+              "Bob's Burgers",
+              "King of the Hill",
+              "South Park"
+            ]
+          }
+        },
+        {
+          "id": "find-episode",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 630,
+            "y": 500
+          },
+          "config": {
+            "mode": "search",
+            "excludeWords": [
+              "reaction",
+              "review",
+              "explained",
+              "recap",
+              "trailer",
+              "teaser",
+              "promo",
+              "sneak peek",
+              "first look",
+              "behind the scenes",
+              "interview",
+              "podcast",
+              "music video",
+              "lofi",
+              "lo-fi",
+              "everything we know"
+            ],
+            "queries": [
+              "https://www.youtube.com/channel/UC1MEMnZEDKqLPu-B-AHIsyw/search?query={show}",
+              "https://www.youtube.com/channel/UCgPClNr5VSYC3syrDUIlzLw/search?query={show}",
+              "https://www.youtube.com/channel/UCgCudMsK-kxYxB2RgiS3bzQ/search?query={show}",
+              "https://www.youtube.com/channel/UCsv4YOF2RBYh0NQ1vuHQ-hg/search?query={show}",
+              "https://www.youtube.com/channel/UC7R27sAWc_DqOldtI1JcYhQ/search?query={show}",
+              "https://www.youtube.com/channel/UC7fZ-QNFi7amcOncIl6owxA/search?query={show}",
+              "https://www.youtube.com/channel/UCE5mQnNl8Q4H2qcv4ikaXeA/search?query={show}"
+            ],
+            "titleIncludes": "{show}",
+            "minDuration": 90
+          }
+        },
+        {
+          "id": "get-transcript",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 40,
+            "y": 282
+          },
+          "config": {
+            "mode": "captions"
+          }
+        },
+        {
+          "id": "pick-moment",
+          "moduleId": "agent",
+          "position": {
+            "x": 335,
+            "y": 178
+          },
+          "config": {
+            "prompt": "You pick one clip for a YouTube Short from a video of the show named in `show`. `transcript` lists caption lines as `[start seconds] text`; `>>` marks a speaker change. Choose the single funniest self-contained moment: a clear setup and punchline that someone with no context understands. Aim for about 50 seconds (40 to 60). Start at the beginning of the line that sets up the joke and end just after the punchline or the reaction to it, using the start times from the transcript. Avoid recaps, intros, credits, ads, sponsor segments and jokes that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
+            "format": "json",
+            "inputKeys": [
+              "show"
+            ],
+            "requiredKeys": [
+              "start",
+              "end",
+              "hook",
+              "why"
+            ],
+            "outputKey": "moment",
+            "fileKeys": [
+              "transcript"
+            ]
+          }
+        },
+        {
+          "id": "download-section",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 630,
+            "y": 114
+          },
+          "config": {
+            "mode": "section"
+          }
+        },
+        {
+          "id": "edit-short",
+          "moduleId": "video-edit",
+          "position": {
+            "x": 925,
+            "y": 114
+          },
+          "config": {}
+        },
+        {
+          "id": "write-metadata",
+          "moduleId": "agent",
+          "position": {
+            "x": 1220,
+            "y": 114
+          },
+          "config": {
+            "prompt": "Write YouTube Shorts metadata for a clip from the show named in `show`. `moment.hook` and `moment.why` describe the joke; `source.title` is the title of the source video. Return only JSON: {\"title\": \"at most 70 characters, names the show, describes the joke plainly, no clickbait, no emojis\", \"description\": \"3 to 5 sentences: open with a hook line that makes someone want to watch (YouTube shows about the first 100 characters), say what happens and who is in the scene, say why it is funny without giving away the punchline, then end with a line crediting the show, such as Clip from <show>. Do not put hashtags in the description.\", \"hashtags\": [\"8 to 10 hashtag words without the # sign: first shorts, then the show name, then the main character, then other characters, the network or genre, and the joke's topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show name\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
+            "format": "json",
+            "inputKeys": [
+              "show",
+              "source",
+              "moment"
+            ],
+            "requiredKeys": [
+              "title",
+              "description",
+              "hashtags",
+              "tags",
+              "thumbnailText"
+            ],
+            "outputKey": "meta"
+          }
+        },
+        {
+          "id": "cover-frames",
+          "moduleId": "thumbnail",
+          "position": {
+            "x": 1515,
+            "y": 292
+          },
+          "config": {
+            "mode": "candidates"
+          }
+        },
+        {
+          "id": "choose-cover",
+          "moduleId": "agent",
+          "position": {
+            "x": 1810,
+            "y": 71
+          },
+          "config": {
+            "prompt": "The attached images are candidate cover frames for a YouTube Short, numbered from 1 in the order given. `moment.hook` describes the joke. Choose the frame where a character's face or the key object is clearest and most expressive. Then give the point on that frame, from 0 to 1000 across and 0 to 1000 down, at the centre of that face or object, for a red circle. Return only JSON: {\"index\": number, \"focusX\": number, \"focusY\": number}. If `agentErrors` is present, fix those problems.",
+            "format": "json",
+            "inputKeys": [
+              "moment"
+            ],
+            "imageKeys": [
+              "frames"
+            ],
+            "requiredKeys": [
+              "index",
+              "focusX",
+              "focusY"
+            ],
+            "outputKey": "cover"
+          }
+        },
+        {
+          "id": "compose-thumbnail",
+          "moduleId": "thumbnail",
+          "position": {
+            "x": 2105,
+            "y": 71
+          },
+          "config": {
+            "mode": "compose"
+          }
+        },
+        {
+          "id": "publish",
+          "moduleId": "youtube-publish",
+          "position": {
+            "x": 2400,
+            "y": 71
+          },
+          "config": {
+            "channelHandle": "@EpicVideoClips101",
+            "privacy": "public",
+            "setCover": false
+          }
+        },
+        {
+          "id": "done",
+          "moduleId": "output",
+          "position": {
+            "x": 2695,
+            "y": 71
+          },
+          "config": {}
+        },
+        {
+          "id": "failed",
+          "moduleId": "error",
+          "position": {
+            "x": 1810,
+            "y": 315
+          },
+          "config": {
+            "message": "Cartoon Clips run stopped: retries exhausted."
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "start--next--pick-show",
+          "source": "start",
+          "sourcePort": "next",
+          "target": "pick-show"
+        },
+        {
+          "id": "pick-show--next--find-episode",
+          "source": "pick-show",
+          "sourcePort": "next",
+          "target": "find-episode"
+        },
+        {
+          "id": "find-episode--next--get-transcript",
+          "source": "find-episode",
+          "sourcePort": "next",
+          "target": "get-transcript"
+        },
+        {
+          "id": "get-transcript--next--pick-moment",
+          "source": "get-transcript",
+          "sourcePort": "next",
+          "target": "pick-moment"
+        },
+        {
+          "id": "get-transcript--missing--retry-episode",
+          "source": "get-transcript",
+          "sourcePort": "missing",
+          "target": "retry-episode"
+        },
+        {
+          "id": "retry-episode--retry--find-episode",
+          "source": "retry-episode",
+          "sourcePort": "retry",
+          "target": "find-episode"
+        },
+        {
+          "id": "retry-episode--exhausted--failed",
+          "source": "retry-episode",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "pick-moment--next--download-section",
+          "source": "pick-moment",
+          "sourcePort": "next",
+          "target": "download-section"
+        },
+        {
+          "id": "pick-moment--invalid--retry-moment",
+          "source": "pick-moment",
+          "sourcePort": "invalid",
+          "target": "retry-moment"
+        },
+        {
+          "id": "retry-moment--retry--pick-moment",
+          "source": "retry-moment",
+          "sourcePort": "retry",
+          "target": "pick-moment"
+        },
+        {
+          "id": "retry-moment--exhausted--failed",
+          "source": "retry-moment",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "download-section--next--edit-short",
+          "source": "download-section",
+          "sourcePort": "next",
+          "target": "edit-short"
+        },
+        {
+          "id": "edit-short--next--write-metadata",
+          "source": "edit-short",
+          "sourcePort": "next",
+          "target": "write-metadata"
+        },
+        {
+          "id": "write-metadata--next--cover-frames",
+          "source": "write-metadata",
+          "sourcePort": "next",
+          "target": "cover-frames"
+        },
+        {
+          "id": "write-metadata--invalid--retry-metadata",
+          "source": "write-metadata",
+          "sourcePort": "invalid",
+          "target": "retry-metadata"
+        },
+        {
+          "id": "retry-metadata--retry--write-metadata",
+          "source": "retry-metadata",
+          "sourcePort": "retry",
+          "target": "write-metadata"
+        },
+        {
+          "id": "retry-metadata--exhausted--failed",
+          "source": "retry-metadata",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "cover-frames--next--choose-cover",
+          "source": "cover-frames",
+          "sourcePort": "next",
+          "target": "choose-cover"
+        },
+        {
+          "id": "choose-cover--next--compose-thumbnail",
+          "source": "choose-cover",
+          "sourcePort": "next",
+          "target": "compose-thumbnail"
+        },
+        {
+          "id": "choose-cover--invalid--retry-cover",
+          "source": "choose-cover",
+          "sourcePort": "invalid",
+          "target": "retry-cover"
+        },
+        {
+          "id": "retry-cover--retry--choose-cover",
+          "source": "retry-cover",
+          "sourcePort": "retry",
+          "target": "choose-cover"
+        },
+        {
+          "id": "retry-cover--exhausted--failed",
+          "source": "retry-cover",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "publish--next--done",
+          "source": "publish",
+          "sourcePort": "next",
+          "target": "done"
+        },
+        {
+          "id": "compose-thumbnail--next--publish",
+          "source": "compose-thumbnail",
+          "sourcePort": "next",
+          "target": "publish"
+        }
+      ],
+      "operators": [
+        {
+          "id": "retry-episode",
+          "kind": "retry",
+          "position": {
+            "x": 369,
+            "y": 555
+          },
+          "maxRetries": 3
+        },
+        {
+          "id": "retry-moment",
+          "kind": "retry",
+          "position": {
+            "x": 664,
+            "y": 388
+          },
+          "maxRetries": 3
+        },
+        {
+          "id": "retry-metadata",
+          "kind": "retry",
+          "position": {
+            "x": 1549,
+            "y": 40
+          },
+          "maxRetries": 3
+        },
+        {
+          "id": "retry-cover",
+          "kind": "retry",
+          "position": {
+            "x": 1549,
+            "y": 152
+          },
+          "maxRetries": 3
+        }
+      ]
+    },
+    "createdAt": "2026-10-08T23:55:40.973Z",
+    "updatedAt": "2026-10-10T17:12:47.941Z"
+  },
+  "modules": [
+    {
+      "id": "start",
+      "name": "Start",
+      "description": "Provides the workflow input.",
+      "kind": "start",
+      "version": 1,
+      "fields": [
+        {
+          "key": "message",
+          "label": "Message",
+          "type": "string",
+          "default": "{input}"
+        }
+      ],
+      "defaults": {
+        "message": "{input}"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "transform",
+      "name": "Transform",
+      "description": "Formats the input deterministically.",
+      "kind": "transform",
+      "version": 1,
+      "fields": [
+        {
+          "key": "text",
+          "label": "Text",
+          "type": "string",
+          "default": "{input}"
+        }
+      ],
+      "defaults": {
+        "text": "{input}"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "review",
+      "name": "Review",
+      "description": "Checks deterministic text constraints.",
+      "kind": "review",
+      "version": 1,
+      "fields": [
+        {
+          "key": "minLength",
+          "label": "Minimum length",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "maxLength",
+          "label": "Maximum length",
+          "type": "number",
+          "default": 10000
+        },
+        {
+          "key": "contains",
+          "label": "Required text",
+          "type": "string",
+          "default": ""
+        }
+      ],
+      "defaults": {
+        "minLength": 0,
+        "maxLength": 10000,
+        "contains": ""
+      },
+      "outputs": [
+        {
+          "id": "pass",
+          "label": "Pass"
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "agent",
+      "name": "Agent",
+      "description": "Calls an explicitly configured agent.",
+      "kind": "agent",
+      "version": 3,
+      "fields": [
+        {
+          "key": "prompt",
+          "label": "Prompt",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "format",
+          "label": "Reply format",
+          "type": "select",
+          "default": "text",
+          "options": [
+            "text",
+            "json"
+          ]
+        },
+        {
+          "key": "requiredKeys",
+          "label": "Required reply keys",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "inputKeys",
+          "label": "Input keys to send",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "imageKeys",
+          "label": "Image keys",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "fileKeys",
+          "label": "File keys",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": ""
+        }
+      ],
+      "defaults": {
+        "prompt": "",
+        "format": "text",
+        "requiredKeys": [],
+        "inputKeys": [],
+        "imageKeys": [],
+        "fileKeys": [],
+        "outputKey": ""
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        },
+        {
+          "id": "invalid",
+          "label": "Invalid"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "format": {
+            "title": "Reply format",
+            "type": "string",
+            "enum": [
+              "text",
+              "json"
+            ]
+          },
+          "requiredKeys": {
+            "title": "Required reply keys",
+            "type": "array"
+          },
+          "inputKeys": {
+            "title": "Input keys to send",
+            "type": "array"
+          },
+          "imageKeys": {
+            "title": "Image keys",
+            "type": "array"
+          },
+          "fileKeys": {
+            "title": "File keys",
+            "type": "array"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "approval",
+      "name": "Approval",
+      "description": "Waits for an explicit operator decision.",
+      "kind": "approval",
+      "version": 1,
+      "fields": [],
+      "defaults": {},
+      "outputs": [
+        {
+          "id": "approved",
+          "label": "Approved"
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "Returns the current workflow value.",
+      "kind": "output",
+      "version": 1,
+      "fields": [],
+      "defaults": {},
+      "outputs": [
+        {
+          "id": "done",
+          "label": "Done"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "error",
+      "name": "Error",
+      "description": "Ends the workflow with a failure.",
+      "kind": "error",
+      "version": 1,
+      "fields": [
+        {
+          "key": "message",
+          "label": "Error message",
+          "type": "string",
+          "default": "Review attempts exhausted."
+        }
+      ],
+      "defaults": {
+        "message": "Review attempts exhausted."
+      },
+      "outputs": [
+        {
+          "id": "failed",
+          "label": "Failed"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "random",
+      "name": "Random pick",
+      "description": "Picks one value from a list and adds it to the job.",
+      "kind": "random",
+      "version": 1,
+      "fields": [
+        {
+          "key": "options",
+          "label": "Options",
+          "type": "json",
+          "default": [
+            "The Simpsons",
+            "Family Guy",
+            "Rick and Morty",
+            "Futurama",
+            "American Dad",
+            "Bob's Burgers",
+            "King of the Hill",
+            "South Park"
+          ]
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": "show"
+        }
+      ],
+      "defaults": {
+        "options": [
+          "The Simpsons",
+          "Family Guy",
+          "Rick and Morty",
+          "Futurama",
+          "American Dad",
+          "Bob's Burgers",
+          "King of the Hill",
+          "South Park"
+        ],
+        "outputKey": "show"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "title": "Options",
+            "type": "array"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "media-fetch",
+      "name": "Media fetch",
+      "description": "Searches, reads captions, downloads a section, or downloads any video link (HLS included) with yt-dlp.",
+      "kind": "media-fetch",
+      "version": 1,
+      "fields": [
+        {
+          "key": "mode",
+          "label": "Mode",
+          "type": "select",
+          "default": "search",
+          "options": [
+            "search",
+            "captions",
+            "section",
+            "download"
+          ]
+        },
+        {
+          "key": "queries",
+          "label": "Search queries",
+          "type": "json",
+          "default": [
+            "ytsearch20:{show} full episode",
+            "ytsearch20:{show} uncropped uncut full episode"
+          ]
+        },
+        {
+          "key": "minDuration",
+          "label": "Minimum duration (s)",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "maxDuration",
+          "label": "Maximum duration (s)",
+          "type": "number",
+          "default": 3600
+        },
+        {
+          "key": "excludeWords",
+          "label": "Excluded title words",
+          "type": "json",
+          "default": [
+            "reaction",
+            "compilation",
+            "review",
+            "explained",
+            "recap",
+            "best of",
+            "minecraft",
+            "roblox",
+            "trailer",
+            "clip"
+          ]
+        },
+        {
+          "key": "titleIncludes",
+          "label": "Title must include",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "maxResults",
+          "label": "Results per query",
+          "type": "number",
+          "default": 60
+        },
+        {
+          "key": "searchTimeoutMs",
+          "label": "Search time limit (ms)",
+          "type": "number",
+          "default": 120000
+        },
+        {
+          "key": "languages",
+          "label": "Caption languages",
+          "type": "json",
+          "default": [
+            "en",
+            "en-orig",
+            "en-US",
+            "en-GB"
+          ]
+        },
+        {
+          "key": "captionsTimeoutMs",
+          "label": "Captions time limit (ms)",
+          "type": "number",
+          "default": 120000
+        },
+        {
+          "key": "padding",
+          "label": "Section padding (s)",
+          "type": "number",
+          "default": 2
+        },
+        {
+          "key": "maxHeight",
+          "label": "Maximum video height",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "minMoment",
+          "label": "Shortest moment (s)",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "maxMoment",
+          "label": "Longest moment (s)",
+          "type": "number",
+          "default": 120
+        },
+        {
+          "key": "downloadTimeoutMs",
+          "label": "Download time limit (ms)",
+          "type": "number",
+          "default": 900000
+        }
+      ],
+      "defaults": {
+        "mode": "search",
+        "queries": [
+          "ytsearch20:{show} full episode",
+          "ytsearch20:{show} uncropped uncut full episode"
+        ],
+        "minDuration": 1080,
+        "maxDuration": 3600,
+        "excludeWords": [
+          "reaction",
+          "compilation",
+          "review",
+          "explained",
+          "recap",
+          "best of",
+          "minecraft",
+          "roblox",
+          "trailer",
+          "clip"
+        ],
+        "titleIncludes": "",
+        "maxResults": 60,
+        "searchTimeoutMs": 120000,
+        "languages": [
+          "en",
+          "en-orig",
+          "en-US",
+          "en-GB"
+        ],
+        "captionsTimeoutMs": 120000,
+        "padding": 2,
+        "maxHeight": 1080,
+        "minMoment": 5,
+        "maxMoment": 120,
+        "downloadTimeoutMs": 900000
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        },
+        {
+          "id": "missing",
+          "label": "Missing"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "title": "Mode",
+            "type": "string",
+            "enum": [
+              "search",
+              "captions",
+              "section",
+              "download"
+            ]
+          },
+          "queries": {
+            "title": "Search queries",
+            "type": "array"
+          },
+          "minDuration": {
+            "title": "Minimum duration (s)",
+            "type": "number"
+          },
+          "maxDuration": {
+            "title": "Maximum duration (s)",
+            "type": "number"
+          },
+          "excludeWords": {
+            "title": "Excluded title words",
+            "type": "array"
+          },
+          "titleIncludes": {
+            "title": "Title must include",
+            "type": "string"
+          },
+          "maxResults": {
+            "title": "Results per query",
+            "type": "number"
+          },
+          "searchTimeoutMs": {
+            "title": "Search time limit (ms)",
+            "type": "number"
+          },
+          "languages": {
+            "title": "Caption languages",
+            "type": "array"
+          },
+          "captionsTimeoutMs": {
+            "title": "Captions time limit (ms)",
+            "type": "number"
+          },
+          "padding": {
+            "title": "Section padding (s)",
+            "type": "number"
+          },
+          "maxHeight": {
+            "title": "Maximum video height",
+            "type": "number"
+          },
+          "minMoment": {
+            "title": "Shortest moment (s)",
+            "type": "number"
+          },
+          "maxMoment": {
+            "title": "Longest moment (s)",
+            "type": "number"
+          },
+          "downloadTimeoutMs": {
+            "title": "Download time limit (ms)",
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "id": "video-edit",
+      "name": "Video edit",
+      "description": "Renders a vertical short with pause cuts, crop, saturation and captions.",
+      "kind": "video-edit",
+      "version": 1,
+      "fields": [
+        {
+          "key": "width",
+          "label": "Width",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "height",
+          "label": "Height",
+          "type": "number",
+          "default": 1920
+        },
+        {
+          "key": "contentAspect",
+          "label": "Content aspect",
+          "type": "string",
+          "default": "4:5"
+        },
+        {
+          "key": "saturation",
+          "label": "Saturation",
+          "type": "number",
+          "default": 1.35
+        },
+        {
+          "key": "removePauses",
+          "label": "Remove pauses",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "maxPause",
+          "label": "Longest pause (s)",
+          "type": "number",
+          "default": 0.35
+        },
+        {
+          "key": "maxWordDuration",
+          "label": "Longest word (s)",
+          "type": "number",
+          "default": 0.6
+        },
+        {
+          "key": "captions",
+          "label": "Captions",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "captionPosition",
+          "label": "Caption position",
+          "type": "number",
+          "default": 0.55
+        },
+        {
+          "key": "captionFont",
+          "label": "Caption font",
+          "type": "string",
+          "default": "Roboto"
+        },
+        {
+          "key": "captionSize",
+          "label": "Caption size",
+          "type": "number",
+          "default": 64
+        },
+        {
+          "key": "captionOutline",
+          "label": "Caption outline",
+          "type": "number",
+          "default": 4
+        },
+        {
+          "key": "maxDuration",
+          "label": "Maximum duration (s)",
+          "type": "number",
+          "default": 60
+        },
+        {
+          "key": "crf",
+          "label": "Quality (CRF)",
+          "type": "number",
+          "default": 20
+        },
+        {
+          "key": "renderTimeoutMs",
+          "label": "Render time limit (ms)",
+          "type": "number",
+          "default": 600000
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": "short"
+        }
+      ],
+      "defaults": {
+        "width": 1080,
+        "height": 1920,
+        "contentAspect": "4:5",
+        "saturation": 1.35,
+        "removePauses": true,
+        "maxPause": 0.35,
+        "maxWordDuration": 0.6,
+        "captions": true,
+        "captionPosition": 0.55,
+        "captionFont": "Roboto",
+        "captionSize": 64,
+        "captionOutline": 4,
+        "maxDuration": 60,
+        "crf": 20,
+        "renderTimeoutMs": 600000,
+        "outputKey": "short"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "width": {
+            "title": "Width",
+            "type": "number"
+          },
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "contentAspect": {
+            "title": "Content aspect",
+            "type": "string"
+          },
+          "saturation": {
+            "title": "Saturation",
+            "type": "number"
+          },
+          "removePauses": {
+            "title": "Remove pauses",
+            "type": "boolean"
+          },
+          "maxPause": {
+            "title": "Longest pause (s)",
+            "type": "number"
+          },
+          "maxWordDuration": {
+            "title": "Longest word (s)",
+            "type": "number"
+          },
+          "captions": {
+            "title": "Captions",
+            "type": "boolean"
+          },
+          "captionPosition": {
+            "title": "Caption position",
+            "type": "number"
+          },
+          "captionFont": {
+            "title": "Caption font",
+            "type": "string"
+          },
+          "captionSize": {
+            "title": "Caption size",
+            "type": "number"
+          },
+          "captionOutline": {
+            "title": "Caption outline",
+            "type": "number"
+          },
+          "maxDuration": {
+            "title": "Maximum duration (s)",
+            "type": "number"
+          },
+          "crf": {
+            "title": "Quality (CRF)",
+            "type": "number"
+          },
+          "renderTimeoutMs": {
+            "title": "Render time limit (ms)",
+            "type": "number"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "thumbnail",
+      "name": "Thumbnail",
+      "description": "Extracts cover frames or composes a cover with arrow, circle and title.",
+      "kind": "thumbnail",
+      "version": 1,
+      "fields": [
+        {
+          "key": "mode",
+          "label": "Mode",
+          "type": "select",
+          "default": "candidates",
+          "options": [
+            "candidates",
+            "compose"
+          ]
+        },
+        {
+          "key": "count",
+          "label": "Candidate frames",
+          "type": "number",
+          "default": 6
+        },
+        {
+          "key": "width",
+          "label": "Width",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "height",
+          "label": "Height",
+          "type": "number",
+          "default": 1920
+        },
+        {
+          "key": "previewWidth",
+          "label": "Preview width",
+          "type": "number",
+          "default": 360
+        },
+        {
+          "key": "font",
+          "label": "Font file",
+          "type": "string",
+          "default": "/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/Roboto-Bold.ttf"
+        },
+        {
+          "key": "arrow",
+          "label": "Arrow",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "circle",
+          "label": "Circle",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "circleRadius",
+          "label": "Circle radius (0-1000)",
+          "type": "number",
+          "default": 150
+        },
+        {
+          "key": "quality",
+          "label": "JPEG quality (2-31)",
+          "type": "number",
+          "default": 3
+        },
+        {
+          "key": "timeoutMs",
+          "label": "Time limit (ms)",
+          "type": "number",
+          "default": 120000
+        }
+      ],
+      "defaults": {
+        "mode": "candidates",
+        "count": 6,
+        "width": 1080,
+        "height": 1920,
+        "previewWidth": 360,
+        "font": "/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/Roboto-Bold.ttf",
+        "arrow": true,
+        "circle": true,
+        "circleRadius": 150,
+        "quality": 3,
+        "timeoutMs": 120000
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "title": "Mode",
+            "type": "string",
+            "enum": [
+              "candidates",
+              "compose"
+            ]
+          },
+          "count": {
+            "title": "Candidate frames",
+            "type": "number"
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          },
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "previewWidth": {
+            "title": "Preview width",
+            "type": "number"
+          },
+          "font": {
+            "title": "Font file",
+            "type": "string"
+          },
+          "arrow": {
+            "title": "Arrow",
+            "type": "boolean"
+          },
+          "circle": {
+            "title": "Circle",
+            "type": "boolean"
+          },
+          "circleRadius": {
+            "title": "Circle radius (0-1000)",
+            "type": "number"
+          },
+          "quality": {
+            "title": "JPEG quality (2-31)",
+            "type": "number"
+          },
+          "timeoutMs": {
+            "title": "Time limit (ms)",
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "id": "youtube-publish",
+      "name": "YouTube publish",
+      "description": "Uploads privately, sets the Short cover in Studio, then applies the privacy.",
+      "kind": "youtube-publish",
+      "version": 2,
+      "fields": [
+        {
+          "key": "channelHandle",
+          "label": "Channel handle",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "privacy",
+          "label": "Privacy",
+          "type": "select",
+          "default": "public",
+          "options": [
+            "private",
+            "unlisted",
+            "public"
+          ]
+        },
+        {
+          "key": "categoryId",
+          "label": "Category id",
+          "type": "string",
+          "default": "23"
+        },
+        {
+          "key": "madeForKids",
+          "label": "Made for kids",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "containsSyntheticMedia",
+          "label": "Contains synthetic media",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "setCover",
+          "label": "Set cover",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "maxHashtags",
+          "label": "Most hashtags",
+          "type": "number",
+          "default": 10
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": "youtube"
+        }
+      ],
+      "defaults": {
+        "channelHandle": "",
+        "privacy": "public",
+        "categoryId": "23",
+        "madeForKids": false,
+        "containsSyntheticMedia": false,
+        "setCover": true,
+        "maxHashtags": 10,
+        "outputKey": "youtube"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "channelHandle": {
+            "title": "Channel handle",
+            "type": "string"
+          },
+          "privacy": {
+            "title": "Privacy",
+            "type": "string",
+            "enum": [
+              "private",
+              "unlisted",
+              "public"
+            ]
+          },
+          "categoryId": {
+            "title": "Category id",
+            "type": "string"
+          },
+          "madeForKids": {
+            "title": "Made for kids",
+            "type": "boolean"
+          },
+          "containsSyntheticMedia": {
+            "title": "Contains synthetic media",
+            "type": "boolean"
+          },
+          "setCover": {
+            "title": "Set cover",
+            "type": "boolean"
+          },
+          "maxHashtags": {
+            "title": "Most hashtags",
+            "type": "number"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}
