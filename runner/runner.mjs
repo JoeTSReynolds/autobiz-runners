@@ -49014,6 +49014,9 @@ var captions = async (job, config, tools, outputKey) => {
     await tools.run("yt-dlp", ["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", languages.join(","), "--sub-format", "json3", "-o", "captions", "--no-warnings", "--", url], { timeoutMs });
   } catch (error) {
     if (error instanceof ExecutionCancelled) throw error;
+    if (error instanceof Error && /confirm you.re not a bot|HTTP Error 429/i.test(error.message)) {
+      throw new ExecutionFailure(`YouTube refused the captions request (bot check or rate limit): ${error.message.slice(-300)}`);
+    }
     return missing();
   }
   for (const language of languages) {
