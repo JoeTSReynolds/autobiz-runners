@@ -1,6 +1,10 @@
-# Throwaway check: can a GitHub-hosted runner fetch YouTube the way the Cartoon Clips business does?
+# Throwaway check: which free workaround gets a GitHub-hosted runner past YouTube's bot check?
+# Run 1 (38072648315): search worked; captions and section download hit "Sign in to confirm you're not a bot" on 3/3 runners.
 name: youtube-spike
 on: push
+env:
+  VIDEO: https://www.youtube.com/watch?v=c2lla70AYz8
+  FORMAT: 'bv*[height<=1080][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=1080][vcodec^=avc1]+ba/b[height<=1080]'
 jobs:
   spike:
     runs-on: ubuntu-24.04
@@ -8,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sample: [1, 2, 3]
+        variant: [tv, tv_simply, android_vr, web_safari, mweb, bgutil, warp, warp-bgutil]
     steps:
       - uses: denoland/setup-deno@v2
         with:
@@ -17,27 +21,40 @@ jobs:
         run: |
           pipx install "yt-dlp[default]==2026.08.19"
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
-          yt-dlp --version; ffmpeg -version | head -1
-          curl -s https://ipinfo.io/json | jq '{ip, org, country}'
-      - name: Search official channels
-        id: search
+      - name: Player client args
+        if: ${{ !contains(matrix.variant, 'bgutil') && !contains(matrix.variant, 'warp') }}
+        run: echo "EXTRA=--extractor-args youtube:player_client=${{ matrix.variant }}" >> "$GITHUB_ENV"
+      - name: Start bgutil PO-token provider
+        if: contains(matrix.variant, 'bgutil')
+        run: |
+          docker run -d --name bgutil -p 4416:4416 brainicism/bgutil-ytdlp-pot-provider
+          pipx inject yt-dlp bgutil-ytdlp-pot-provider
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4416/ping && break; sleep 1; done; echo
+      - name: Start Cloudflare WARP (SOCKS) behind privoxy (HTTP, so ffmpeg can use it)
+        if: contains(matrix.variant, 'warp')
+        run: |
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq cloudflare-warp privoxy > /dev/null
+          warp-cli --accept-tos registration new
+          warp-cli --accept-tos mode proxy
+          warp-cli --accept-tos connect
+          sleep 5
+          echo 'forward-socks5t / 127.0.0.1:40000 .' | sudo tee -a /etc/privoxy/config > /dev/null
+          sudo systemctl restart privoxy; sleep 2
+          curl -s -x http://127.0.0.1:8118 https://ipinfo.io/json | jq '{ip, org}'
+          echo "PROXY=--proxy http://127.0.0.1:8118" >> "$GITHUB_ENV"
+      - name: Captions
+        id: captions
         continue-on-error: true
         run: |
-          for q in "UCgPClNr5VSYC3syrDUIlzLw/search?query=Rick%20and%20Morty" "UC1MEMnZEDKqLPu-B-AHIsyw/search?query=Family%20Guy" "UCE5mQnNl8Q4H2qcv4ikaXeA/search?query=Futurama"; do
-            yt-dlp --flat-playlist -J --no-warnings --playlist-end 20 -- "https://www.youtube.com/channel/$q" > search.json 2> search.err || { tail -3 search.err; continue; }
-            id=$(jq -r '[.entries[] | select(.duration != null and .duration >= 120 and .duration <= 3600)][0].id // empty' search.json)
-            if [ -n "$id" ]; then echo "id=$id" >> "$GITHUB_OUTPUT"; jq -r --arg id "$id" '.entries[] | select(.id == $id) | "picked \(.id) \(.duration)s \(.title)"' search.json; exit 0; fi
-          done
-          exit 1
-      - name: Captions (json3, no download)
-        if: steps.search.outputs.id != ''
+          yt-dlp $EXTRA $PROXY --skip-download --write-subs --write-auto-subs --sub-langs en,en-orig,en-US --sub-format json3 -o captions --no-warnings -- "$VIDEO"
+          ls captions*
+      - name: Section download
+        id: section
         continue-on-error: true
         run: |
-          yt-dlp --skip-download --write-subs --write-auto-subs --sub-langs en,en-orig,en-US --sub-format json3 -o captions --no-warnings -- "https://www.youtube.com/watch?v=${{ steps.search.outputs.id }}"
-          ls -la captions*
-      - name: Section download (60 s, H.264 HLS first)
-        if: steps.search.outputs.id != ''
-        continue-on-error: true
-        run: |
-          yt-dlp -f 'bv*[height<=1080][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=1080][vcodec^=avc1]+ba/b[height<=1080]' --download-sections '*30-90' --force-keyframes-at-cuts --merge-output-format mp4 -o 'section.%(ext)s' --no-warnings -- "https://www.youtube.com/watch?v=${{ steps.search.outputs.id }}"
-          ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json section.mp4
+          yt-dlp $EXTRA $PROXY -f "$FORMAT" --download-sections '*30-90' --force-keyframes-at-cuts --merge-output-format mp4 -o 'section.%(ext)s' --no-warnings -- "$VIDEO"
+          ffprobe -v error -show_entries format=duration -of csv=p=0 section.mp4
+      - name: Result
+        run: echo "RESULT ${{ matrix.variant }} captions=${{ steps.captions.outcome }} section=${{ steps.section.outcome }}"
