@@ -1,0 +1,1796 @@
+{
+  "business": {
+    "id": "b9cb6158-3145-4fb3-8f75-0265659bb79b",
+    "name": "NoWayClips",
+    "description": "Finds this week's most-viewed English podcasts, interviews and debates, picks the most controversial or funniest moment from what viewers replayed, laughed at or commented on, and tells it as a story Short: a reaction hook, the host's intro, build-up beats and the payoff, with transitions, effects, particles, emoji pop-ups and sound effects over a textured background. Publishes to @NoWayClipsHQ without review.",
+    "status": "draft",
+    "settings": {},
+    "workflow": {
+      "nodes": [
+        {
+          "id": "start",
+          "moduleId": "start",
+          "position": {
+            "x": 630,
+            "y": 548
+          },
+          "config": {}
+        },
+        {
+          "id": "find-trending",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 925,
+            "y": 548
+          },
+          "config": {
+            "mode": "search",
+            "pick": "list",
+            "listSize": 25,
+            "queries": [
+              "https://www.youtube.com/results?search_query=podcast&sp=CAMSBggDEAEYAg%3D%3D",
+              "https://www.youtube.com/results?search_query=interview&sp=CAMSBggDEAEYAg%3D%3D",
+              "https://www.youtube.com/results?search_query=debate&sp=CAMSBggDEAEYAg%3D%3D"
+            ],
+            "maxResults": 40,
+            "minDuration": 1200,
+            "maxDuration": 10800,
+            "excludeWords": [
+              "reaction",
+              "compilation",
+              "highlights",
+              "trailer",
+              "livestream",
+              "live stream",
+              "music video",
+              "full match"
+            ]
+          }
+        },
+        {
+          "id": "choose-episode",
+          "moduleId": "agent",
+          "position": {
+            "x": 1220,
+            "y": 182
+          },
+          "config": {
+            "prompt": "You pick one long video for a YouTube Shorts channel that posts the most controversial, shocking or funny moments from trending podcasts, interviews and debates. `candidates` are this week's most-viewed long videos (`views`, `duration` in seconds). Choose the one most likely to contain a controversial, heated, shocking or very funny standalone moment that people would argue about in the comments. It must be in English and a conversation between people: a podcast, interview, debate or panel show. Skip news coverage, election results, live streams, sport commentary or match analysis, music performances, video essays and anything not in English. Never choose an id listed in `rejectedSources`. When two are equally good, prefer the bigger names and more views. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: the chosen candidate copied exactly, with its `id`, `url`, `title`, `channel`, `duration` and `views`, plus `why` (one sentence).",
+            "format": "json",
+            "inputKeys": [
+              "candidates",
+              "rejectedSources"
+            ],
+            "requiredKeys": [
+              "id",
+              "url",
+              "title",
+              "channel",
+              "duration"
+            ],
+            "outputKey": "source"
+          }
+        },
+        {
+          "id": "get-transcript",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 40,
+            "y": 425
+          },
+          "config": {
+            "mode": "captions",
+            "languages": [
+              "en-orig"
+            ],
+            "hotspots": true,
+            "commentsToScan": 300,
+            "transcriptUnit": "sentence"
+          }
+        },
+        {
+          "id": "pick-moment",
+          "moduleId": "agent",
+          "position": {
+            "x": 335,
+            "y": 385
+          },
+          "config": {
+            "prompt": "You pick the payoff of a story-style YouTube Short, for a channel that posts the most controversial and funniest podcast moments, from the episode in `source`. `hotspots` holds the parts viewers reacted to most: each `##` header gives a time range in seconds and why it is hot (replay = YouTube's most-replayed graph, laughs = laughter in the captions, comment = a top comment pointing at that time); the lines under it are `[start-end] sentence` in seconds, and `>>` marks a speaker change. If the header says no hotspots were found, the whole transcript follows instead. Pick the single most controversial or funniest moment: a hot take, a heated disagreement, a confession, a wild claim or a big laugh. 12 to 25 seconds, starting at a sentence's start time and ending at a sentence's end time (use the times shown). End it only after the other person's response and any laughter or reaction have fully played out, usually 4 to 10 seconds after the punchline. Avoid ad reads, sponsor segments, intros and outros. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 6 words, names who is talking if known\", \"why\": \"one sentence\"}.",
+            "format": "json",
+            "inputKeys": [
+              "source"
+            ],
+            "fileKeys": [
+              "hotspots"
+            ],
+            "requiredKeys": [
+              "start",
+              "end",
+              "hook",
+              "why"
+            ],
+            "outputKey": "moment"
+          }
+        },
+        {
+          "id": "edit-short",
+          "moduleId": "video-edit",
+          "position": {
+            "x": 1220,
+            "y": 40
+          },
+          "config": {
+            "mode": "story",
+            "background": "brick",
+            "headlineSize": 76
+          }
+        },
+        {
+          "id": "write-metadata",
+          "moduleId": "agent",
+          "position": {
+            "x": 1515,
+            "y": 363
+          },
+          "config": {
+            "prompt": "Write YouTube Shorts metadata for a clip from the episode in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. Lean into the controversy: the title should make people want to see what was said and argue about it in the comments. Attribute what was said to the person who said it (\"X says ...\", \"X on ...\") rather than stating it as fact. Return only JSON: {\"title\": \"at most 70 characters, names the guest or host, no emojis\", \"description\": \"2 to 4 sentences: a hook line first (YouTube shows about the first 100 characters), then what is said and by whom, then a last line crediting the source exactly as: Source: <source.title> - <source.channel> <source.url>. No hashtags in the description.\", \"hashtags\": [\"6 to 10 words without the # sign: shorts, podcast, the show name, the guest, the host, the topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show and the guest\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
+            "format": "json",
+            "inputKeys": [
+              "source",
+              "moment",
+              "story"
+            ],
+            "requiredKeys": [
+              "title",
+              "description",
+              "hashtags",
+              "tags",
+              "thumbnailText"
+            ],
+            "outputKey": "meta"
+          }
+        },
+        {
+          "id": "publish",
+          "moduleId": "youtube-publish",
+          "position": {
+            "x": 1810,
+            "y": 363
+          },
+          "config": {
+            "channelHandle": "@NoWayClipsHQ",
+            "privacy": "public",
+            "categoryId": "24",
+            "setCover": false
+          }
+        },
+        {
+          "id": "done",
+          "moduleId": "output",
+          "position": {
+            "x": 2105,
+            "y": 363
+          },
+          "config": {}
+        },
+        {
+          "id": "failed",
+          "moduleId": "error",
+          "position": {
+            "x": 1220,
+            "y": 591
+          },
+          "config": {
+            "message": "NoWayClips run stopped: retries exhausted."
+          }
+        },
+        {
+          "id": "plan-story",
+          "moduleId": "agent",
+          "position": {
+            "x": 630,
+            "y": 187
+          },
+          "config": {
+            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from the episode in `source`, for a channel that posts the most controversial and funniest podcast moments. `moment` is the payoff already chosen as the climax (episode seconds). `transcript` is the whole episode as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Build a story around the payoff that makes someone keep watching to the end: (1) hook: the strongest reaction (a laugh, a shout or a shocked line), taken from inside the payoff and shown first; one or two whole sentences, 4 to 7 seconds, that someone understands with no context; (2) intro: 3 to 7 seconds from the first minutes of the episode where the host introduces the guest or the topic; (3) beats: 2 to 4 short clips of 4 to 9 seconds, from the six minutes before the payoff, in episode order, that set up the payoff's topic so that each cut follows on from the previous one and the last beat leads straight into the payoff (no unrelated anecdotes); (4) payoff: the given moment, 12 to 25 seconds, ending only after the other person's response and any laughter or reaction have fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; use the time: aim for 45 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 6 words, the on-screen title, names who is talking\", \"clips\": [{\"role\": \"hook\" | \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
+            "format": "json",
+            "inputKeys": [
+              "source",
+              "moment"
+            ],
+            "fileKeys": [
+              "transcript"
+            ],
+            "requiredKeys": [
+              "headline",
+              "clips",
+              "effects",
+              "emojis"
+            ],
+            "outputKey": "story"
+          }
+        },
+        {
+          "id": "download-clips",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 925,
+            "y": 62
+          },
+          "config": {
+            "mode": "sections"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "start--next--find-trending",
+          "source": "start",
+          "sourcePort": "next",
+          "target": "find-trending"
+        },
+        {
+          "id": "find-trending--next--choose-episode",
+          "source": "find-trending",
+          "sourcePort": "next",
+          "target": "choose-episode"
+        },
+        {
+          "id": "choose-episode--next--get-transcript",
+          "source": "choose-episode",
+          "sourcePort": "next",
+          "target": "get-transcript"
+        },
+        {
+          "id": "choose-episode--invalid--retry-choice",
+          "source": "choose-episode",
+          "sourcePort": "invalid",
+          "target": "retry-choice"
+        },
+        {
+          "id": "retry-choice--retry--choose-episode",
+          "source": "retry-choice",
+          "sourcePort": "retry",
+          "target": "choose-episode"
+        },
+        {
+          "id": "retry-choice--exhausted--failed",
+          "source": "retry-choice",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "get-transcript--next--pick-moment",
+          "source": "get-transcript",
+          "sourcePort": "next",
+          "target": "pick-moment"
+        },
+        {
+          "id": "get-transcript--missing--retry-episode",
+          "source": "get-transcript",
+          "sourcePort": "missing",
+          "target": "retry-episode"
+        },
+        {
+          "id": "retry-episode--retry--choose-episode",
+          "source": "retry-episode",
+          "sourcePort": "retry",
+          "target": "choose-episode"
+        },
+        {
+          "id": "retry-episode--exhausted--failed",
+          "source": "retry-episode",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "pick-moment--invalid--retry-moment",
+          "source": "pick-moment",
+          "sourcePort": "invalid",
+          "target": "retry-moment"
+        },
+        {
+          "id": "retry-moment--retry--pick-moment",
+          "source": "retry-moment",
+          "sourcePort": "retry",
+          "target": "pick-moment"
+        },
+        {
+          "id": "retry-moment--exhausted--failed",
+          "source": "retry-moment",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "edit-short--next--write-metadata",
+          "source": "edit-short",
+          "sourcePort": "next",
+          "target": "write-metadata"
+        },
+        {
+          "id": "write-metadata--invalid--retry-metadata",
+          "source": "write-metadata",
+          "sourcePort": "invalid",
+          "target": "retry-metadata"
+        },
+        {
+          "id": "retry-metadata--retry--write-metadata",
+          "source": "retry-metadata",
+          "sourcePort": "retry",
+          "target": "write-metadata"
+        },
+        {
+          "id": "retry-metadata--exhausted--failed",
+          "source": "retry-metadata",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "publish--next--done",
+          "source": "publish",
+          "sourcePort": "next",
+          "target": "done"
+        },
+        {
+          "id": "pick-moment--next--plan-story",
+          "source": "pick-moment",
+          "sourcePort": "next",
+          "target": "plan-story"
+        },
+        {
+          "id": "plan-story--next--download-clips",
+          "source": "plan-story",
+          "sourcePort": "next",
+          "target": "download-clips"
+        },
+        {
+          "id": "plan-story--invalid--retry-story",
+          "source": "plan-story",
+          "sourcePort": "invalid",
+          "target": "retry-story"
+        },
+        {
+          "id": "retry-story--retry--plan-story",
+          "source": "retry-story",
+          "sourcePort": "retry",
+          "target": "plan-story"
+        },
+        {
+          "id": "retry-story--exhausted--failed",
+          "source": "retry-story",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "download-clips--next--edit-short",
+          "source": "download-clips",
+          "sourcePort": "next",
+          "target": "edit-short"
+        },
+        {
+          "id": "write-metadata--next--publish",
+          "source": "write-metadata",
+          "sourcePort": "next",
+          "target": "publish"
+        }
+      ],
+      "operators": [
+        {
+          "id": "retry-episode",
+          "kind": "retry",
+          "position": {
+            "x": 959,
+            "y": 763
+          },
+          "maxRetries": 4
+        },
+        {
+          "id": "retry-choice",
+          "kind": "retry",
+          "position": {
+            "x": 959,
+            "y": 212
+          },
+          "maxRetries": 3
+        },
+        {
+          "id": "retry-moment",
+          "kind": "retry",
+          "position": {
+            "x": 664,
+            "y": 690
+          },
+          "maxRetries": 3
+        },
+        {
+          "id": "retry-metadata",
+          "kind": "retry",
+          "position": {
+            "x": 959,
+            "y": 436
+          },
+          "maxRetries": 3
+        },
+        {
+          "id": "retry-story",
+          "kind": "retry",
+          "position": {
+            "x": 959,
+            "y": 324
+          },
+          "maxRetries": 3
+        }
+      ]
+    },
+    "createdAt": "2026-10-13T01:32:43.003Z",
+    "updatedAt": "2026-10-13T14:50:40.633Z"
+  },
+  "modules": [
+    {
+      "id": "start",
+      "name": "Start",
+      "description": "Provides the workflow input.",
+      "kind": "start",
+      "version": 1,
+      "fields": [
+        {
+          "key": "message",
+          "label": "Message",
+          "type": "string",
+          "default": "{input}"
+        }
+      ],
+      "defaults": {
+        "message": "{input}"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "transform",
+      "name": "Transform",
+      "description": "Formats the input deterministically.",
+      "kind": "transform",
+      "version": 1,
+      "fields": [
+        {
+          "key": "text",
+          "label": "Text",
+          "type": "string",
+          "default": "{input}"
+        }
+      ],
+      "defaults": {
+        "text": "{input}"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "review",
+      "name": "Review",
+      "description": "Checks deterministic text constraints.",
+      "kind": "review",
+      "version": 1,
+      "fields": [
+        {
+          "key": "minLength",
+          "label": "Minimum length",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "maxLength",
+          "label": "Maximum length",
+          "type": "number",
+          "default": 10000
+        },
+        {
+          "key": "contains",
+          "label": "Required text",
+          "type": "string",
+          "default": ""
+        }
+      ],
+      "defaults": {
+        "minLength": 0,
+        "maxLength": 10000,
+        "contains": ""
+      },
+      "outputs": [
+        {
+          "id": "pass",
+          "label": "Pass"
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "agent",
+      "name": "Agent",
+      "description": "Calls an explicitly configured agent.",
+      "kind": "agent",
+      "version": 3,
+      "fields": [
+        {
+          "key": "prompt",
+          "label": "Prompt",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "format",
+          "label": "Reply format",
+          "type": "select",
+          "default": "text",
+          "options": [
+            "text",
+            "json"
+          ]
+        },
+        {
+          "key": "requiredKeys",
+          "label": "Required reply keys",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "inputKeys",
+          "label": "Input keys to send",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "imageKeys",
+          "label": "Image keys",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "fileKeys",
+          "label": "File keys",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": ""
+        }
+      ],
+      "defaults": {
+        "prompt": "",
+        "format": "text",
+        "requiredKeys": [],
+        "inputKeys": [],
+        "imageKeys": [],
+        "fileKeys": [],
+        "outputKey": ""
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        },
+        {
+          "id": "invalid",
+          "label": "Invalid"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "format": {
+            "title": "Reply format",
+            "type": "string",
+            "enum": [
+              "text",
+              "json"
+            ]
+          },
+          "requiredKeys": {
+            "title": "Required reply keys",
+            "type": "array"
+          },
+          "inputKeys": {
+            "title": "Input keys to send",
+            "type": "array"
+          },
+          "imageKeys": {
+            "title": "Image keys",
+            "type": "array"
+          },
+          "fileKeys": {
+            "title": "File keys",
+            "type": "array"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "approval",
+      "name": "Approval",
+      "description": "Waits for an explicit operator decision.",
+      "kind": "approval",
+      "version": 1,
+      "fields": [],
+      "defaults": {},
+      "outputs": [
+        {
+          "id": "approved",
+          "label": "Approved"
+        },
+        {
+          "id": "rejected",
+          "label": "Rejected"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "output",
+      "name": "Output",
+      "description": "Returns the current workflow value.",
+      "kind": "output",
+      "version": 1,
+      "fields": [],
+      "defaults": {},
+      "outputs": [
+        {
+          "id": "done",
+          "label": "Done"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "error",
+      "name": "Error",
+      "description": "Ends the workflow with a failure.",
+      "kind": "error",
+      "version": 1,
+      "fields": [
+        {
+          "key": "message",
+          "label": "Error message",
+          "type": "string",
+          "default": "Review attempts exhausted."
+        }
+      ],
+      "defaults": {
+        "message": "Review attempts exhausted."
+      },
+      "outputs": [
+        {
+          "id": "failed",
+          "label": "Failed"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "",
+        "onFail": ""
+      }
+    },
+    {
+      "id": "random",
+      "name": "Random pick",
+      "description": "Picks one value from a list and adds it to the job.",
+      "kind": "random",
+      "version": 1,
+      "fields": [
+        {
+          "key": "options",
+          "label": "Options",
+          "type": "json",
+          "default": [
+            "The Simpsons",
+            "Family Guy",
+            "Rick and Morty",
+            "Futurama",
+            "American Dad",
+            "Bob's Burgers",
+            "King of the Hill",
+            "South Park"
+          ]
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": "show"
+        }
+      ],
+      "defaults": {
+        "options": [
+          "The Simpsons",
+          "Family Guy",
+          "Rick and Morty",
+          "Futurama",
+          "American Dad",
+          "Bob's Burgers",
+          "King of the Hill",
+          "South Park"
+        ],
+        "outputKey": "show"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "options": {
+            "title": "Options",
+            "type": "array"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "media-fetch",
+      "name": "Media fetch",
+      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, or downloads any video link (HLS included) with yt-dlp.",
+      "kind": "media-fetch",
+      "version": 3,
+      "fields": [
+        {
+          "key": "mode",
+          "label": "Mode",
+          "type": "select",
+          "default": "search",
+          "options": [
+            "search",
+            "captions",
+            "section",
+            "sections",
+            "download"
+          ]
+        },
+        {
+          "key": "queries",
+          "label": "Search queries",
+          "type": "json",
+          "default": [
+            "ytsearch20:{show} full episode",
+            "ytsearch20:{show} uncropped uncut full episode"
+          ]
+        },
+        {
+          "key": "minDuration",
+          "label": "Minimum duration (s)",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "maxDuration",
+          "label": "Maximum duration (s)",
+          "type": "number",
+          "default": 3600
+        },
+        {
+          "key": "excludeWords",
+          "label": "Excluded title words",
+          "type": "json",
+          "default": [
+            "reaction",
+            "compilation",
+            "review",
+            "explained",
+            "recap",
+            "best of",
+            "minecraft",
+            "roblox",
+            "trailer",
+            "clip"
+          ]
+        },
+        {
+          "key": "titleIncludes",
+          "label": "Title must include",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "maxResults",
+          "label": "Results per query",
+          "type": "number",
+          "default": 60
+        },
+        {
+          "key": "searchTimeoutMs",
+          "label": "Search time limit (ms)",
+          "type": "number",
+          "default": 120000
+        },
+        {
+          "key": "pick",
+          "label": "Search pick",
+          "type": "select",
+          "default": "random",
+          "options": [
+            "random",
+            "list"
+          ]
+        },
+        {
+          "key": "listSize",
+          "label": "Candidates in a list",
+          "type": "number",
+          "default": 25
+        },
+        {
+          "key": "languages",
+          "label": "Caption languages",
+          "type": "json",
+          "default": [
+            "en",
+            "en-orig",
+            "en-US",
+            "en-GB"
+          ]
+        },
+        {
+          "key": "captionsTimeoutMs",
+          "label": "Captions time limit (ms)",
+          "type": "number",
+          "default": 120000
+        },
+        {
+          "key": "hotspots",
+          "label": "Find hotspots",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "commentsToScan",
+          "label": "Top comments to scan",
+          "type": "number",
+          "default": 300
+        },
+        {
+          "key": "hotspotWindow",
+          "label": "Hotspot window (s)",
+          "type": "number",
+          "default": 75
+        },
+        {
+          "key": "hotspotsPerKind",
+          "label": "Hotspots per signal",
+          "type": "number",
+          "default": 4
+        },
+        {
+          "key": "transcriptUnit",
+          "label": "Transcript unit",
+          "type": "select",
+          "default": "line",
+          "options": [
+            "line",
+            "sentence"
+          ]
+        },
+        {
+          "key": "padding",
+          "label": "Section padding (s)",
+          "type": "number",
+          "default": 2
+        },
+        {
+          "key": "maxHeight",
+          "label": "Maximum video height",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "minMoment",
+          "label": "Shortest moment (s)",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "maxMoment",
+          "label": "Longest moment (s)",
+          "type": "number",
+          "default": 120
+        },
+        {
+          "key": "downloadTimeoutMs",
+          "label": "Download time limit (ms)",
+          "type": "number",
+          "default": 900000
+        },
+        {
+          "key": "hookLead",
+          "label": "Hook lead (s)",
+          "type": "number",
+          "default": 10.5
+        },
+        {
+          "key": "clipLead",
+          "label": "Clip lead (s)",
+          "type": "number",
+          "default": 3.5
+        },
+        {
+          "key": "clipTail",
+          "label": "Clip tail (s)",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "payoffTail",
+          "label": "Payoff tail (s)",
+          "type": "number",
+          "default": 15
+        }
+      ],
+      "defaults": {
+        "mode": "search",
+        "queries": [
+          "ytsearch20:{show} full episode",
+          "ytsearch20:{show} uncropped uncut full episode"
+        ],
+        "minDuration": 1080,
+        "maxDuration": 3600,
+        "excludeWords": [
+          "reaction",
+          "compilation",
+          "review",
+          "explained",
+          "recap",
+          "best of",
+          "minecraft",
+          "roblox",
+          "trailer",
+          "clip"
+        ],
+        "titleIncludes": "",
+        "maxResults": 60,
+        "searchTimeoutMs": 120000,
+        "pick": "random",
+        "listSize": 25,
+        "languages": [
+          "en",
+          "en-orig",
+          "en-US",
+          "en-GB"
+        ],
+        "captionsTimeoutMs": 120000,
+        "hotspots": false,
+        "commentsToScan": 300,
+        "hotspotWindow": 75,
+        "hotspotsPerKind": 4,
+        "transcriptUnit": "line",
+        "padding": 2,
+        "maxHeight": 1080,
+        "minMoment": 5,
+        "maxMoment": 120,
+        "downloadTimeoutMs": 900000,
+        "hookLead": 10.5,
+        "clipLead": 3.5,
+        "clipTail": 5,
+        "payoffTail": 15
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        },
+        {
+          "id": "missing",
+          "label": "Missing"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "title": "Mode",
+            "type": "string",
+            "enum": [
+              "search",
+              "captions",
+              "section",
+              "sections",
+              "download"
+            ]
+          },
+          "queries": {
+            "title": "Search queries",
+            "type": "array"
+          },
+          "minDuration": {
+            "title": "Minimum duration (s)",
+            "type": "number"
+          },
+          "maxDuration": {
+            "title": "Maximum duration (s)",
+            "type": "number"
+          },
+          "excludeWords": {
+            "title": "Excluded title words",
+            "type": "array"
+          },
+          "titleIncludes": {
+            "title": "Title must include",
+            "type": "string"
+          },
+          "maxResults": {
+            "title": "Results per query",
+            "type": "number"
+          },
+          "searchTimeoutMs": {
+            "title": "Search time limit (ms)",
+            "type": "number"
+          },
+          "pick": {
+            "title": "Search pick",
+            "type": "string",
+            "enum": [
+              "random",
+              "list"
+            ]
+          },
+          "listSize": {
+            "title": "Candidates in a list",
+            "type": "number"
+          },
+          "languages": {
+            "title": "Caption languages",
+            "type": "array"
+          },
+          "captionsTimeoutMs": {
+            "title": "Captions time limit (ms)",
+            "type": "number"
+          },
+          "hotspots": {
+            "title": "Find hotspots",
+            "type": "boolean"
+          },
+          "commentsToScan": {
+            "title": "Top comments to scan",
+            "type": "number"
+          },
+          "hotspotWindow": {
+            "title": "Hotspot window (s)",
+            "type": "number"
+          },
+          "hotspotsPerKind": {
+            "title": "Hotspots per signal",
+            "type": "number"
+          },
+          "transcriptUnit": {
+            "title": "Transcript unit",
+            "type": "string",
+            "enum": [
+              "line",
+              "sentence"
+            ]
+          },
+          "padding": {
+            "title": "Section padding (s)",
+            "type": "number"
+          },
+          "maxHeight": {
+            "title": "Maximum video height",
+            "type": "number"
+          },
+          "minMoment": {
+            "title": "Shortest moment (s)",
+            "type": "number"
+          },
+          "maxMoment": {
+            "title": "Longest moment (s)",
+            "type": "number"
+          },
+          "downloadTimeoutMs": {
+            "title": "Download time limit (ms)",
+            "type": "number"
+          },
+          "hookLead": {
+            "title": "Hook lead (s)",
+            "type": "number"
+          },
+          "clipLead": {
+            "title": "Clip lead (s)",
+            "type": "number"
+          },
+          "clipTail": {
+            "title": "Clip tail (s)",
+            "type": "number"
+          },
+          "payoffTail": {
+            "title": "Payoff tail (s)",
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "id": "video-edit",
+      "name": "Video edit",
+      "description": "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).",
+      "kind": "video-edit",
+      "version": 3,
+      "fields": [
+        {
+          "key": "mode",
+          "label": "Mode",
+          "type": "select",
+          "default": "short",
+          "options": [
+            "short",
+            "story"
+          ]
+        },
+        {
+          "key": "width",
+          "label": "Width",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "height",
+          "label": "Height",
+          "type": "number",
+          "default": 1920
+        },
+        {
+          "key": "contentAspect",
+          "label": "Content aspect",
+          "type": "string",
+          "default": "4:5"
+        },
+        {
+          "key": "saturation",
+          "label": "Saturation",
+          "type": "number",
+          "default": 1.35
+        },
+        {
+          "key": "removePauses",
+          "label": "Remove pauses",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "maxPause",
+          "label": "Longest pause (s)",
+          "type": "number",
+          "default": 0.35
+        },
+        {
+          "key": "maxWordDuration",
+          "label": "Longest word (s)",
+          "type": "number",
+          "default": 0.6
+        },
+        {
+          "key": "captions",
+          "label": "Captions",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "captionPosition",
+          "label": "Caption position",
+          "type": "number",
+          "default": 0.55
+        },
+        {
+          "key": "captionFont",
+          "label": "Caption font",
+          "type": "string",
+          "default": "Roboto"
+        },
+        {
+          "key": "captionSize",
+          "label": "Caption size",
+          "type": "number",
+          "default": 64
+        },
+        {
+          "key": "captionOutline",
+          "label": "Caption outline",
+          "type": "number",
+          "default": 4
+        },
+        {
+          "key": "headline",
+          "label": "Headline (job path)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "headlinePosition",
+          "label": "Headline position",
+          "type": "number",
+          "default": 0.12
+        },
+        {
+          "key": "headlineSize",
+          "label": "Headline size",
+          "type": "number",
+          "default": 72
+        },
+        {
+          "key": "sounds",
+          "label": "Sound effects (job path)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "soundsDir",
+          "label": "Sound library folder",
+          "type": "string",
+          "default": "sfx"
+        },
+        {
+          "key": "soundVolume",
+          "label": "Sound volume",
+          "type": "number",
+          "default": 0.7
+        },
+        {
+          "key": "maxSounds",
+          "label": "Most sound effects",
+          "type": "number",
+          "default": 8
+        },
+        {
+          "key": "maxDuration",
+          "label": "Maximum duration (s)",
+          "type": "number",
+          "default": 60
+        },
+        {
+          "key": "crf",
+          "label": "Quality (CRF)",
+          "type": "number",
+          "default": 20
+        },
+        {
+          "key": "renderTimeoutMs",
+          "label": "Render time limit (ms)",
+          "type": "number",
+          "default": 600000
+        },
+        {
+          "key": "background",
+          "label": "Story background",
+          "type": "string",
+          "default": "brick"
+        },
+        {
+          "key": "emojiDir",
+          "label": "Emoji cache folder",
+          "type": "string",
+          "default": "emoji"
+        },
+        {
+          "key": "storySeed",
+          "label": "Particle seed",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": "short"
+        }
+      ],
+      "defaults": {
+        "mode": "short",
+        "width": 1080,
+        "height": 1920,
+        "contentAspect": "4:5",
+        "saturation": 1.35,
+        "removePauses": true,
+        "maxPause": 0.35,
+        "maxWordDuration": 0.6,
+        "captions": true,
+        "captionPosition": 0.55,
+        "captionFont": "Roboto",
+        "captionSize": 64,
+        "captionOutline": 4,
+        "headline": "",
+        "headlinePosition": 0.12,
+        "headlineSize": 72,
+        "sounds": "",
+        "soundsDir": "sfx",
+        "soundVolume": 0.7,
+        "maxSounds": 8,
+        "maxDuration": 60,
+        "crf": 20,
+        "renderTimeoutMs": 600000,
+        "background": "brick",
+        "emojiDir": "emoji",
+        "storySeed": "",
+        "outputKey": "short"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "title": "Mode",
+            "type": "string",
+            "enum": [
+              "short",
+              "story"
+            ]
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          },
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "contentAspect": {
+            "title": "Content aspect",
+            "type": "string"
+          },
+          "saturation": {
+            "title": "Saturation",
+            "type": "number"
+          },
+          "removePauses": {
+            "title": "Remove pauses",
+            "type": "boolean"
+          },
+          "maxPause": {
+            "title": "Longest pause (s)",
+            "type": "number"
+          },
+          "maxWordDuration": {
+            "title": "Longest word (s)",
+            "type": "number"
+          },
+          "captions": {
+            "title": "Captions",
+            "type": "boolean"
+          },
+          "captionPosition": {
+            "title": "Caption position",
+            "type": "number"
+          },
+          "captionFont": {
+            "title": "Caption font",
+            "type": "string"
+          },
+          "captionSize": {
+            "title": "Caption size",
+            "type": "number"
+          },
+          "captionOutline": {
+            "title": "Caption outline",
+            "type": "number"
+          },
+          "headline": {
+            "title": "Headline (job path)",
+            "type": "string"
+          },
+          "headlinePosition": {
+            "title": "Headline position",
+            "type": "number"
+          },
+          "headlineSize": {
+            "title": "Headline size",
+            "type": "number"
+          },
+          "sounds": {
+            "title": "Sound effects (job path)",
+            "type": "string"
+          },
+          "soundsDir": {
+            "title": "Sound library folder",
+            "type": "string"
+          },
+          "soundVolume": {
+            "title": "Sound volume",
+            "type": "number"
+          },
+          "maxSounds": {
+            "title": "Most sound effects",
+            "type": "number"
+          },
+          "maxDuration": {
+            "title": "Maximum duration (s)",
+            "type": "number"
+          },
+          "crf": {
+            "title": "Quality (CRF)",
+            "type": "number"
+          },
+          "renderTimeoutMs": {
+            "title": "Render time limit (ms)",
+            "type": "number"
+          },
+          "background": {
+            "title": "Story background",
+            "type": "string"
+          },
+          "emojiDir": {
+            "title": "Emoji cache folder",
+            "type": "string"
+          },
+          "storySeed": {
+            "title": "Particle seed",
+            "type": "string"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "id": "thumbnail",
+      "name": "Thumbnail",
+      "description": "Extracts cover frames or composes a cover with arrow, circle and title.",
+      "kind": "thumbnail",
+      "version": 1,
+      "fields": [
+        {
+          "key": "mode",
+          "label": "Mode",
+          "type": "select",
+          "default": "candidates",
+          "options": [
+            "candidates",
+            "compose"
+          ]
+        },
+        {
+          "key": "count",
+          "label": "Candidate frames",
+          "type": "number",
+          "default": 6
+        },
+        {
+          "key": "width",
+          "label": "Width",
+          "type": "number",
+          "default": 1080
+        },
+        {
+          "key": "height",
+          "label": "Height",
+          "type": "number",
+          "default": 1920
+        },
+        {
+          "key": "previewWidth",
+          "label": "Preview width",
+          "type": "number",
+          "default": 360
+        },
+        {
+          "key": "font",
+          "label": "Font file",
+          "type": "string",
+          "default": "/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/Roboto-Bold.ttf"
+        },
+        {
+          "key": "arrow",
+          "label": "Arrow",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "circle",
+          "label": "Circle",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "circleRadius",
+          "label": "Circle radius (0-1000)",
+          "type": "number",
+          "default": 150
+        },
+        {
+          "key": "quality",
+          "label": "JPEG quality (2-31)",
+          "type": "number",
+          "default": 3
+        },
+        {
+          "key": "timeoutMs",
+          "label": "Time limit (ms)",
+          "type": "number",
+          "default": 120000
+        }
+      ],
+      "defaults": {
+        "mode": "candidates",
+        "count": 6,
+        "width": 1080,
+        "height": 1920,
+        "previewWidth": 360,
+        "font": "/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/Roboto-Bold.ttf",
+        "arrow": true,
+        "circle": true,
+        "circleRadius": 150,
+        "quality": 3,
+        "timeoutMs": 120000
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "title": "Mode",
+            "type": "string",
+            "enum": [
+              "candidates",
+              "compose"
+            ]
+          },
+          "count": {
+            "title": "Candidate frames",
+            "type": "number"
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          },
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "previewWidth": {
+            "title": "Preview width",
+            "type": "number"
+          },
+          "font": {
+            "title": "Font file",
+            "type": "string"
+          },
+          "arrow": {
+            "title": "Arrow",
+            "type": "boolean"
+          },
+          "circle": {
+            "title": "Circle",
+            "type": "boolean"
+          },
+          "circleRadius": {
+            "title": "Circle radius (0-1000)",
+            "type": "number"
+          },
+          "quality": {
+            "title": "JPEG quality (2-31)",
+            "type": "number"
+          },
+          "timeoutMs": {
+            "title": "Time limit (ms)",
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "id": "youtube-publish",
+      "name": "YouTube publish",
+      "description": "Uploads privately, sets the Short cover in Studio, then applies the privacy.",
+      "kind": "youtube-publish",
+      "version": 2,
+      "fields": [
+        {
+          "key": "channelHandle",
+          "label": "Channel handle",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "privacy",
+          "label": "Privacy",
+          "type": "select",
+          "default": "public",
+          "options": [
+            "private",
+            "unlisted",
+            "public"
+          ]
+        },
+        {
+          "key": "categoryId",
+          "label": "Category id",
+          "type": "string",
+          "default": "23"
+        },
+        {
+          "key": "madeForKids",
+          "label": "Made for kids",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "containsSyntheticMedia",
+          "label": "Contains synthetic media",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "setCover",
+          "label": "Set cover",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "maxHashtags",
+          "label": "Most hashtags",
+          "type": "number",
+          "default": 10
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": "youtube"
+        }
+      ],
+      "defaults": {
+        "channelHandle": "",
+        "privacy": "public",
+        "categoryId": "23",
+        "madeForKids": false,
+        "containsSyntheticMedia": false,
+        "setCover": true,
+        "maxHashtags": 10,
+        "outputKey": "youtube"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      },
+      "configSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "channelHandle": {
+            "title": "Channel handle",
+            "type": "string"
+          },
+          "privacy": {
+            "title": "Privacy",
+            "type": "string",
+            "enum": [
+              "private",
+              "unlisted",
+              "public"
+            ]
+          },
+          "categoryId": {
+            "title": "Category id",
+            "type": "string"
+          },
+          "madeForKids": {
+            "title": "Made for kids",
+            "type": "boolean"
+          },
+          "containsSyntheticMedia": {
+            "title": "Contains synthetic media",
+            "type": "boolean"
+          },
+          "setCover": {
+            "title": "Set cover",
+            "type": "boolean"
+          },
+          "maxHashtags": {
+            "title": "Most hashtags",
+            "type": "number"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}
