@@ -47212,7 +47212,9 @@ function starterModules() {
       field("hookLead", "Hook lead (s)", "number", 10.5),
       field("clipLead", "Clip lead (s)", "number", 3.5),
       field("clipTail", "Clip tail (s)", "number", 5),
-      field("payoffTail", "Payoff tail (s)", "number", 15)
+      field("payoffTail", "Payoff tail (s)", "number", 15),
+      field("blockedRetries", "Retries after a YouTube block", "number", 3),
+      field("blockedWaitSeconds", "First wait after a block (s)", "number", 30)
     ], ["next", "missing"]),
     seeded("video-edit", "Video edit", "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).", [
       field("mode", "Mode", "select", "short", ["short", "story"]),
@@ -48926,9 +48928,13 @@ var DEFAULTS2 = {
   hookLead: 10.5,
   clipLead: 3.5,
   clipTail: 5,
-  payoffTail: 15
+  payoffTail: 15,
+  // yt-dlp calls: retries after YouTube's bot check or a 429, and the first wait (doubles each retry)
+  blockedRetries: 3,
+  blockedWaitSeconds: 30
 };
 var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", sections: "clips", download: "video" };
+var WHISPER_MODEL = "base.en";
 var WORDS_FILE = "captions.words.json";
 var TRANSCRIPT_FILE = "transcript.txt";
 var HOTSPOTS_FILE = "hotspots.txt";
@@ -48966,11 +48972,27 @@ function sourceOf(job) {
   if (duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration))) throw new ExecutionFailure("media-fetch job.source.duration must be a number.");
   return { id: source.id, url: positional(source.url, "job.source.url"), duration };
 }
+var BLOCKED = /confirm you.re not a bot|HTTP Error 429/i;
+var isBlock = (error) => error instanceof Error && !(error instanceof ExecutionCancelled) && !(error instanceof ExecutionLimitFailure) && BLOCKED.test(error.message);
+function ytDlp(config, tools) {
+  const [retries, waitSeconds] = [count(config, "blockedRetries", false, true), count(config, "blockedWaitSeconds")];
+  return async (args, timeoutMs) => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await tools.run("yt-dlp", args, { timeoutMs });
+      } catch (error) {
+        if (!isBlock(error) || attempt >= retries || !tools.backOff) throw error;
+        await tools.backOff(waitSeconds * 1e3 * 2 ** attempt);
+      }
+    }
+  };
+}
 var reason = (error) => error instanceof Error ? error.message : String(error);
 var seconds = (ms) => Math.round(ms) / 1e3;
 var text = (...values) => values.find((value) => typeof value === "string" && value !== "") ?? "";
 var squash = (value) => value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 var search = async (job, config, tools, outputKey) => {
+  const yt2 = ytDlp(config, tools);
   const queries = list(config, "queries", 1);
   const excluded = list(config, "excludeWords", 0).map((word) => word.toLowerCase());
   const [minDuration, maxDuration] = [count(config, "minDuration"), count(config, "maxDuration")];
@@ -48995,7 +49017,7 @@ var search = async (job, config, tools, outputKey) => {
   for (const query of expanded) {
     let stdout;
     try {
-      ({ stdout } = await tools.run("yt-dlp", ["--flat-playlist", "-J", "--no-warnings", "--playlist-end", String(maxResults), "--", query], { timeoutMs }));
+      ({ stdout } = await yt2(["--flat-playlist", "-J", "--no-warnings", "--playlist-end", String(maxResults), "--", query], timeoutMs));
     } catch (error) {
       if (error instanceof ExecutionCancelled) throw error;
       failures.push(reason(error));
@@ -49156,9 +49178,22 @@ ${transcript}`, windows: 0 };
 `).join("");
   return { text: text3, windows: windows.length };
 }
+function whisperToJson3(json2) {
+  const { segments } = JSON.parse(json2);
+  if (!Array.isArray(segments)) throw new Error("whisper output has no segments list");
+  const ms = (value) => Math.round(Number(value) * 1e3);
+  const events = segments.filter(isObject3).flatMap((segment) => {
+    const words = (Array.isArray(segment.words) ? segment.words.filter(isObject3) : []).map((word) => ({ utf8: text(word.word).trim(), tOffsetMs: ms(word.start) - ms(segment.start) }));
+    const segs = words.some((word) => word.utf8) ? words.filter((word) => word.utf8) : [{ utf8: text(segment.text).trim(), tOffsetMs: 0 }];
+    return segs[0].utf8 ? [{ tStartMs: ms(segment.start), dDurationMs: ms(segment.end) - ms(segment.start), segs }] : [];
+  });
+  return JSON.stringify({ events });
+}
 var captions = async (job, config, tools, outputKey) => {
+  const yt2 = ytDlp(config, tools);
   const languages = list(config, "languages", 1);
-  const timeoutMs = count(config, "captionsTimeoutMs", true);
+  const timeout = count(config, "captionsTimeoutMs", true);
+  const downloadTimeoutMs = count(config, "downloadTimeoutMs", true);
   const hotspots = config.hotspots ?? DEFAULTS2.hotspots;
   if (typeof hotspots !== "boolean") throw new ExecutionFailure("media-fetch setting hotspots must be true or false.");
   const commentsToScan = count(config, "commentsToScan", false, true);
@@ -49171,13 +49206,21 @@ var captions = async (job, config, tools, outputKey) => {
   const missing = () => ({ output: { ...job, rejectedSources: [...rejected, id] }, port: "missing" });
   try {
     const infoArgs = !hotspots ? [] : ["--write-info-json", ...commentsToScan > 0 ? ["--write-comments", "--extractor-args", `youtube:max_comments=${commentsToScan},all,0,0;comment_sort=top`] : []];
-    await tools.run("yt-dlp", ["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", languages.join(","), "--sub-format", "json3", ...infoArgs, "-o", "captions", "--no-warnings", "--", url], { timeoutMs });
+    await yt2(["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", languages.join(","), "--sub-format", "json3", ...infoArgs, "-o", "captions", "--no-warnings", "--", url], timeout);
   } catch (error) {
     if (error instanceof ExecutionCancelled) throw error;
-    if (error instanceof Error && /confirm you.re not a bot|HTTP Error 429/i.test(error.message)) {
-      throw new ExecutionFailure(`YouTube refused the captions request (bot check or rate limit): ${error.message.slice(-300)}`);
+    if (!isBlock(error)) return missing();
+    const refused = `YouTube refused the captions request (bot check or rate limit): ${error.message.slice(-300)}`;
+    try {
+      await tools.run("yt-dlp", ["-f", "ba[ext=m4a]/ba", "-o", "captions-audio", "--no-warnings", "--", url], { timeoutMs: downloadTimeoutMs });
+      await tools.run("whisper-ctranslate2", ["captions-audio", "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", "--word_timestamps", "True", "--output_format", "json", "--output_dir", "."], { timeoutMs: downloadTimeoutMs });
+      const spoken = await tools.readText("run", "captions-audio.json");
+      if (spoken === void 0) throw new Error("whisper wrote no captions-audio.json");
+      await tools.writeText("run", `captions.${languages[0]}.json3`, whisperToJson3(spoken));
+    } catch (fallback) {
+      if (fallback instanceof ExecutionCancelled || fallback instanceof ExecutionLimitFailure) throw fallback;
+      throw new ExecutionFailure(`${refused} (transcription fallback failed: ${reason(fallback).slice(-200)})`);
     }
-    return missing();
   }
   for (const language of languages) {
     const json2 = await tools.readText("run", `captions.${language}.json3`);
@@ -49216,6 +49259,7 @@ async function probe(tools, file, timeoutMs) {
 }
 var sectionFormat = (maxHeight) => `bv*[height<=${maxHeight}][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=${maxHeight}][vcodec^=avc1]+ba/b[height<=${maxHeight}]`;
 var section = async (job, config, tools, outputKey) => {
+  const yt2 = ytDlp(config, tools);
   const padding = count(config, "padding");
   const maxHeight = count(config, "maxHeight", true);
   const [minMoment, maxMoment] = [count(config, "minMoment"), count(config, "maxMoment")];
@@ -49227,12 +49271,13 @@ var section = async (job, config, tools, outputKey) => {
   }
   const from = round(Math.max(0, start - padding));
   const to = round(duration === void 0 ? end + padding : Math.min(duration, end + padding));
-  await tools.run("yt-dlp", ["-f", sectionFormat(maxHeight), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "section.%(ext)s", "--no-warnings", "--", url], { timeoutMs });
+  await yt2(["-f", sectionFormat(maxHeight), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "section.%(ext)s", "--no-warnings", "--", url], timeoutMs);
   const length3 = await probe(tools, CLIP_FILE, timeoutMs);
   return { output: { ...job, [outputKey]: { file: CLIP_FILE, offset: from, duration: length3 } }, port: "next" };
 };
 var ROLES = ["hook", "intro", "beat", "payoff"];
 var sections = async (job, config, tools, outputKey) => {
+  const yt2 = ytDlp(config, tools);
   const maxHeight = count(config, "maxHeight", true);
   const timeoutMs = count(config, "downloadTimeoutMs", true);
   const [hookLead, clipLead, clipTail, payoffTail] = ["hookLead", "clipLead", "clipTail", "payoffTail"].map((key) => count(config, key));
@@ -49251,10 +49296,10 @@ var sections = async (job, config, tools, outputKey) => {
   for (const { from, to } of wanted) downloads.set(from, Math.max(downloads.get(from) ?? 0, to));
   const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "clip-%(section_start).3f.%(ext)s", "--no-warnings", "--", url];
   try {
-    await tools.run("yt-dlp", args, { timeoutMs });
+    await yt2(args, timeoutMs);
   } catch (error) {
-    if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure || error instanceof Error && /confirm you.re not a bot|HTTP Error 429/i.test(error.message)) throw error;
-    await tools.run("yt-dlp", args, { timeoutMs });
+    if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure || isBlock(error)) throw error;
+    await yt2(args, timeoutMs);
   }
   const lengths = /* @__PURE__ */ new Map();
   const found = [];
@@ -49277,10 +49322,11 @@ function httpLink(value) {
   throw new ExecutionFailure("media-fetch job.url must be an http or https link.");
 }
 var download = async (job, config, tools, outputKey) => {
+  const yt2 = ytDlp(config, tools);
   const maxHeight = count(config, "maxHeight", true);
   const timeoutMs = count(config, "downloadTimeoutMs", true);
   const url = httpLink(job.url);
-  await tools.run("yt-dlp", ["-f", `bv*[height<=?${maxHeight}][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=?${maxHeight}]+ba/b[height<=?${maxHeight}]`, "--match-filter", "!is_live", "--no-playlist", "--merge-output-format", "mp4", "--remux-video", "mp4", "-o", "download.%(ext)s", "--no-warnings", "--", url], { timeoutMs });
+  await yt2(["-f", `bv*[height<=?${maxHeight}][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=?${maxHeight}]+ba/b[height<=?${maxHeight}]`, "--match-filter", "!is_live", "--no-playlist", "--merge-output-format", "mp4", "--remux-video", "mp4", "-o", "download.%(ext)s", "--no-warnings", "--", url], timeoutMs);
   const duration = await probe(tools, VIDEO_FILE, timeoutMs);
   return { output: { ...job, [outputKey]: { file: VIDEO_FILE, duration } }, port: "next" };
 };
@@ -51110,6 +51156,7 @@ function boundTools(tools, signal, deadline) {
   return {
     runDir: tools.runDir,
     stateDir: tools.stateDir,
+    ...tools.backOff && { backOff: (ms) => runBounded(tools.backOff(ms), signal, deadline, Infinity) },
     readText: (area, path) => runBounded(tools.readText(area, path), signal, deadline, Infinity),
     writeText: (area, path, text3) => runBounded(tools.writeText(area, path, text3), signal, deadline, Infinity),
     run: (tool, args, options = {}) => {
@@ -51524,8 +51571,9 @@ import { spawn as spawn2 } from "node:child_process";
 import { createHash, randomUUID as randomUUID2 } from "node:crypto";
 import { lstat as lstat2, mkdir, readFile as readFile2, realpath as realpath2, rename, rm as rm2, stat as stat2, writeFile } from "node:fs/promises";
 import { basename as basename2, dirname as dirname2, isAbsolute, join as join2, resolve, sep as sep2 } from "node:path";
-var toolNames = ["yt-dlp", "ffmpeg", "ffprobe"];
+var toolNames = ["yt-dlp", "ffmpeg", "ffprobe", "whisper-ctranslate2"];
 var defaultTimeoutMs2 = 6e5;
+var resetTimeoutMs = 12e4;
 var maxTimerMs = 2147483647;
 var defaultMaxOutputBytes = 64 * 1024 * 1024;
 var stderrKeepBytes = 16 * 1024;
@@ -51634,6 +51682,20 @@ function createRunTools(options) {
     runDir,
     stateDir,
     run: run2,
+    async backOff(ms) {
+      if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) throw new ExecutionFailure("backOff needs a wait of 0 ms or more.");
+      await new Promise((done) => setTimeout(done, Math.min(ms, maxTimerMs)));
+      if (!options.networkResetCommand) return;
+      await new Promise((done) => {
+        const child = spawn2("bash", ["-c", options.networkResetCommand], { stdio: "ignore" });
+        const timer = setTimeout(() => child.kill("SIGKILL"), resetTimeoutMs);
+        child.on("error", () => done());
+        child.on("close", () => {
+          clearTimeout(timer);
+          done();
+        });
+      });
+    },
     async readText(area, path) {
       const file = await locate(area, path);
       const info = await stat2(file).catch((error) => {
@@ -51841,7 +51903,7 @@ var RunService = class {
           return response;
         } : void 0,
         approve,
-        tools: media2 && createRunTools({ runDir, stateDir: join3(media2.dataDir, "state", "businesses", storageKey(run2.businessId)), executables: media2.toolExecutables }),
+        tools: media2 && createRunTools({ runDir, stateDir: join3(media2.dataDir, "state", "businesses", storageKey(run2.businessId)), executables: media2.toolExecutables, networkResetCommand: media2.networkResetCommand }),
         youtube: media2?.youtube?.(runDir),
         instagram: media2?.instagram?.(runDir),
         timeoutMs: this.timeoutMs,
@@ -55280,7 +55342,7 @@ async function createApp(options = {}) {
   const dataDir = resolve5(options.dataDir || process.env.AUTOBIZ_DATA_DIR || dirname5(databasePath));
   const repository = new WorkspaceRepository(databasePath);
   const configuredAgent = options.agent ?? createConfiguredAgent();
-  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir) }, agentTimeoutMs);
+  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
   repository.markActiveRunsInterrupted();
   const cloudSync = runnersRepo ? createCloudSync({ repo: runnersRepo, dataDir, repository, gh: options.cloudSync?.gh }) : void 0;
   app.decorate("workspaceRepository", repository);

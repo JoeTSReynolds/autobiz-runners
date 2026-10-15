@@ -986,6 +986,18 @@
           "label": "Payoff tail (s)",
           "type": "number",
           "default": 15
+        },
+        {
+          "key": "blockedRetries",
+          "label": "Retries after a YouTube block",
+          "type": "number",
+          "default": 3
+        },
+        {
+          "key": "blockedWaitSeconds",
+          "label": "First wait after a block (s)",
+          "type": "number",
+          "default": 30
         }
       ],
       "defaults": {
@@ -1033,7 +1045,9 @@
         "hookLead": 10.5,
         "clipLead": 3.5,
         "clipTail": 5,
-        "payoffTail": 15
+        "payoffTail": 15,
+        "blockedRetries": 3,
+        "blockedWaitSeconds": 30
       },
       "outputs": [
         {
@@ -1171,6 +1185,14 @@
           },
           "payoffTail": {
             "title": "Payoff tail (s)",
+            "type": "number"
+          },
+          "blockedRetries": {
+            "title": "Retries after a YouTube block",
+            "type": "number"
+          },
+          "blockedWaitSeconds": {
+            "title": "First wait after a block (s)",
             "type": "number"
           }
         }

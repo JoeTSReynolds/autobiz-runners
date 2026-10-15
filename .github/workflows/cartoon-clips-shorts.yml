@@ -4,7 +4,11 @@ on:
   schedule:
     - cron: '17 9 * * *'
       timezone: 'Europe/London'
+    - cron: '17 12 * * *'
+      timezone: 'Europe/London'
     - cron: '17 15 * * *'
+      timezone: 'Europe/London'
+    - cron: '17 18 * * *'
       timezone: 'Europe/London'
     - cron: '17 21 * * *'
       timezone: 'Europe/London'
@@ -29,6 +33,8 @@ jobs:
       - name: Install tools
         run: |
           pipx install "yt-dlp[default]==2026.08.19"
+          pipx inject yt-dlp "bgutil-ytdlp-pot-provider==2.0.2"
+          pipx install "whisper-ctranslate2==0.5.8"
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg fonts-roboto-unhinted privoxy > /dev/null
           curl -fsSL https://claude.ai/install.sh | bash -s 2.1.112
@@ -37,6 +43,8 @@ jobs:
           npx --prefix runner playwright install --with-deps chromium
       - name: Start Cloudflare WARP for yt-dlp
         run: bash runner/warp.sh start
+      - name: Start the PO token provider for yt-dlp
+        run: docker run -d --init --network host --name bgutil brainicism/bgutil-ytdlp-pot-provider:2.0.2-node
       - uses: actions/cache/restore@v4
         with:
           path: data/state
@@ -52,17 +60,18 @@ jobs:
       - name: "Run Cartoon Clips Shorts"
         env:
           AUTOBIZ_RUN_TIMEOUT_MS: '3600000'
+          AUTOBIZ_NETWORK_RESET_COMMAND: bash runner/warp.sh rotate
           AGENT_CLI: claude
           AGENT_MODEL: claude-haiku-5-5
           AGENT_TIMEOUT_MS: '180000'
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           YOUTUBE_DATA_API_CLIENT_ID: ${{ secrets.YOUTUBE_DATA_API_CLIENT_ID }}
           YOUTUBE_DATA_API_CLIENT_SECRET: ${{ secrets.YOUTUBE_DATA_API_CLIENT_SECRET }}
-        run: node runner/runner.mjs businesses/cartoon-clips-shorts/business.json --data data --attempts 3 --between "bash runner/warp.sh rotate"
+        run: node runner/runner.mjs businesses/cartoon-clips-shorts/business.json --data data
       - name: Forget credentials and browser caches before saving state
         if: always()
         run: |
-          rm -rf data/state/youtube-tokens data/studio-cookies.sqlite
+          rm -rf data/state/youtube-tokens data/state/instagram-tokens data/studio-cookies.sqlite
           find data/state -type d \( -name Cache -o -name 'Code Cache' -o -name GPUCache -o -name CacheStorage \) -prune -exec rm -rf {} + 2>/dev/null || true
       - uses: actions/cache/save@v4
         if: always()

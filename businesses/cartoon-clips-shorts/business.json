@@ -2,7 +2,7 @@
   "business": {
     "id": "ed7654f3-0915-41d5-ac2d-990efcd69940",
     "name": "Cartoon Clips Shorts",
-    "description": "Picks a cartoon, finds an official clip of it on one of the show's official YouTube channels, cuts its funniest ~50 s moment into a vertical Short with captions and a thumbnail, then publishes to @EpicVideoClips101.",
+    "description": "Picks a cartoon, finds an official clip of it on one of the show's official YouTube channels, cuts its funniest ~50 s moment into a vertical Short with captions, then publishes to @EpicVideoClips101.",
     "status": "active",
     "settings": {},
     "workflow": {
@@ -12,7 +12,7 @@
           "moduleId": "start",
           "position": {
             "x": 40,
-            "y": 667
+            "y": 614
           },
           "config": {}
         },
@@ -21,7 +21,7 @@
           "moduleId": "random",
           "position": {
             "x": 335,
-            "y": 667
+            "y": 614
           },
           "config": {
             "options": [
@@ -40,7 +40,7 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 630,
-            "y": 500
+            "y": 406
           },
           "config": {
             "mode": "search",
@@ -80,7 +80,7 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 40,
-            "y": 282
+            "y": 287
           },
           "config": {
             "mode": "captions"
@@ -91,7 +91,7 @@
           "moduleId": "agent",
           "position": {
             "x": 335,
-            "y": 178
+            "y": 132
           },
           "config": {
             "prompt": "You pick one clip for a YouTube Short from a video of the show named in `show`. `transcript` lists caption lines as `[start seconds] text`; `>>` marks a speaker change. Choose the single funniest self-contained moment: a clear setup and punchline that someone with no context understands. Aim for about 50 seconds (40 to 60). Start at the beginning of the line that sets up the joke and end just after the punchline or the reaction to it, using the start times from the transcript. Avoid recaps, intros, credits, ads, sponsor segments and jokes that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
@@ -116,7 +116,7 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 630,
-            "y": 114
+            "y": 40
           },
           "config": {
             "mode": "section"
@@ -127,7 +127,7 @@
           "moduleId": "video-edit",
           "position": {
             "x": 925,
-            "y": 114
+            "y": 40
           },
           "config": {}
         },
@@ -136,7 +136,7 @@
           "moduleId": "agent",
           "position": {
             "x": 1220,
-            "y": 114
+            "y": 221
           },
           "config": {
             "prompt": "Write YouTube Shorts metadata for a clip from the show named in `show`. `moment.hook` and `moment.why` describe the joke; `source.title` is the title of the source video. Return only JSON: {\"title\": \"at most 70 characters, names the show, describes the joke plainly, no clickbait, no emojis\", \"description\": \"3 to 5 sentences: open with a hook line that makes someone want to watch (YouTube shows about the first 100 characters), say what happens and who is in the scene, say why it is funny without giving away the punchline, then end with a line crediting the show, such as Clip from <show>. Do not put hashtags in the description.\", \"hashtags\": [\"8 to 10 hashtag words without the # sign: first shorts, then the show name, then the main character, then other characters, the network or genre, and the joke's topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show name\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
@@ -157,57 +157,11 @@
           }
         },
         {
-          "id": "cover-frames",
-          "moduleId": "thumbnail",
-          "position": {
-            "x": 1515,
-            "y": 292
-          },
-          "config": {
-            "mode": "candidates"
-          }
-        },
-        {
-          "id": "choose-cover",
-          "moduleId": "agent",
-          "position": {
-            "x": 1810,
-            "y": 71
-          },
-          "config": {
-            "prompt": "The attached images are candidate cover frames for a YouTube Short, numbered from 1 in the order given. `moment.hook` describes the joke. Choose the frame where a character's face or the key object is clearest and most expressive. Then give the point on that frame, from 0 to 1000 across and 0 to 1000 down, at the centre of that face or object, for a red circle. Return only JSON: {\"index\": number, \"focusX\": number, \"focusY\": number}. If `agentErrors` is present, fix those problems.",
-            "format": "json",
-            "inputKeys": [
-              "moment"
-            ],
-            "imageKeys": [
-              "frames"
-            ],
-            "requiredKeys": [
-              "index",
-              "focusX",
-              "focusY"
-            ],
-            "outputKey": "cover"
-          }
-        },
-        {
-          "id": "compose-thumbnail",
-          "moduleId": "thumbnail",
-          "position": {
-            "x": 2105,
-            "y": 71
-          },
-          "config": {
-            "mode": "compose"
-          }
-        },
-        {
           "id": "publish",
           "moduleId": "youtube-publish",
           "position": {
-            "x": 2400,
-            "y": 71
+            "x": 1515,
+            "y": 221
           },
           "config": {
             "channelHandle": "@EpicVideoClips101",
@@ -219,8 +173,8 @@
           "id": "done",
           "moduleId": "output",
           "position": {
-            "x": 2695,
-            "y": 71
+            "x": 1810,
+            "y": 221
           },
           "config": {}
         },
@@ -228,8 +182,8 @@
           "id": "failed",
           "moduleId": "error",
           "position": {
-            "x": 1810,
-            "y": 315
+            "x": 925,
+            "y": 531
           },
           "config": {
             "message": "Cartoon Clips run stopped: retries exhausted."
@@ -316,12 +270,6 @@
           "target": "write-metadata"
         },
         {
-          "id": "write-metadata--next--cover-frames",
-          "source": "write-metadata",
-          "sourcePort": "next",
-          "target": "cover-frames"
-        },
-        {
           "id": "write-metadata--invalid--retry-metadata",
           "source": "write-metadata",
           "sourcePort": "invalid",
@@ -340,44 +288,14 @@
           "target": "failed"
         },
         {
-          "id": "cover-frames--next--choose-cover",
-          "source": "cover-frames",
-          "sourcePort": "next",
-          "target": "choose-cover"
-        },
-        {
-          "id": "choose-cover--next--compose-thumbnail",
-          "source": "choose-cover",
-          "sourcePort": "next",
-          "target": "compose-thumbnail"
-        },
-        {
-          "id": "choose-cover--invalid--retry-cover",
-          "source": "choose-cover",
-          "sourcePort": "invalid",
-          "target": "retry-cover"
-        },
-        {
-          "id": "retry-cover--retry--choose-cover",
-          "source": "retry-cover",
-          "sourcePort": "retry",
-          "target": "choose-cover"
-        },
-        {
-          "id": "retry-cover--exhausted--failed",
-          "source": "retry-cover",
-          "sourcePort": "exhausted",
-          "target": "failed"
-        },
-        {
           "id": "publish--next--done",
           "source": "publish",
           "sourcePort": "next",
           "target": "done"
         },
         {
-          "id": "compose-thumbnail--next--publish",
-          "source": "compose-thumbnail",
+          "id": "write-metadata--next--publish",
+          "source": "write-metadata",
           "sourcePort": "next",
           "target": "publish"
         }
@@ -388,7 +306,7 @@
           "kind": "retry",
           "position": {
             "x": 369,
-            "y": 555
+            "y": 502
           },
           "maxRetries": 3
         },
@@ -397,7 +315,7 @@
           "kind": "retry",
           "position": {
             "x": 664,
-            "y": 388
+            "y": 182
           },
           "maxRetries": 3
         },
@@ -405,24 +323,15 @@
           "id": "retry-metadata",
           "kind": "retry",
           "position": {
-            "x": 1549,
-            "y": 40
-          },
-          "maxRetries": 3
-        },
-        {
-          "id": "retry-cover",
-          "kind": "retry",
-          "position": {
-            "x": 1549,
-            "y": 152
+            "x": 664,
+            "y": 294
           },
           "maxRetries": 3
         }
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-10T17:12:47.941Z"
+    "updatedAt": "2026-10-15T14:14:09.808Z"
   },
   "modules": [
     {
@@ -791,9 +700,9 @@
     {
       "id": "media-fetch",
       "name": "Media fetch",
-      "description": "Searches, reads captions, downloads a section, or downloads any video link (HLS included) with yt-dlp.",
+      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, or downloads any video link (HLS included) with yt-dlp.",
       "kind": "media-fetch",
-      "version": 1,
+      "version": 3,
       "fields": [
         {
           "key": "mode",
@@ -804,6 +713,7 @@
             "search",
             "captions",
             "section",
+            "sections",
             "download"
           ]
         },
@@ -864,6 +774,22 @@
           "default": 120000
         },
         {
+          "key": "pick",
+          "label": "Search pick",
+          "type": "select",
+          "default": "random",
+          "options": [
+            "random",
+            "list"
+          ]
+        },
+        {
+          "key": "listSize",
+          "label": "Candidates in a list",
+          "type": "number",
+          "default": 25
+        },
+        {
           "key": "languages",
           "label": "Caption languages",
           "type": "json",
@@ -879,6 +805,40 @@
           "label": "Captions time limit (ms)",
           "type": "number",
           "default": 120000
+        },
+        {
+          "key": "hotspots",
+          "label": "Find hotspots",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "commentsToScan",
+          "label": "Top comments to scan",
+          "type": "number",
+          "default": 300
+        },
+        {
+          "key": "hotspotWindow",
+          "label": "Hotspot window (s)",
+          "type": "number",
+          "default": 75
+        },
+        {
+          "key": "hotspotsPerKind",
+          "label": "Hotspots per signal",
+          "type": "number",
+          "default": 4
+        },
+        {
+          "key": "transcriptUnit",
+          "label": "Transcript unit",
+          "type": "select",
+          "default": "line",
+          "options": [
+            "line",
+            "sentence"
+          ]
         },
         {
           "key": "padding",
@@ -909,6 +869,42 @@
           "label": "Download time limit (ms)",
           "type": "number",
           "default": 900000
+        },
+        {
+          "key": "hookLead",
+          "label": "Hook lead (s)",
+          "type": "number",
+          "default": 10.5
+        },
+        {
+          "key": "clipLead",
+          "label": "Clip lead (s)",
+          "type": "number",
+          "default": 3.5
+        },
+        {
+          "key": "clipTail",
+          "label": "Clip tail (s)",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "payoffTail",
+          "label": "Payoff tail (s)",
+          "type": "number",
+          "default": 15
+        },
+        {
+          "key": "blockedRetries",
+          "label": "Retries after a YouTube block",
+          "type": "number",
+          "default": 3
+        },
+        {
+          "key": "blockedWaitSeconds",
+          "label": "First wait after a block (s)",
+          "type": "number",
+          "default": 30
         }
       ],
       "defaults": {
@@ -934,6 +930,8 @@
         "titleIncludes": "",
         "maxResults": 60,
         "searchTimeoutMs": 120000,
+        "pick": "random",
+        "listSize": 25,
         "languages": [
           "en",
           "en-orig",
@@ -941,11 +939,22 @@
           "en-GB"
         ],
         "captionsTimeoutMs": 120000,
+        "hotspots": false,
+        "commentsToScan": 300,
+        "hotspotWindow": 75,
+        "hotspotsPerKind": 4,
+        "transcriptUnit": "line",
         "padding": 2,
         "maxHeight": 1080,
         "minMoment": 5,
         "maxMoment": 120,
-        "downloadTimeoutMs": 900000
+        "downloadTimeoutMs": 900000,
+        "hookLead": 10.5,
+        "clipLead": 3.5,
+        "clipTail": 5,
+        "payoffTail": 15,
+        "blockedRetries": 3,
+        "blockedWaitSeconds": 30
       },
       "outputs": [
         {
@@ -973,6 +982,7 @@
               "search",
               "captions",
               "section",
+              "sections",
               "download"
             ]
           },
@@ -1004,6 +1014,18 @@
             "title": "Search time limit (ms)",
             "type": "number"
           },
+          "pick": {
+            "title": "Search pick",
+            "type": "string",
+            "enum": [
+              "random",
+              "list"
+            ]
+          },
+          "listSize": {
+            "title": "Candidates in a list",
+            "type": "number"
+          },
           "languages": {
             "title": "Caption languages",
             "type": "array"
@@ -1011,6 +1033,30 @@
           "captionsTimeoutMs": {
             "title": "Captions time limit (ms)",
             "type": "number"
+          },
+          "hotspots": {
+            "title": "Find hotspots",
+            "type": "boolean"
+          },
+          "commentsToScan": {
+            "title": "Top comments to scan",
+            "type": "number"
+          },
+          "hotspotWindow": {
+            "title": "Hotspot window (s)",
+            "type": "number"
+          },
+          "hotspotsPerKind": {
+            "title": "Hotspots per signal",
+            "type": "number"
+          },
+          "transcriptUnit": {
+            "title": "Transcript unit",
+            "type": "string",
+            "enum": [
+              "line",
+              "sentence"
+            ]
           },
           "padding": {
             "title": "Section padding (s)",
@@ -1031,6 +1077,30 @@
           "downloadTimeoutMs": {
             "title": "Download time limit (ms)",
             "type": "number"
+          },
+          "hookLead": {
+            "title": "Hook lead (s)",
+            "type": "number"
+          },
+          "clipLead": {
+            "title": "Clip lead (s)",
+            "type": "number"
+          },
+          "clipTail": {
+            "title": "Clip tail (s)",
+            "type": "number"
+          },
+          "payoffTail": {
+            "title": "Payoff tail (s)",
+            "type": "number"
+          },
+          "blockedRetries": {
+            "title": "Retries after a YouTube block",
+            "type": "number"
+          },
+          "blockedWaitSeconds": {
+            "title": "First wait after a block (s)",
+            "type": "number"
           }
         }
       }
@@ -1038,10 +1108,20 @@
     {
       "id": "video-edit",
       "name": "Video edit",
-      "description": "Renders a vertical short with pause cuts, crop, saturation and captions.",
+      "description": "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).",
       "kind": "video-edit",
-      "version": 1,
+      "version": 3,
       "fields": [
+        {
+          "key": "mode",
+          "label": "Mode",
+          "type": "select",
+          "default": "short",
+          "options": [
+            "short",
+            "story"
+          ]
+        },
         {
           "key": "width",
           "label": "Width",
@@ -1115,6 +1195,48 @@
           "default": 4
         },
         {
+          "key": "headline",
+          "label": "Headline (job path)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "headlinePosition",
+          "label": "Headline position",
+          "type": "number",
+          "default": 0.12
+        },
+        {
+          "key": "headlineSize",
+          "label": "Headline size",
+          "type": "number",
+          "default": 72
+        },
+        {
+          "key": "sounds",
+          "label": "Sound effects (job path)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "soundsDir",
+          "label": "Sound library folder",
+          "type": "string",
+          "default": "sfx"
+        },
+        {
+          "key": "soundVolume",
+          "label": "Sound volume",
+          "type": "number",
+          "default": 0.7
+        },
+        {
+          "key": "maxSounds",
+          "label": "Most sound effects",
+          "type": "number",
+          "default": 8
+        },
+        {
           "key": "maxDuration",
           "label": "Maximum duration (s)",
           "type": "number",
@@ -1133,6 +1255,24 @@
           "default": 600000
         },
         {
+          "key": "background",
+          "label": "Story background",
+          "type": "string",
+          "default": "brick"
+        },
+        {
+          "key": "emojiDir",
+          "label": "Emoji cache folder",
+          "type": "string",
+          "default": "emoji"
+        },
+        {
+          "key": "storySeed",
+          "label": "Particle seed",
+          "type": "string",
+          "default": ""
+        },
+        {
           "key": "outputKey",
           "label": "Output key",
           "type": "string",
@@ -1140,6 +1280,7 @@
         }
       ],
       "defaults": {
+        "mode": "short",
         "width": 1080,
         "height": 1920,
         "contentAspect": "4:5",
@@ -1152,9 +1293,19 @@
         "captionFont": "Roboto",
         "captionSize": 64,
         "captionOutline": 4,
+        "headline": "",
+        "headlinePosition": 0.12,
+        "headlineSize": 72,
+        "sounds": "",
+        "soundsDir": "sfx",
+        "soundVolume": 0.7,
+        "maxSounds": 8,
         "maxDuration": 60,
         "crf": 20,
         "renderTimeoutMs": 600000,
+        "background": "brick",
+        "emojiDir": "emoji",
+        "storySeed": "",
         "outputKey": "short"
       },
       "outputs": [
@@ -1172,6 +1323,14 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "mode": {
+            "title": "Mode",
+            "type": "string",
+            "enum": [
+              "short",
+              "story"
+            ]
+          },
           "width": {
             "title": "Width",
             "type": "number"
@@ -1220,6 +1379,34 @@
             "title": "Caption outline",
             "type": "number"
           },
+          "headline": {
+            "title": "Headline (job path)",
+            "type": "string"
+          },
+          "headlinePosition": {
+            "title": "Headline position",
+            "type": "number"
+          },
+          "headlineSize": {
+            "title": "Headline size",
+            "type": "number"
+          },
+          "sounds": {
+            "title": "Sound effects (job path)",
+            "type": "string"
+          },
+          "soundsDir": {
+            "title": "Sound library folder",
+            "type": "string"
+          },
+          "soundVolume": {
+            "title": "Sound volume",
+            "type": "number"
+          },
+          "maxSounds": {
+            "title": "Most sound effects",
+            "type": "number"
+          },
           "maxDuration": {
             "title": "Maximum duration (s)",
             "type": "number"
@@ -1231,6 +1418,18 @@
           "renderTimeoutMs": {
             "title": "Render time limit (ms)",
             "type": "number"
+          },
+          "background": {
+            "title": "Story background",
+            "type": "string"
+          },
+          "emojiDir": {
+            "title": "Emoji cache folder",
+            "type": "string"
+          },
+          "storySeed": {
+            "title": "Particle seed",
+            "type": "string"
           },
           "outputKey": {
             "title": "Output key",
