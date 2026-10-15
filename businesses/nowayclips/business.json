@@ -11,8 +11,8 @@
           "id": "start",
           "moduleId": "start",
           "position": {
-            "x": 630,
-            "y": 548
+            "x": 335,
+            "y": 40
           },
           "config": {}
         },
@@ -20,8 +20,8 @@
           "id": "find-trending",
           "moduleId": "media-fetch",
           "position": {
-            "x": 925,
-            "y": 548
+            "x": 630,
+            "y": 40
           },
           "config": {
             "mode": "search",
@@ -52,13 +52,14 @@
           "moduleId": "agent",
           "position": {
             "x": 1220,
-            "y": 182
+            "y": 83
           },
           "config": {
-            "prompt": "You pick one long video for a YouTube Shorts channel that posts the most controversial, shocking or funny moments from trending podcasts, interviews and debates. `candidates` are this week's most-viewed long videos (`views`, `duration` in seconds). Choose the one most likely to contain a controversial, heated, shocking or very funny standalone moment that people would argue about in the comments. It must be in English and a conversation between people: a podcast, interview, debate or panel show. Skip news coverage, election results, live streams, sport commentary or match analysis, music performances, video essays and anything not in English. Never choose an id listed in `rejectedSources`. When two are equally good, prefer the bigger names and more views. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: the chosen candidate copied exactly, with its `id`, `url`, `title`, `channel`, `duration` and `views`, plus `why` (one sentence).",
+            "prompt": "You pick one long video for a YouTube Shorts channel that posts the most controversial moments from trending podcasts, interviews and debates. Its clips do best when a famous, divisive person says something people fight about in the comments (race, politics, gender, religion, money, celebrity feuds) and worst when the guest is little known or the topic is niche. `candidates` are this week's most-viewed long videos (`views`, `duration` in seconds). `buzz` is web research from the past two weeks on which of these people and topics are in the news and why. Rank the candidates: first a famous, polarising speaker who is in the news right now according to `buzz`, then a hot-button topic, then views; choose the top one. It must be in English and a conversation between people: a podcast, interview, debate or panel show. Skip news coverage, election results, live streams, sport commentary or match analysis, music performances, video essays and anything not in English. Never choose an id listed in `rejectedSources`. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: the chosen candidate copied exactly, with its `id`, `url`, `title`, `channel`, `duration` and `views`, plus `why` (one sentence).",
             "format": "json",
             "inputKeys": [
               "candidates",
+              "buzz",
               "rejectedSources"
             ],
             "requiredKeys": [
@@ -76,7 +77,7 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 40,
-            "y": 425
+            "y": 505
           },
           "config": {
             "mode": "captions",
@@ -93,10 +94,10 @@
           "moduleId": "agent",
           "position": {
             "x": 335,
-            "y": 385
+            "y": 474
           },
           "config": {
-            "prompt": "You pick the payoff of a story-style YouTube Short, for a channel that posts the most controversial and funniest podcast moments, from the episode in `source`. `hotspots` holds the parts viewers reacted to most: each `##` header gives a time range in seconds and why it is hot (replay = YouTube's most-replayed graph, laughs = laughter in the captions, comment = a top comment pointing at that time); the lines under it are `[start-end] sentence` in seconds, and `>>` marks a speaker change. If the header says no hotspots were found, the whole transcript follows instead. Pick the single most controversial or funniest moment: a hot take, a heated disagreement, a confession, a wild claim or a big laugh. 12 to 25 seconds, starting at a sentence's start time and ending at a sentence's end time (use the times shown). End it only after the other person's response and any laughter or reaction have fully played out, usually 4 to 10 seconds after the punchline. Avoid ad reads, sponsor segments, intros and outros. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 6 words, names who is talking if known\", \"why\": \"one sentence\"}.",
+            "prompt": "You pick the payoff of a story-style YouTube Short, for a channel that posts the most controversial podcast moments, from the episode in `source`. `hotspots` holds the parts viewers reacted to most: each `##` header gives a time range in seconds and why it is hot (replay = YouTube's most-replayed graph, laughs = laughter in the captions, comment = a top comment pointing at that time); the lines under it are `[start-end] sentence` in seconds, and `>>` marks a speaker change. If the header says no hotspots were found, the whole transcript follows instead. Pick the single most controversial moment: the line viewers would argue about in the comments, such as a divisive claim about a group, politics, religion or a public figure, a hot take, a heated disagreement, a confession or a wild claim. Prefer comment hotspots, where viewers are already reacting. A laugh alone is not enough. 12 to 25 seconds, starting at a sentence's start time and ending at a sentence's end time (use the times shown). End it only after the other person's response and any laughter or reaction have fully played out, usually 4 to 10 seconds after the punchline. Avoid ad reads, sponsor segments, intros and outros. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 6 words, names who is talking if known\", \"why\": \"one sentence\"}.",
             "format": "json",
             "inputKeys": [
               "source"
@@ -118,7 +119,7 @@
           "moduleId": "video-edit",
           "position": {
             "x": 1220,
-            "y": 40
+            "y": 302
           },
           "config": {
             "mode": "story",
@@ -131,10 +132,10 @@
           "moduleId": "agent",
           "position": {
             "x": 1515,
-            "y": 363
+            "y": 375
           },
           "config": {
-            "prompt": "Write YouTube Shorts metadata for a clip from the episode in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. Lean into the controversy: the title should make people want to see what was said and argue about it in the comments. Attribute what was said to the person who said it (\"X says ...\", \"X on ...\") rather than stating it as fact. Return only JSON: {\"title\": \"at most 70 characters, names the guest or host, no emojis\", \"description\": \"2 to 4 sentences: a hook line first (YouTube shows about the first 100 characters), then what is said and by whom, then a last line crediting the source exactly as: Source: <source.title> - <source.channel> <source.url>. No hashtags in the description.\", \"hashtags\": [\"6 to 10 words without the # sign: shorts, podcast, the show name, the guest, the host, the topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show and the guest\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
+            "prompt": "Write YouTube Shorts metadata for a clip from the episode in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. Lean into the controversy: the title should make people want to see what was said and argue about it in the comments. Attribute what was said to the person who said it (\"X says ...\", \"X on ...\") rather than stating it as fact. Return only JSON: {\"title\": \"at most 70 characters: who is talking, then their most provocative words as a short quote, for example X says '...', no emojis\", \"description\": \"2 to 4 sentences: a hook line first (YouTube shows about the first 100 characters), then what is said and by whom, then a last line crediting the source exactly as: Source: <source.title> - <source.channel> <source.url>. No hashtags in the description.\", \"hashtags\": [\"6 to 10 words without the # sign: shorts, podcast, the show name, the guest, the host, the topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show and the guest\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
             "format": "json",
             "inputKeys": [
               "source",
@@ -156,7 +157,7 @@
           "moduleId": "youtube-publish",
           "position": {
             "x": 1810,
-            "y": 363
+            "y": 375
           },
           "config": {
             "channelHandle": "@NoWayClipsHQ",
@@ -170,7 +171,7 @@
           "moduleId": "output",
           "position": {
             "x": 2105,
-            "y": 363
+            "y": 375
           },
           "config": {}
         },
@@ -179,7 +180,7 @@
           "moduleId": "error",
           "position": {
             "x": 1220,
-            "y": 591
+            "y": 531
           },
           "config": {
             "message": "NoWayClips run stopped: retries exhausted."
@@ -190,10 +191,10 @@
           "moduleId": "agent",
           "position": {
             "x": 630,
-            "y": 187
+            "y": 401
           },
           "config": {
-            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from the episode in `source`, for a channel that posts the most controversial and funniest podcast moments. `moment` is the payoff already chosen as the climax (episode seconds). `transcript` is the whole episode as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Build a story around the payoff that makes someone keep watching to the end: (1) hook: the strongest reaction (a laugh, a shout or a shocked line), taken from inside the payoff and shown first; one or two whole sentences, 4 to 7 seconds, that someone understands with no context; (2) intro: 3 to 7 seconds from the first minutes of the episode where the host introduces the guest or the topic; (3) beats: 2 to 4 short clips of 4 to 9 seconds, from the six minutes before the payoff, in episode order, that set up the payoff's topic so that each cut follows on from the previous one and the last beat leads straight into the payoff (no unrelated anecdotes); (4) payoff: the given moment, 12 to 25 seconds, ending only after the other person's response and any laughter or reaction have fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; use the time: aim for 45 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 6 words, the on-screen title, names who is talking\", \"clips\": [{\"role\": \"hook\" | \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
+            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from the episode in `source`, for a channel that posts the most controversial podcast moments. `moment` is the payoff already chosen as the climax (episode seconds). `transcript` is the whole episode as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Build a story around the payoff that makes someone keep watching to the end: (1) hook: the most inflammatory sentence in the payoff, the claim people will argue about, shown first word for word; one or two whole sentences, 3 to 5 seconds, that someone understands with no context; (2) intro: 3 to 7 seconds from the first minutes of the episode where the host introduces the guest or the topic; (3) beats: 2 to 4 short clips of 4 to 9 seconds, from the six minutes before the payoff, in episode order, that set up the payoff's topic so that each cut follows on from the previous one and the last beat leads straight into the payoff (no unrelated anecdotes); (4) payoff: the given moment, 12 to 25 seconds, ending only after the other person's response and any laughter or reaction have fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; use the time: aim for 45 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 6 words, the on-screen title: the most provocative claim as a quote or a loaded question, naming who is talking\", \"clips\": [{\"role\": \"hook\" | \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
             "format": "json",
             "inputKeys": [
               "source",
@@ -216,10 +217,27 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 925,
-            "y": 62
+            "y": 302
           },
           "config": {
             "mode": "sections"
+          }
+        },
+        {
+          "id": "research-buzz",
+          "moduleId": "agent",
+          "position": {
+            "x": 925,
+            "y": 40
+          },
+          "config": {
+            "prompt": "You research which of this week's trending long videos are at the centre of a controversy right now, for a YouTube Shorts channel that posts the most controversial moments from podcasts, interviews and debates. `candidates` are the videos (`id`, `title`, `channel`, `views`). Use web search on news and social media coverage from the past two weeks. Work out who the guests and hosts of the most promising candidates are, then search for them and their topics together with words like controversy, backlash, slams, feud, viral or responds. Run at most 6 searches. Find which of these people and topics are being argued about right now: backlash, feuds, outrage, viral clips, heated public debate, and how big the story is. Reply in plain text. First, one line per candidate you found something for, most controversial first: `<id> | <who or what is controversial and why, one sentence> | <outlet and date>`. Then one line `quiet: <ids>` for candidates whose guest is little known or whose topic nobody is discussing. Only report what the searches found.",
+            "format": "text",
+            "inputKeys": [
+              "candidates"
+            ],
+            "outputKey": "buzz",
+            "webSearch": true
           }
         }
       ],
@@ -229,12 +247,6 @@
           "source": "start",
           "sourcePort": "next",
           "target": "find-trending"
-        },
-        {
-          "id": "find-trending--next--choose-episode",
-          "source": "find-trending",
-          "sourcePort": "next",
-          "target": "choose-episode"
         },
         {
           "id": "choose-episode--next--get-transcript",
@@ -373,6 +385,18 @@
           "source": "write-metadata",
           "sourcePort": "next",
           "target": "publish"
+        },
+        {
+          "id": "find-trending--next--research-buzz",
+          "source": "find-trending",
+          "sourcePort": "next",
+          "target": "research-buzz"
+        },
+        {
+          "id": "research-buzz--next--choose-episode",
+          "source": "research-buzz",
+          "sourcePort": "next",
+          "target": "choose-episode"
         }
       ],
       "operators": [
@@ -381,7 +405,7 @@
           "kind": "retry",
           "position": {
             "x": 959,
-            "y": 763
+            "y": 695
           },
           "maxRetries": 4
         },
@@ -390,7 +414,7 @@
           "kind": "retry",
           "position": {
             "x": 959,
-            "y": 212
+            "y": 182
           },
           "maxRetries": 3
         },
@@ -399,7 +423,7 @@
           "kind": "retry",
           "position": {
             "x": 664,
-            "y": 690
+            "y": 629
           },
           "maxRetries": 3
         },
@@ -408,7 +432,7 @@
           "kind": "retry",
           "position": {
             "x": 959,
-            "y": 436
+            "y": 444
           },
           "maxRetries": 3
         },
@@ -417,14 +441,14 @@
           "kind": "retry",
           "position": {
             "x": 959,
-            "y": 324
+            "y": 556
           },
           "maxRetries": 3
         }
       ]
     },
     "createdAt": "2026-10-13T01:32:43.003Z",
-    "updatedAt": "2026-10-13T14:50:40.633Z"
+    "updatedAt": "2026-10-15T15:02:52.348Z"
   },
   "modules": [
     {
@@ -584,6 +608,12 @@
           "label": "Output key",
           "type": "string",
           "default": ""
+        },
+        {
+          "key": "webSearch",
+          "label": "Web search",
+          "type": "boolean",
+          "default": false
         }
       ],
       "defaults": {
@@ -593,7 +623,8 @@
         "inputKeys": [],
         "imageKeys": [],
         "fileKeys": [],
-        "outputKey": ""
+        "outputKey": "",
+        "webSearch": false
       },
       "outputs": [
         {
@@ -645,6 +676,10 @@
           "outputKey": {
             "title": "Output key",
             "type": "string"
+          },
+          "webSearch": {
+            "type": "boolean",
+            "title": "Web search"
           }
         }
       }

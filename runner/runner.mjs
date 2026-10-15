@@ -47168,8 +47168,9 @@ function starterModules() {
       field("inputKeys", "Input keys to send", "json", []),
       field("imageKeys", "Image keys", "json", []),
       field("fileKeys", "File keys", "json", []),
-      field("outputKey", "Output key", "string", "")
-    ], { prompt: "", format: "text", requiredKeys: [], inputKeys: [], imageKeys: [], fileKeys: [], outputKey: "" }, [
+      field("outputKey", "Output key", "string", ""),
+      field("webSearch", "Web search", "boolean", false)
+    ], { prompt: "", format: "text", requiredKeys: [], inputKeys: [], imageKeys: [], fileKeys: [], outputKey: "", webSearch: false }, [
       { id: "next", label: "Next" },
       { id: "invalid", label: "Invalid" }
     ]),
@@ -47481,6 +47482,7 @@ function createConfiguredAgent(env = process.env) {
   }
   const requestUrl = `${endpoint.toString().replace(/\/$/, "")}/chat/completions`;
   return async (prompt, input, config, images) => {
+    if (wantsWebSearch(config)) throw new Error("Web search needs the Claude CLI provider (AGENT_CLI=claude).");
     const text3 = agentText(prompt, input, config);
     const content = images?.length ? [{ type: "text", text: text3 }, ...await Promise.all(images.map(imagePart))] : text3;
     const requestBody = JSON.stringify({ model, messages: [{ role: "user", content }] });
@@ -47517,6 +47519,8 @@ function createConfiguredAgent(env = process.env) {
     }
   };
 }
+var wantsWebSearch = (config) => config?.webSearch === true;
+var webSearchMaxTurns = 12;
 var agentText = (prompt, input, config) => `${prompt}
 
 Input: ${JSON.stringify(input)}
@@ -47536,7 +47540,7 @@ async function imagePart(path) {
 var claudeSystemPrompt = "You are one step of an automated content pipeline. Follow the instructions exactly and reply with only the requested output.";
 var claudeEnvKeys = ["PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"];
 function createClaudeCliAgent(model, timeoutMs, env) {
-  const args = [
+  const args = (webSearch) => [
     "-p",
     "--model",
     model,
@@ -47545,8 +47549,7 @@ function createClaudeCliAgent(model, timeoutMs, env) {
     "--output-format",
     "stream-json",
     "--verbose",
-    "--tools",
-    "",
+    ...webSearch ? ["--tools", "WebSearch", "--allowedTools", "WebSearch", "--max-turns", String(webSearchMaxTurns)] : ["--tools", ""],
     "--setting-sources",
     "",
     "--strict-mcp-config",
@@ -47562,7 +47565,7 @@ function createClaudeCliAgent(model, timeoutMs, env) {
     }));
     const message2 = JSON.stringify({ type: "user", message: { role: "user", content: [{ type: "text", text: agentText(prompt, input, config) }, ...imageBlocks] } });
     if (Buffer.byteLength(message2) > requestLimitBytes) throw new Error("Agent provider request exceeds the 1 MiB payload limit.");
-    const { stdout, stderr, code } = await runClaude(args, childEnv, `${message2}
+    const { stdout, stderr, code } = await runClaude(args(wantsWebSearch(config)), childEnv, `${message2}
 `, timeoutMs);
     const result = stdout.split("\n").flatMap((line2) => {
       try {
@@ -48817,6 +48820,7 @@ async function execute4({ input, config, module }, { agent, tools }) {
   const fileKeys = keyList(config, "fileKeys");
   const outputKey = config.outputKey === void 0 ? "" : config.outputKey;
   if (typeof outputKey !== "string") throw new ExecutionFailure("Agent setting outputKey must be a string.");
+  if (config.webSearch !== void 0 && typeof config.webSearch !== "boolean") throw new ExecutionFailure("Agent setting webSearch must be true or false.");
   const value = cloneJson(input);
   if ((inputKeys.length > 0 || imageKeys.length > 0 || fileKeys.length > 0 || outputKey) && !isObject(value)) {
     throw new ExecutionFailure("Agent input must be an object when inputKeys, imageKeys, fileKeys or outputKey is set.");

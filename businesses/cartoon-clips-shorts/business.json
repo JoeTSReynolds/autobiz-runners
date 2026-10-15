@@ -94,7 +94,7 @@
             "y": 132
           },
           "config": {
-            "prompt": "You pick one clip for a YouTube Short from a video of the show named in `show`. `transcript` lists caption lines as `[start seconds] text`; `>>` marks a speaker change. Choose the single funniest self-contained moment: a clear setup and punchline that someone with no context understands. Aim for about 50 seconds (40 to 60). Start at the beginning of the line that sets up the joke and end just after the punchline or the reaction to it, using the start times from the transcript. Avoid recaps, intros, credits, ads, sponsor segments and jokes that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
+            "prompt": "You pick one clip for a YouTube Short from a video of the show named in `show`. `transcript` lists caption lines as `[start seconds] text`; `>>` marks a speaker change. Choose the single most shocking, insane or unhinged self-contained moment, the kind that makes a viewer think 'how did that happen?': a character snapping, violence, an explosion or disaster, a betrayal, something gross, or an ordinary scene that spirals into chaos. It needs a clear build-up and a big payoff that someone with no context understands. Aim for about 50 seconds (40 to 60). Start at the beginning of the line that sets up the joke and end just after the payoff or the reaction to it, using the start times from the transcript. Avoid recaps, intros, credits, ads, sponsor segments and moments that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
             "format": "json",
             "inputKeys": [
               "show"
@@ -139,7 +139,7 @@
             "y": 221
           },
           "config": {
-            "prompt": "Write YouTube Shorts metadata for a clip from the show named in `show`. `moment.hook` and `moment.why` describe the joke; `source.title` is the title of the source video. Return only JSON: {\"title\": \"at most 70 characters, names the show, describes the joke plainly, no clickbait, no emojis\", \"description\": \"3 to 5 sentences: open with a hook line that makes someone want to watch (YouTube shows about the first 100 characters), say what happens and who is in the scene, say why it is funny without giving away the punchline, then end with a line crediting the show, such as Clip from <show>. Do not put hashtags in the description.\", \"hashtags\": [\"8 to 10 hashtag words without the # sign: first shorts, then the show name, then the main character, then other characters, the network or genre, and the joke's topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show name\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
+            "prompt": "Write YouTube Shorts metadata for a clip from the show named in `show`. `moment.hook` and `moment.why` describe the moment; `source.title` is the title of the source video. Return only JSON: {\"title\": \"at most 70 characters, a curiosity-gap title that makes the viewer need to see what happens, names the main character, true to the scene, for example 'Peter did WHAT to the car?' or 'Rick insults Jerry and then this happens', no emojis\", \"description\": \"3 to 5 sentences: open with a hook line that makes someone want to watch (YouTube shows about the first 100 characters), say what happens and who is in the scene, say why it is shocking without giving away the payoff, then end with a line crediting the show, such as Clip from <show>. Do not put hashtags in the description.\", \"hashtags\": [\"8 to 10 hashtag words without the # sign: first shorts, then the show name, then the main character, then other characters, the network or genre, and the moment's topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show name\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
             "format": "json",
             "inputKeys": [
               "show",
@@ -331,7 +331,7 @@
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-15T14:14:09.808Z"
+    "updatedAt": "2026-10-15T15:02:52.524Z"
   },
   "modules": [
     {
@@ -491,6 +491,12 @@
           "label": "Output key",
           "type": "string",
           "default": ""
+        },
+        {
+          "key": "webSearch",
+          "label": "Web search",
+          "type": "boolean",
+          "default": false
         }
       ],
       "defaults": {
@@ -500,7 +506,8 @@
         "inputKeys": [],
         "imageKeys": [],
         "fileKeys": [],
-        "outputKey": ""
+        "outputKey": "",
+        "webSearch": false
       },
       "outputs": [
         {
@@ -552,6 +559,10 @@
           "outputKey": {
             "title": "Output key",
             "type": "string"
+          },
+          "webSearch": {
+            "type": "boolean",
+            "title": "Web search"
           }
         }
       }
