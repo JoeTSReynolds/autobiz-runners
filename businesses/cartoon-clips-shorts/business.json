@@ -12,7 +12,7 @@
           "moduleId": "start",
           "position": {
             "x": 40,
-            "y": 614
+            "y": 40
           },
           "config": {}
         },
@@ -21,7 +21,7 @@
           "moduleId": "random",
           "position": {
             "x": 335,
-            "y": 614
+            "y": 40
           },
           "config": {
             "options": [
@@ -40,7 +40,7 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 630,
-            "y": 406
+            "y": 50
           },
           "config": {
             "mode": "search",
@@ -80,10 +80,11 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 40,
-            "y": 287
+            "y": 322
           },
           "config": {
-            "mode": "captions"
+            "mode": "captions",
+            "transcriptUnit": "sentence"
           }
         },
         {
@@ -91,10 +92,10 @@
           "moduleId": "agent",
           "position": {
             "x": 335,
-            "y": 132
+            "y": 482
           },
           "config": {
-            "prompt": "You pick one clip for a YouTube Short from a video of the show named in `show`. `transcript` lists caption lines as `[start seconds] text`; `>>` marks a speaker change. Choose the single most shocking, insane or unhinged self-contained moment, the kind that makes a viewer think 'how did that happen?': a character snapping, violence, an explosion or disaster, a betrayal, something gross, or an ordinary scene that spirals into chaos. It needs a clear build-up and a big payoff that someone with no context understands. Aim for about 50 seconds (40 to 60). Start at the beginning of the line that sets up the joke and end just after the payoff or the reaction to it, using the start times from the transcript. Avoid recaps, intros, credits, ads, sponsor segments and moments that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
+            "prompt": "You pick the payoff of a story-style YouTube Short from a video of the show named in `show`. `transcript` lists the video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Choose the single most shocking, insane or unhinged self-contained moment, the kind that makes a viewer think 'how did that happen?': a character snapping, violence, an explosion or disaster, a betrayal, something gross, or an ordinary scene that spirals into chaos. It needs a build-up earlier in the video that leads to it. The payoff is 10 to 25 seconds, starting at a sentence's start time and ending at a sentence's end time, after the reaction has played out. Avoid recaps, intros, credits, ads, sponsor segments and moments that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
             "format": "json",
             "inputKeys": [
               "show"
@@ -112,31 +113,24 @@
           }
         },
         {
-          "id": "download-section",
-          "moduleId": "media-fetch",
-          "position": {
-            "x": 630,
-            "y": 40
-          },
-          "config": {
-            "mode": "section"
-          }
-        },
-        {
           "id": "edit-short",
           "moduleId": "video-edit",
           "position": {
-            "x": 925,
-            "y": 40
+            "x": 1220,
+            "y": 565
           },
-          "config": {}
+          "config": {
+            "mode": "story",
+            "layout": "frame",
+            "headlineSize": 76
+          }
         },
         {
           "id": "write-metadata",
           "moduleId": "agent",
           "position": {
-            "x": 1220,
-            "y": 221
+            "x": 1515,
+            "y": 525
           },
           "config": {
             "prompt": "Write YouTube Shorts metadata for a clip from the show named in `show`. `moment.hook` and `moment.why` describe the moment; `source.title` is the title of the source video. Return only JSON: {\"title\": \"at most 70 characters, a curiosity-gap title that makes the viewer need to see what happens, names the main character, true to the scene, for example 'Peter did WHAT to the car?' or 'Rick insults Jerry and then this happens', no emojis\", \"description\": \"3 to 5 sentences: open with a hook line that makes someone want to watch (YouTube shows about the first 100 characters), say what happens and who is in the scene, say why it is shocking without giving away the payoff, then end with a line crediting the show, such as Clip from <show>. Do not put hashtags in the description.\", \"hashtags\": [\"8 to 10 hashtag words without the # sign: first shorts, then the show name, then the main character, then other characters, the network or genre, and the moment's topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show name\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
@@ -160,8 +154,8 @@
           "id": "publish",
           "moduleId": "youtube-publish",
           "position": {
-            "x": 1515,
-            "y": 221
+            "x": 1810,
+            "y": 525
           },
           "config": {
             "channelHandle": "@EpicVideoClips101",
@@ -173,8 +167,8 @@
           "id": "done",
           "moduleId": "output",
           "position": {
-            "x": 1810,
-            "y": 221
+            "x": 2105,
+            "y": 525
           },
           "config": {}
         },
@@ -182,11 +176,49 @@
           "id": "failed",
           "moduleId": "error",
           "position": {
-            "x": 925,
-            "y": 531
+            "x": 1220,
+            "y": 401
           },
           "config": {
             "message": "Cartoon Clips run stopped: retries exhausted."
+          }
+        },
+        {
+          "id": "plan-story",
+          "moduleId": "agent",
+          "position": {
+            "x": 630,
+            "y": 192
+          },
+          "config": {
+            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from a cartoon clip of the show in `show`, for a channel that posts the most shocking and insane cartoon moments. `moment` is the payoff already chosen as the climax (seconds in the video in `source`). `transcript` is the whole video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Build a story that opens on the shock and then jumps back to show how it happened: (1) hook: the 3 to 5 seconds at the peak of the payoff, the most shocking instant (the scream, the explosion, the moment it all goes wrong), shown first so the viewer thinks 'how did that happen?'; (2) intro: 3 to 7 seconds where the scene starts, before the build-up, so the story jumps back to the beginning; (3) beats: 2 to 4 short clips of 4 to 9 seconds, in order, between the intro and the payoff, that build up to it so each cut follows on from the previous one and the last beat leads straight into the payoff; (4) payoff: the given moment, ending only after the reaction has fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; aim for 40 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 6 words, the on-screen title: a curiosity hook about what happens, naming the main character\", \"clips\": [{\"role\": \"hook\" | \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
+            "format": "json",
+            "inputKeys": [
+              "show",
+              "source",
+              "moment"
+            ],
+            "fileKeys": [
+              "transcript"
+            ],
+            "requiredKeys": [
+              "headline",
+              "clips",
+              "effects",
+              "emojis"
+            ],
+            "outputKey": "story"
+          }
+        },
+        {
+          "id": "download-clips",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 925,
+            "y": 565
+          },
+          "config": {
+            "mode": "sections"
           }
         }
       ],
@@ -234,12 +266,6 @@
           "target": "failed"
         },
         {
-          "id": "pick-moment--next--download-section",
-          "source": "pick-moment",
-          "sourcePort": "next",
-          "target": "download-section"
-        },
-        {
           "id": "pick-moment--invalid--retry-moment",
           "source": "pick-moment",
           "sourcePort": "invalid",
@@ -256,12 +282,6 @@
           "source": "retry-moment",
           "sourcePort": "exhausted",
           "target": "failed"
-        },
-        {
-          "id": "download-section--next--edit-short",
-          "source": "download-section",
-          "sourcePort": "next",
-          "target": "edit-short"
         },
         {
           "id": "edit-short--next--write-metadata",
@@ -298,6 +318,42 @@
           "source": "write-metadata",
           "sourcePort": "next",
           "target": "publish"
+        },
+        {
+          "id": "pick-moment--next--plan-story",
+          "source": "pick-moment",
+          "sourcePort": "next",
+          "target": "plan-story"
+        },
+        {
+          "id": "plan-story--next--download-clips",
+          "source": "plan-story",
+          "sourcePort": "next",
+          "target": "download-clips"
+        },
+        {
+          "id": "plan-story--invalid--retry-story",
+          "source": "plan-story",
+          "sourcePort": "invalid",
+          "target": "retry-story"
+        },
+        {
+          "id": "retry-story--retry--plan-story",
+          "source": "retry-story",
+          "sourcePort": "retry",
+          "target": "plan-story"
+        },
+        {
+          "id": "retry-story--exhausted--failed",
+          "source": "retry-story",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "download-clips--next--edit-short",
+          "source": "download-clips",
+          "sourcePort": "next",
+          "target": "edit-short"
         }
       ],
       "operators": [
@@ -306,7 +362,7 @@
           "kind": "retry",
           "position": {
             "x": 369,
-            "y": 502
+            "y": 370
           },
           "maxRetries": 3
         },
@@ -315,7 +371,7 @@
           "kind": "retry",
           "position": {
             "x": 664,
-            "y": 182
+            "y": 334
           },
           "maxRetries": 3
         },
@@ -323,15 +379,24 @@
           "id": "retry-metadata",
           "kind": "retry",
           "position": {
-            "x": 664,
-            "y": 294
+            "x": 959,
+            "y": 400
+          },
+          "maxRetries": 3
+        },
+        {
+          "id": "retry-story",
+          "kind": "retry",
+          "position": {
+            "x": 959,
+            "y": 197
           },
           "maxRetries": 3
         }
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-15T15:02:52.524Z"
+    "updatedAt": "2026-10-19T13:02:09.313Z"
   },
   "modules": [
     {
@@ -1288,6 +1353,16 @@
           "label": "Output key",
           "type": "string",
           "default": "short"
+        },
+        {
+          "key": "layout",
+          "label": "Story layout",
+          "type": "select",
+          "default": "box",
+          "options": [
+            "box",
+            "frame"
+          ]
         }
       ],
       "defaults": {
@@ -1317,7 +1392,8 @@
         "background": "brick",
         "emojiDir": "emoji",
         "storySeed": "",
-        "outputKey": "short"
+        "outputKey": "short",
+        "layout": "box"
       },
       "outputs": [
         {
@@ -1445,6 +1521,14 @@
           "outputKey": {
             "title": "Output key",
             "type": "string"
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "box",
+              "frame"
+            ],
+            "title": "Story layout"
           }
         }
       }
