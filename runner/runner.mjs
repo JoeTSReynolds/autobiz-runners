@@ -5727,9 +5727,9 @@ var require_rfdc = __commonJS({
           } else if (ArrayBuffer.isView(cur)) {
             a2[k] = copyBuffer(cur);
           } else {
-            const index = refs.indexOf(cur);
-            if (index !== -1) {
-              a2[k] = refsNew[index];
+            const index2 = refs.indexOf(cur);
+            if (index2 !== -1) {
+              a2[k] = refsNew[index2];
             } else {
               a2[k] = fn2(cur);
             }
@@ -6948,8 +6948,8 @@ var require_redaction = __commonJS({
         if (o[ns] === null) {
           return o;
         }
-        const { index } = next;
-        const nextPath = `${str2.substr(index, str2.length - 1)}`;
+        const { index: index2 } = next;
+        const nextPath = `${str2.substr(index2, str2.length - 1)}`;
         o[ns] = o[ns] || [];
         if (ns !== wildcardFirstSym && o[ns].length === 0) {
           o[ns].push(...o[wildcardFirstSym] || []);
@@ -7025,11 +7025,11 @@ var require_time = __commonJS({
       const date = new Date(msSinceEpoch);
       const year = date.getUTCFullYear();
       const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
-      const day = date.getUTCDate().toString().padStart(2, "0");
+      const day2 = date.getUTCDate().toString().padStart(2, "0");
       const hours = date.getUTCHours().toString().padStart(2, "0");
       const minutes = date.getUTCMinutes().toString().padStart(2, "0");
       const seconds2 = date.getUTCSeconds().toString().padStart(2, "0");
-      return `,"time":"${year}-${month}-${day}T${hours}:${minutes}:${seconds2}.${nanosWithinSecond.toString().padStart(9, "0")}Z"`;
+      return `,"time":"${year}-${month}-${day2}T${hours}:${minutes}:${seconds2}.${nanosWithinSecond.toString().padStart(9, "0")}Z"`;
     };
     module.exports = { nullTime, epochTime, unixTime, isoTime, isoTimeNano };
   }
@@ -7055,8 +7055,8 @@ var require_quick_format_unescaped = __commonJS({
         if (len === 1) return f;
         var objects = new Array(len);
         objects[0] = ss(f);
-        for (var index = 1; index < len; index++) {
-          objects[index] = ss(args[index]);
+        for (var index2 = 1; index2 < len; index2++) {
+          objects[index2] = ss(args[index2]);
         }
         return objects.join(" ");
       }
@@ -7827,8 +7827,8 @@ var require_on_exit_leak_free = __commonJS({
     }
     function clear(ref) {
       for (const event of ["exit", "beforeExit"]) {
-        const index = refs[event].indexOf(ref);
-        refs[event].splice(index, index + 1);
+        const index2 = refs[event].indexOf(ref);
+        refs[event].splice(index2, index2 + 1);
         uninstall(event);
       }
     }
@@ -7938,9 +7938,9 @@ var require_wait = __commonJS({
   "node_modules/thread-stream/lib/wait.js"(exports, module) {
     "use strict";
     var MAX_TIMEOUT = 1e3;
-    function wait(state, index, expected, timeout, done) {
+    function wait(state, index2, expected, timeout, done) {
       const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
+      let current = Atomics.load(state, index2);
       if (current === expected) {
         done(null, "ok");
         return;
@@ -7952,7 +7952,7 @@ var require_wait = __commonJS({
         } else {
           setTimeout(() => {
             prior = current;
-            current = Atomics.load(state, index);
+            current = Atomics.load(state, index2);
             if (current === prior) {
               check(backoff >= MAX_TIMEOUT ? MAX_TIMEOUT : backoff * 2);
             } else {
@@ -7964,9 +7964,9 @@ var require_wait = __commonJS({
       };
       check(1);
     }
-    function waitDiff(state, index, expected, timeout, done) {
+    function waitDiff(state, index2, expected, timeout, done) {
       const max = Date.now() + timeout;
-      let current = Atomics.load(state, index);
+      let current = Atomics.load(state, index2);
       if (current !== expected) {
         done(null, "ok");
         return;
@@ -7976,7 +7976,7 @@ var require_wait = __commonJS({
           done(null, "timed-out");
         } else {
           setTimeout(() => {
-            current = Atomics.load(state, index);
+            current = Atomics.load(state, index2);
             if (current !== expected) {
               done(null, "ok");
             } else {
@@ -10087,9 +10087,9 @@ var require_multistream = __commonJS({
       }
       function remove(id) {
         const { streams } = this;
-        const index = streams.findIndex((s) => s.id === id);
-        if (index >= 0) {
-          streams.splice(index, 1);
+        const index2 = streams.findIndex((s) => s.id === id);
+        if (index2 >= 0) {
+          streams.splice(index2, 1);
           streams.sort(compareByLevel);
           this.minLevel = streams.length > 0 ? streams[0].level : -1;
         }
@@ -24022,8 +24022,8 @@ var require_formats = __commonJS({
         return false;
       const year = +matches[1];
       const month = +matches[2];
-      const day = +matches[3];
-      return month >= 1 && month <= 12 && day >= 1 && day <= (month === 2 && isLeapYear(year) ? 29 : DAYS[month]);
+      const day2 = +matches[3];
+      return month >= 1 && month <= 12 && day2 >= 1 && day2 <= (month === 2 && isLeapYear(year) ? 29 : DAYS[month]);
     }
     function compareDate(d1, d2) {
       if (!(d1 && d2))
@@ -27645,11 +27645,11 @@ var require_merge_json_schemas = __commonJS({
       }
       mergedSchema[keyword] = mergedOneOf;
     }
-    function getSchemaForItem(schema, index) {
+    function getSchemaForItem(schema, index2) {
       const { items, additionalItems } = schema;
       if (Array.isArray(items)) {
-        if (index < items.length) {
-          return items[index];
+        if (index2 < items.length) {
+          return items[index2];
         }
         return additionalItems;
       }
@@ -28628,10 +28628,10 @@ ${contextFunctionCode}`,
       const schema = location.schema;
       const types = schema.type.sort((t1) => t1 === "null" ? -1 : 1);
       let code = "";
-      types.forEach((type, index) => {
+      types.forEach((type, index2) => {
         location.schema = { ...location.schema, type };
         const nestedResult = buildSingleTypeSerializer(context, location, input);
-        const statement = index === 0 ? "if" : "else if";
+        const statement = index2 === 0 ? "if" : "else if";
         switch (type) {
           case "null":
             code += `
@@ -28872,8 +28872,8 @@ ${contextFunctionCode}`,
       );
       const oneOfsLocation = location.getPropertyLocation(type);
       let code = "";
-      for (let index = 0, oneOfsLength = oneOfs.length; index < oneOfsLength; index++) {
-        const optionLocation = oneOfsLocation.getPropertyLocation(index);
+      for (let index2 = 0, oneOfsLength = oneOfs.length; index2 < oneOfsLength; index2++) {
+        const optionLocation = oneOfsLocation.getPropertyLocation(index2);
         const optionSchema = optionLocation.schema;
         let mergedSchemaId = context.mergedSchemasIds.get(optionSchema);
         let mergedLocation = null;
@@ -28890,7 +28890,7 @@ ${contextFunctionCode}`,
         const nestedResult = buildValue(context, mergedLocation, input);
         const schemaRef = optionLocation.getSchemaRef();
         code += `
-      ${index === 0 ? "if" : "else if"}(validator.validate("${schemaRef}", ${input})) {
+      ${index2 === 0 ? "if" : "else if"}(validator.validate("${schemaRef}", ${input})) {
         ${nestedResult}
       }
     `;
@@ -29271,13 +29271,13 @@ var require_re = __commonJS({
     };
     var createToken = (name, value, isGlobal) => {
       const safe = makeSafeRegex(value);
-      const index = R2++;
-      debug(name, index, value);
-      t[name] = index;
-      src[index] = value;
-      safeSrc[index] = safe;
-      re2[index] = new RegExp(value, isGlobal ? "g" : void 0);
-      safeRe[index] = new RegExp(safe, isGlobal ? "g" : void 0);
+      const index2 = R2++;
+      debug(name, index2, value);
+      t[name] = index2;
+      src[index2] = value;
+      safeSrc[index2] = safe;
+      re2[index2] = new RegExp(value, isGlobal ? "g" : void 0);
+      safeRe[index2] = new RegExp(safe, isGlobal ? "g" : void 0);
     };
     createToken("NUMERICIDENTIFIER", "0|[1-9]\\d*");
     createToken("NUMERICIDENTIFIERLOOSE", "\\d+");
@@ -33306,12 +33306,12 @@ var require_node = __commonJS({
       }
       setStaticChild(label, node) {
         const charCode = label.charCodeAt(0);
-        const index = this.staticChildrenCharCodes.indexOf(charCode);
-        if (index === -1) {
+        const index2 = this.staticChildrenCharCodes.indexOf(charCode);
+        if (index2 === -1) {
           this.staticChildrenCharCodes.push(charCode);
           this.staticChildrenNodes.push(node);
         } else {
-          this.staticChildrenNodes[index] = node;
+          this.staticChildrenNodes[index2] = node;
         }
       }
       findStaticMatchingChild(path, pathIndex) {
@@ -33866,8 +33866,8 @@ var require_url_sanitizer = __commonJS({
       }
       return { path, querystring: "", shouldDecodeParam: false };
     }
-    function reencodePercentChar(path, index) {
-      return path.slice(0, index + 1) + "25" + path.slice(index + 1);
+    function reencodePercentChar(path, index2) {
+      return path.slice(0, index2 + 1) + "25" + path.slice(index2 + 1);
     }
     function safeDecodeURIPercentScan(path, useSemicolonDelimiter, startIndex) {
       let shouldDecode = false;
@@ -35483,22 +35483,22 @@ var require_dist4 = __commonJS({
       if (len < 2)
         return obj;
       const dec = options?.decode || decode2;
-      let index = 0;
+      let index2 = 0;
       do {
-        const eqIdx = eqIndex(str2, index, len);
+        const eqIdx = eqIndex(str2, index2, len);
         if (eqIdx === -1)
           break;
-        const endIdx = endIndex(str2, index, len);
+        const endIdx = endIndex(str2, index2, len);
         if (eqIdx > endIdx) {
-          index = str2.lastIndexOf(";", eqIdx - 1) + 1;
+          index2 = str2.lastIndexOf(";", eqIdx - 1) + 1;
           continue;
         }
-        const key = valueSlice(str2, index, eqIdx);
+        const key = valueSlice(str2, index2, eqIdx);
         if (obj[key] === void 0) {
           obj[key] = dec(valueSlice(str2, eqIdx + 1, endIdx));
         }
-        index = endIdx + 1;
-      } while (index < len);
+        index2 = endIdx + 1;
+      } while (index2 < len);
       return obj;
     }
     function stringifyCookie(cookie, options) {
@@ -35608,11 +35608,11 @@ var require_dist4 = __commonJS({
         name: valueSlice(str2, 0, eqIdx),
         value: dec(valueSlice(str2, eqIdx + 1, endIdx))
       };
-      let index = endIdx + 1;
-      while (index < len) {
-        const endIdx2 = endIndex(str2, index, len);
-        const eqIdx2 = eqIndex(str2, index, endIdx2);
-        const attr = eqIdx2 === -1 ? valueSlice(str2, index, endIdx2) : valueSlice(str2, index, eqIdx2);
+      let index2 = endIdx + 1;
+      while (index2 < len) {
+        const endIdx2 = endIndex(str2, index2, len);
+        const eqIdx2 = eqIndex(str2, index2, endIdx2);
+        const attr = eqIdx2 === -1 ? valueSlice(str2, index2, endIdx2) : valueSlice(str2, index2, eqIdx2);
         const val = eqIdx2 === -1 ? void 0 : valueSlice(str2, eqIdx2 + 1, endIdx2);
         switch (attr.toLowerCase()) {
           case "httponly":
@@ -35658,17 +35658,17 @@ var require_dist4 = __commonJS({
             }
             break;
         }
-        index = endIdx2 + 1;
+        index2 = endIdx2 + 1;
       }
       return setCookie;
     }
     function endIndex(str2, min, len) {
-      const index = str2.indexOf(";", min);
-      return index === -1 ? len : index;
+      const index2 = str2.indexOf(";", min);
+      return index2 === -1 ? len : index2;
     }
     function eqIndex(str2, min, max) {
-      const index = str2.indexOf("=", min);
-      return index < max ? index : -1;
+      const index2 = str2.indexOf("=", min);
+      return index2 < max ? index2 : -1;
     }
     function valueSlice(str2, min, max) {
       let start = min;
@@ -41460,10 +41460,10 @@ var require_escape_html = __commonJS({
       }
       var escape3;
       var html = "";
-      var index = 0;
+      var index2 = 0;
       var lastIndex = 0;
-      for (index = match.index; index < str2.length; index++) {
-        switch (str2.charCodeAt(index)) {
+      for (index2 = match.index; index2 < str2.length; index2++) {
+        switch (str2.charCodeAt(index2)) {
           case 34:
             escape3 = "&quot;";
             break;
@@ -41482,13 +41482,13 @@ var require_escape_html = __commonJS({
           default:
             continue;
         }
-        if (lastIndex !== index) {
-          html += str2.substring(lastIndex, index);
+        if (lastIndex !== index2) {
+          html += str2.substring(lastIndex, index2);
         }
-        lastIndex = index + 1;
+        lastIndex = index2 + 1;
         html += escape3;
       }
-      return lastIndex !== index ? html + str2.substring(lastIndex, index) : html;
+      return lastIndex !== index2 ? html + str2.substring(lastIndex, index2) : html;
     }
   }
 });
@@ -42507,7 +42507,7 @@ var require_send = __commonJS({
       }
       const extensions = options.extensions !== void 0 ? normalizeList(options.extensions, "extensions option") : [];
       const immutable = options.immutable !== void 0 ? Boolean(options.immutable) : false;
-      const index = options.index !== void 0 ? normalizeList(options.index, "index option") : ["index.html"];
+      const index2 = options.index !== void 0 ? normalizeList(options.index, "index option") : ["index.html"];
       const lastModified = options.lastModified !== void 0 ? Boolean(options.lastModified) : true;
       const maxage = normalizeMaxAge(options.maxAge ?? options.maxage);
       const maxContentRangeChunkSize = options.maxContentRangeChunkSize !== void 0 ? Number(options.maxContentRangeChunkSize) : null;
@@ -42521,7 +42521,7 @@ var require_send = __commonJS({
         dotfiles,
         extensions,
         immutable,
-        index,
+        index: index2,
         lastModified,
         maxage,
         maxContentRangeChunkSize,
@@ -42831,8 +42831,8 @@ var require_send = __commonJS({
     async function sendIndex(request, path2, options) {
       let err;
       for (let i = 0; i < options.index.length; i++) {
-        const index = options.index[i];
-        const p = join10(path2, index);
+        const index2 = options.index[i];
+        const p = join10(path2, index2);
         const { error, stat: stat4 } = await tryStat(p);
         if (error) {
           err = error;
@@ -43082,53 +43082,53 @@ function parse(header, options) {
   const len = header.length;
   const multipart = options?.multipart === true;
   const extended = options?.extended !== false;
-  let index = skipOWS(header, 0, header.length);
-  const typeStart = index;
-  index = parseToken(header, index, len);
-  const typeEnd = trailingOWS(header, typeStart, index);
+  let index2 = skipOWS(header, 0, header.length);
+  const typeStart = index2;
+  index2 = parseToken(header, index2, len);
+  const typeEnd = trailingOWS(header, typeStart, index2);
   const type = header.slice(typeStart, typeEnd).toLowerCase();
   const parameters = new NullObject();
-  parameter: while (index < len) {
-    index = skipOWS(header, index + 1, len);
-    const keyStart = index;
-    while (index < len) {
-      const char = header.charCodeAt(index);
+  parameter: while (index2 < len) {
+    index2 = skipOWS(header, index2 + 1, len);
+    const keyStart = index2;
+    while (index2 < len) {
+      const char = header.charCodeAt(index2);
       if (char === SEMI)
         continue parameter;
       if (char === EQ) {
-        const keyEnd = trailingOWS(header, keyStart, index);
+        const keyEnd = trailingOWS(header, keyStart, index2);
         const key = header.slice(keyStart, keyEnd).toLowerCase();
-        index = skipOWS(header, index + 1, len);
-        if (index < len && header.charCodeAt(index) === DQUOTE) {
-          index++;
+        index2 = skipOWS(header, index2 + 1, len);
+        if (index2 < len && header.charCodeAt(index2) === DQUOTE) {
+          index2++;
           let value2 = "";
           if (multipart) {
-            while (index < len) {
-              const code = header.charCodeAt(index++);
+            while (index2 < len) {
+              const code = header.charCodeAt(index2++);
               if (code === DQUOTE) {
-                index = parseToken(header, index, len);
+                index2 = parseToken(header, index2, len);
                 if (parameters[key] === void 0)
                   parameters[key] = value2;
                 break;
               }
               if (code === /* % */
-              37 && index + 1 < len) {
-                const code2 = header.charCodeAt(index);
-                const code3 = header.charCodeAt(index + 1);
+              37 && index2 + 1 < len) {
+                const code2 = header.charCodeAt(index2);
+                const code3 = header.charCodeAt(index2 + 1);
                 if (code2 === 50 && code3 === 50) {
                   value2 += '"';
-                  index += 2;
+                  index2 += 2;
                   continue;
                 }
                 if (code2 === 48) {
                   if (code3 === 100 || code3 === 68) {
                     value2 += "\r";
-                    index += 2;
+                    index2 += 2;
                     continue;
                   }
                   if (code3 === 97 || code3 === 65) {
                     value2 += "\n";
-                    index += 2;
+                    index2 += 2;
                     continue;
                   }
                 }
@@ -43136,16 +43136,16 @@ function parse(header, options) {
               value2 += String.fromCharCode(code);
             }
           } else {
-            while (index < len) {
-              const code = header.charCodeAt(index++);
+            while (index2 < len) {
+              const code = header.charCodeAt(index2++);
               if (code === DQUOTE) {
-                index = parseToken(header, index, len);
+                index2 = parseToken(header, index2, len);
                 if (parameters[key] === void 0)
                   parameters[key] = value2;
                 break;
               }
-              if (code === BSLASH && index < len) {
-                value2 += header[index++];
+              if (code === BSLASH && index2 < len) {
+                value2 += header[index2++];
                 continue;
               }
               value2 += String.fromCharCode(code);
@@ -43153,9 +43153,9 @@ function parse(header, options) {
           }
           continue parameter;
         }
-        const valueStart = index;
-        index = parseToken(header, index, len);
-        const valueEnd = trailingOWS(header, valueStart, index);
+        const valueStart = index2;
+        index2 = parseToken(header, index2, len);
+        const valueEnd = trailingOWS(header, valueStart, index2);
         const value = header.slice(valueStart, valueEnd);
         if (parameters[key] === void 0) {
           parameters[key] = value;
@@ -43168,7 +43168,7 @@ function parse(header, options) {
         }
         continue parameter;
       }
-      index++;
+      index2++;
     }
   }
   return { type, parameters };
@@ -43224,23 +43224,23 @@ function tryDecodeURIComponent(str2) {
     return void 0;
   }
 }
-function parseToken(str2, index, len) {
-  while (index < len) {
-    const char = str2.charCodeAt(index);
+function parseToken(str2, index2, len) {
+  while (index2 < len) {
+    const char = str2.charCodeAt(index2);
     if (char === SEMI)
       break;
-    index++;
+    index2++;
   }
-  return index;
+  return index2;
 }
-function skipOWS(str2, index, len) {
-  while (index < len) {
-    const char = str2.charCodeAt(index);
+function skipOWS(str2, index2, len) {
+  while (index2 < len) {
+    const char = str2.charCodeAt(index2);
     if (char !== SP && char !== HTAB)
       break;
-    index++;
+    index2++;
   }
-  return index;
+  return index2;
 }
 function trailingOWS(str2, start, end) {
   while (end > start) {
@@ -47169,8 +47169,9 @@ function starterModules() {
       field("imageKeys", "Image keys", "json", []),
       field("fileKeys", "File keys", "json", []),
       field("outputKey", "Output key", "string", ""),
-      field("webSearch", "Web search", "boolean", false)
-    ], { prompt: "", format: "text", requiredKeys: [], inputKeys: [], imageKeys: [], fileKeys: [], outputKey: "", webSearch: false }, [
+      field("webSearch", "Web search", "boolean", false),
+      field("includeDate", "Include today's date", "boolean", false)
+    ], { prompt: "", format: "text", requiredKeys: [], inputKeys: [], imageKeys: [], fileKeys: [], outputKey: "", webSearch: false, includeDate: false }, [
       { id: "next", label: "Next" },
       { id: "invalid", label: "Invalid" }
     ]),
@@ -47187,8 +47188,8 @@ function starterModules() {
       field("options", "Options", "json", ["The Simpsons", "Family Guy", "Rick and Morty", "Futurama", "American Dad", "Bob's Burgers", "King of the Hill", "South Park"]),
       field("outputKey", "Output key", "string", "show")
     ], ["next"]),
-    seeded("media-fetch", "Media fetch", "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, or downloads any video link (HLS included) with yt-dlp.", [
-      field("mode", "Mode", "select", "search", ["search", "captions", "section", "sections", "download"]),
+    seeded("media-fetch", "Media fetch", "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, or locates a scene by its dialogue.", [
+      field("mode", "Mode", "select", "search", ["search", "captions", "section", "sections", "download", "index", "locate"]),
       field("queries", "Search queries", "json", ["ytsearch20:{show} full episode", "ytsearch20:{show} uncropped uncut full episode"]),
       field("minDuration", "Minimum duration (s)", "number", 1080),
       field("maxDuration", "Maximum duration (s)", "number", 3600),
@@ -47198,6 +47199,8 @@ function starterModules() {
       field("searchTimeoutMs", "Search time limit (ms)", "number", 12e4),
       field("pick", "Search pick", "select", "random", ["random", "list"]),
       field("listSize", "Candidates in a list", "number", 25),
+      field("maxAgeDays", "Maximum upload age (days, 0 = any)", "number", 0),
+      field("sort", "List order", "select", "views", ["views", "velocity"]),
       field("languages", "Caption languages", "json", ["en", "en-orig", "en-US", "en-GB"]),
       field("captionsTimeoutMs", "Captions time limit (ms)", "number", 12e4),
       field("hotspots", "Find hotspots", "boolean", false),
@@ -47205,6 +47208,7 @@ function starterModules() {
       field("hotspotWindow", "Hotspot window (s)", "number", 75),
       field("hotspotsPerKind", "Hotspots per signal", "number", 4),
       field("transcriptUnit", "Transcript unit", "select", "line", ["line", "sentence"]),
+      field("transcribeUpTo", "Transcribe uncaptioned videos up to (s)", "number", 0),
       field("padding", "Section padding (s)", "number", 2),
       field("maxHeight", "Maximum video height", "number", 1080),
       field("minMoment", "Shortest moment (s)", "number", 5),
@@ -47215,7 +47219,18 @@ function starterModules() {
       field("clipTail", "Clip tail (s)", "number", 5),
       field("payoffTail", "Payoff tail (s)", "number", 15),
       field("blockedRetries", "Retries after a YouTube block", "number", 3),
-      field("blockedWaitSeconds", "First wait after a block (s)", "number", 30)
+      field("blockedWaitSeconds", "First wait after a block (s)", "number", 30),
+      field("onlyWhen", "Run only when (key=value)", "string", ""),
+      field("withCaptions", "Items with captions text", "number", 0),
+      field("indexChannels", "Index channels", "json", []),
+      field("indexPerRun", "Videos indexed per run", "number", 20),
+      field("indexListSize", "Channel uploads listed", "number", 400),
+      field("indexDir", "Index folder", "string", "index"),
+      field("indexTimeoutMs", "Index time limit (ms)", "number", 24e4),
+      field("fromKey", "Fallback list (job key)", "string", "rising"),
+      field("minQuoteScore", "Least quote match (0-1)", "number", 0.6),
+      field("minKeywordHits", "Least keywords in a scene", "number", 2),
+      field("keywordWindow", "Keyword window (s)", "number", 60)
     ], ["next", "missing"]),
     seeded("video-edit", "Video edit", "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).", [
       field("mode", "Mode", "select", "short", ["short", "story"]),
@@ -47529,7 +47544,7 @@ Input: ${JSON.stringify(input)}
 Configuration: ${JSON.stringify(config)}`;
 async function readImage(path) {
   const bytes = await readFile(path);
-  const type = imageTypes.find(({ magic }) => magic.every((byte, index) => bytes[index] === byte));
+  const type = imageTypes.find(({ magic }) => magic.every((byte, index2) => bytes[index2] === byte));
   if (!type) throw new Error(`Agent image ${basename(path)} must be a JPEG or PNG file.`);
   if (bytes.length > imageLimitBytes) throw new Error(`Agent image ${basename(path)} exceeds the 512 KiB limit.`);
   return { mime: type.mime, data: bytes.toString("base64") };
@@ -48795,13 +48810,28 @@ async function fileTexts(value, keys, tools) {
     return [key, texts[i]];
   }));
 }
+function leadingJson(text3) {
+  if (text3[0] !== "{" && text3[0] !== "[") return text3;
+  let depth = 0;
+  let quoted = false;
+  for (let i = 0; i < text3.length; i++) {
+    const c = text3[i];
+    if (quoted) {
+      if (c === "\\") i++;
+      else if (c === '"') quoted = false;
+    } else if (c === '"') quoted = true;
+    else if (c === "{" || c === "[") depth++;
+    else if ((c === "}" || c === "]") && --depth === 0) return text3.slice(0, i + 1);
+  }
+  return text3;
+}
 function parseReply(reply, requiredKeys) {
   if (typeof reply !== "string") return { reason: "Agent reply is not text; expected JSON." };
   const text3 = reply.trim();
-  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(text3);
+  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```/i.exec(text3);
   let value;
   try {
-    value = JSON.parse(fenced ? fenced[1] : text3);
+    value = JSON.parse(fenced ? fenced[1] : leadingJson(text3));
   } catch (error) {
     return { reason: `Agent reply is not valid JSON: ${error instanceof Error ? error.message : String(error)}` };
   }
@@ -48822,6 +48852,7 @@ async function execute4({ input, config, module }, { agent, tools }) {
   const outputKey = config.outputKey === void 0 ? "" : config.outputKey;
   if (typeof outputKey !== "string") throw new ExecutionFailure("Agent setting outputKey must be a string.");
   if (config.webSearch !== void 0 && typeof config.webSearch !== "boolean") throw new ExecutionFailure("Agent setting webSearch must be true or false.");
+  if (config.includeDate !== void 0 && typeof config.includeDate !== "boolean") throw new ExecutionFailure("Agent setting includeDate must be true or false.");
   const value = cloneJson(input);
   if ((inputKeys.length > 0 || imageKeys.length > 0 || fileKeys.length > 0 || outputKey) && !isObject(value)) {
     throw new ExecutionFailure("Agent input must be an object when inputKeys, imageKeys, fileKeys or outputKey is set.");
@@ -48829,7 +48860,9 @@ async function execute4({ input, config, module }, { agent, tools }) {
   const texts = isObject(value) ? await fileTexts(value, fileKeys, tools) : {};
   const sent = isObject(value) && (inputKeys.length > 0 || fileKeys.length > 0) ? { ...Object.fromEntries([...inputKeys, "agentErrors"].filter((key) => Object.hasOwn(value, key)).map((key) => [key, value[key]])), ...texts } : value;
   const names = isObject(value) ? imageNames(value, imageKeys) : [];
-  const frozenInput = deepFreeze(cloneJson(sent));
+  const now = /* @__PURE__ */ new Date();
+  const today = `${now.toISOString().slice(0, 10)} (${now.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" })})`;
+  const frozenInput = deepFreeze(cloneJson(config.includeDate === true && isObject(sent) ? { ...sent, today } : sent));
   const frozenConfig = deepFreeze(cloneJson(config));
   const result = names.length > 0 ? await agent(prompt, frozenInput, frozenConfig, names) : await agent(prompt, frozenInput, frozenConfig);
   if (!result || !Number.isFinite(result.cost) || result.cost < 0) {
@@ -48915,6 +48948,8 @@ var DEFAULTS2 = {
   searchTimeoutMs: 12e4,
   pick: "random",
   listSize: 25,
+  maxAgeDays: 0,
+  sort: "views",
   // captions
   languages: ["en", "en-orig", "en-US", "en-GB"],
   captionsTimeoutMs: 12e4,
@@ -48923,6 +48958,8 @@ var DEFAULTS2 = {
   hotspotWindow: 75,
   hotspotsPerKind: 4,
   transcriptUnit: "line",
+  transcribeUpTo: 0,
+  // seconds; a video this short with no captions is transcribed with whisper instead of rejected (0 = never)
   // section (maxHeight and downloadTimeoutMs also apply to download and sections)
   padding: 2,
   maxHeight: 1080,
@@ -48936,9 +48973,24 @@ var DEFAULTS2 = {
   payoffTail: 15,
   // yt-dlp calls: retries after YouTube's bot check or a 429, and the first wait (doubles each retry)
   blockedRetries: 3,
-  blockedWaitSeconds: 30
+  blockedWaitSeconds: 30,
+  // all modes: run only when job[key] equals the value ("key=value"); empty always runs
+  onlyWhen: "",
+  // search with pick 'list': captions text attached to the first N items
+  withCaptions: 0,
+  // index: official channels whose uploads are indexed by dialogue, best effort, a few per run
+  indexChannels: [],
+  indexPerRun: 20,
+  indexListSize: 400,
+  indexDir: "index",
+  indexTimeoutMs: 24e4,
+  // locate
+  fromKey: "rising",
+  minQuoteScore: 0.6,
+  minKeywordHits: 2,
+  keywordWindow: 60
 };
-var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", sections: "clips", download: "video" };
+var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", sections: "clips", download: "video", index: "index", locate: "source" };
 var WHISPER_MODEL = "base.en";
 var WORDS_FILE = "captions.words.json";
 var TRANSCRIPT_FILE = "transcript.txt";
@@ -48996,6 +49048,23 @@ var reason = (error) => error instanceof Error ? error.message : String(error);
 var seconds = (ms) => Math.round(ms) / 1e3;
 var text = (...values) => values.find((value) => typeof value === "string" && value !== "") ?? "";
 var squash = (value) => value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+var summary = ({ id, title, channel, uploader, duration }) => ({ id, url: `https://www.youtube.com/watch?v=${id}`, title: text(title), channel: text(channel, uploader), duration });
+var usedIds = async (tools) => new Set((await tools.readText("state", "archive.txt"))?.split(/\r?\n/).flatMap((line2) => /^youtube (\S+)\s*$/.exec(line2)?.[1] ?? []));
+var rethrowStop = (error) => {
+  if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure) throw error;
+};
+function captionFetcher(config, tools) {
+  const languages = list(config, "languages", 1);
+  const timeoutMs = count(config, "captionsTimeoutMs", true);
+  return async (id, url, prefix) => {
+    await tools.run("yt-dlp", ["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", languages.join(","), "--sub-format", "json3", "-o", `${prefix}-${id}`, "--no-warnings", "--", url], { timeoutMs });
+    for (const language of languages) {
+      const lines = parseCaptions(await tools.readText("run", `${prefix}-${id}.${language}.json3`));
+      if (lines.length) return lines;
+    }
+    return [];
+  };
+}
 var search = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
   const queries = list(config, "queries", 1);
@@ -49006,6 +49075,11 @@ var search = async (job, config, tools, outputKey) => {
   const pick = config.pick ?? DEFAULTS2.pick;
   if (pick !== "random" && pick !== "list") throw new ExecutionFailure("media-fetch setting pick must be 'random' or 'list'.");
   const listSize = count(config, "listSize", true, true);
+  const withCaptions = count(config, "withCaptions", false, true);
+  const maxAgeDays = count(config, "maxAgeDays");
+  const sort = config.sort ?? DEFAULTS2.sort;
+  if (sort !== "views" && sort !== "velocity") throw new ExecutionFailure("media-fetch setting sort must be 'views' or 'velocity'.");
+  const dated = maxAgeDays > 0 || sort === "velocity";
   const titleIncludes = config.titleIncludes ?? DEFAULTS2.titleIncludes;
   if (typeof titleIncludes !== "string") throw new ExecutionFailure("media-fetch setting titleIncludes must be a string.");
   const rejected = rejectedSources(job);
@@ -49022,7 +49096,7 @@ var search = async (job, config, tools, outputKey) => {
   for (const query of expanded) {
     let stdout;
     try {
-      ({ stdout } = await yt2(["--flat-playlist", "-J", "--no-warnings", "--playlist-end", String(maxResults), "--", query], timeoutMs));
+      ({ stdout } = await yt2(["--flat-playlist", "-J", "--no-warnings", "--playlist-end", String(maxResults), ...dated ? ["--extractor-args", "youtubetab:approximate_date"] : [], "--", query], timeoutMs));
     } catch (error) {
       if (error instanceof ExecutionCancelled) throw error;
       failures.push(reason(error));
@@ -49039,17 +49113,43 @@ var search = async (job, config, tools, outputKey) => {
     }
   }
   if (failures.length === expanded.length) throw new ExecutionFailure(`media-fetch: all ${failures.length} search queries failed; last error: ${failures.at(-1)}`);
-  const used = new Set((await tools.readText("state", "archive.txt"))?.split(/\r?\n/).flatMap((line2) => /^youtube (\S+)\s*$/.exec(line2)?.[1] ?? []));
-  const candidates2 = [...found.values()].filter(({ id, title, duration }) => typeof duration === "number" && duration >= minDuration && duration <= maxDuration && !excluded.some((word) => text(title).toLowerCase().includes(word)) && squash(text(title)).includes(wanted) && !used.has(id) && !rejected.includes(id));
+  const used = await usedIds(tools);
+  const now = Date.now() / 1e3;
+  const ageOf = ({ timestamp }) => typeof timestamp === "number" ? Math.max(0.5, (now - timestamp) / 86400) : void 0;
+  const views = ({ view_count }) => typeof view_count === "number" ? view_count : 0;
+  const velocityOf = (item) => {
+    const age = ageOf(item);
+    return age === void 0 ? void 0 : Math.round(views(item) / age);
+  };
+  const candidates2 = [...found.values()].filter((item) => {
+    const { id, title, duration } = item;
+    const age = ageOf(item);
+    return typeof duration === "number" && duration >= minDuration && duration <= maxDuration && !excluded.some((word) => text(title).toLowerCase().includes(word)) && squash(text(title)).includes(wanted) && !used.has(id) && !rejected.includes(id) && (maxAgeDays === 0 || age !== void 0 && age <= maxAgeDays);
+  });
   if (candidates2.length === 0) {
     const skipped = failures.length ? `; ${failures.length} of ${expanded.length} search queries failed (last error: ${failures.at(-1)})` : "";
-    throw new ExecutionFailure(`No usable source: found ${found.size} videos, filtered out ${found.size} (duration, excluded words, title, already used or rejected)${skipped}.`);
+    throw new ExecutionFailure(`No usable source: found ${found.size} videos, filtered out ${found.size} (duration, excluded words, title${maxAgeDays > 0 ? ", age" : ""}, already used or rejected)${skipped}.`);
   }
-  const summary = ({ id, title, channel, uploader, duration }) => ({ id, url: `https://www.youtube.com/watch?v=${id}`, title: text(title), channel: text(channel, uploader), duration });
   if (pick === "list") {
-    const views = ({ view_count }) => typeof view_count === "number" ? view_count : 0;
-    const top = [...candidates2].sort((a, b) => views(b) - views(a)).slice(0, listSize);
-    return { output: { ...job, [outputKey]: top.map((item) => ({ ...summary(item), views: views(item) })) }, port: "next" };
+    const score = (item) => sort === "velocity" ? velocityOf(item) ?? -1 : views(item);
+    const top = [...candidates2].sort((a, b) => score(b) - score(a)).slice(0, listSize);
+    const dates = (item) => {
+      const age = ageOf(item);
+      return age === void 0 ? {} : { uploaded: new Date(item.timestamp * 1e3).toISOString().slice(0, 10), ageDays: Math.round(age * 10) / 10, velocity: velocityOf(item) };
+    };
+    const items = top.map((item) => ({ ...summary(item), views: views(item), ...dates(item) }));
+    if (withCaptions > 0) {
+      const fetchLines = captionFetcher(config, tools);
+      for (const item of items.slice(0, withCaptions)) {
+        try {
+          item.captions = (await fetchLines(item.id, item.url, "cap")).map((line2) => line2.text).join(" ").slice(0, 1500);
+        } catch (error) {
+          rethrowStop(error);
+          item.captions = "";
+        }
+      }
+    }
+    return { output: { ...job, [outputKey]: items }, port: "next" };
   }
   return { output: { ...job, [outputKey]: summary(candidates2[Math.floor(Math.random() * candidates2.length)]) }, port: "next" };
 };
@@ -49068,26 +49168,26 @@ function rawLines(json2) {
     const end = start + (typeof event.dDurationMs === "number" ? event.dDurationMs : 0);
     const segs = event.segs.filter(isObject3);
     const offset = (seg) => start + (typeof seg.tOffsetMs === "number" ? seg.tOffsetMs : 0);
-    const words = segs.flatMap((seg, index) => {
+    const words2 = segs.flatMap((seg, index2) => {
       if (typeof seg.utf8 !== "string") return [];
       const tokens = seg.utf8.replace(/^\s*>>/, "").replace(/\[[^\]]*\]/g, " ").split(/\s+/).filter(Boolean);
-      const span = Math.max(0, (segs[index + 1] ? offset(segs[index + 1]) : end) - offset(seg));
+      const span = Math.max(0, (segs[index2 + 1] ? offset(segs[index2 + 1]) : end) - offset(seg));
       return tokens.map((token, i) => ({ text: token, start: offset(seg) + span * i / tokens.length }));
     });
     const speakerChange = segs.some((seg) => seg.isSpeakerChange || typeof seg.utf8 === "string" && /^\s*>>/.test(seg.utf8));
-    return words.length ? [{ start, end, speakerChange, words }] : [];
+    return words2.length ? [{ start, end, speakerChange, words: words2 }] : [];
   });
 }
 function parseCaptions(json2) {
   const raw = rawLines(json2);
   return raw.map((line2, i) => {
     const lineEnd = Math.min(line2.end, raw[i + 1]?.start ?? Infinity);
-    const words = line2.words.map((word, j) => ({
+    const words2 = line2.words.map((word, j) => ({
       text: word.text,
       start: seconds(word.start),
       end: seconds(Math.max(word.start, line2.words[j + 1]?.start ?? lineEnd))
     }));
-    return { start: seconds(line2.start), end: seconds(lineEnd), speakerChange: line2.speakerChange, text: words.map((word) => word.text).join(" "), words };
+    return { start: seconds(line2.start), end: seconds(lineEnd), speakerChange: line2.speakerChange, text: words2.map((word) => word.text).join(" "), words: words2 };
   });
 }
 var transcriptLine = (line2) => ({ start: line2.start, text: `[${line2.start.toFixed(1)}] ${line2.speakerChange ? ">> " : ""}${line2.text}` });
@@ -49103,19 +49203,19 @@ function quoteAfter(open3, token) {
   return open3;
 }
 function sentencesOf(lines) {
-  const words = lines.flatMap((line2) => line2.words.map((word, i) => ({ ...word, speakerChange: i === 0 && line2.speakerChange })));
+  const words2 = lines.flatMap((line2) => line2.words.map((word, i) => ({ ...word, speakerChange: i === 0 && line2.speakerChange })));
   const sentences = [];
   let first = 0;
   let open3 = false;
   let held = 0;
-  words.forEach((word, last) => {
-    const next = words[last + 1];
+  words2.forEach((word, last) => {
+    const next = words2[last + 1];
     open3 = quoteAfter(open3, word.text);
-    const hold = endsSentence(word.text) && open3 && held < 3 && word.start - words[first].start < 12;
+    const hold = endsSentence(word.text) && open3 && held < 3 && word.start - words2[first].start < 12;
     if (hold) held++;
     if (next && (hold || !endsSentence(word.text)) && !next.speakerChange && Math.round((next.start - word.start) * 1e3) < 1400) return;
     const end = next ? Math.min(next.start - 0.15, word.start + 1.2) : word.start + 1.2;
-    sentences.push({ start: words[first].start, end: seconds(end * 1e3), text: words.slice(first, last + 1).map((w) => w.text).join(" "), speakerChange: words[first].speakerChange, first, last });
+    sentences.push({ start: words2[first].start, end: seconds(end * 1e3), text: words2.slice(first, last + 1).map((w) => w.text).join(" "), speakerChange: words2[first].speakerChange, first, last });
     first = last + 1;
     open3 = false;
     held = 0;
@@ -49188,8 +49288,8 @@ function whisperToJson3(json2) {
   if (!Array.isArray(segments)) throw new Error("whisper output has no segments list");
   const ms = (value) => Math.round(Number(value) * 1e3);
   const events = segments.filter(isObject3).flatMap((segment) => {
-    const words = (Array.isArray(segment.words) ? segment.words.filter(isObject3) : []).map((word) => ({ utf8: text(word.word).trim(), tOffsetMs: ms(word.start) - ms(segment.start) }));
-    const segs = words.some((word) => word.utf8) ? words.filter((word) => word.utf8) : [{ utf8: text(segment.text).trim(), tOffsetMs: 0 }];
+    const words2 = (Array.isArray(segment.words) ? segment.words.filter(isObject3) : []).map((word) => ({ utf8: text(word.word).trim(), tOffsetMs: ms(word.start) - ms(segment.start) }));
+    const segs = words2.some((word) => word.utf8) ? words2.filter((word) => word.utf8) : [{ utf8: text(segment.text).trim(), tOffsetMs: 0 }];
     return segs[0].utf8 ? [{ tStartMs: ms(segment.start), dDurationMs: ms(segment.end) - ms(segment.start), segs }] : [];
   });
   return JSON.stringify({ events });
@@ -49204,11 +49304,19 @@ var captions = async (job, config, tools, outputKey) => {
   const commentsToScan = count(config, "commentsToScan", false, true);
   const window = count(config, "hotspotWindow", true);
   const perKind = count(config, "hotspotsPerKind", true, true);
+  const transcribeUpTo = count(config, "transcribeUpTo");
   const unit = config.transcriptUnit ?? DEFAULTS2.transcriptUnit;
   if (unit !== "line" && unit !== "sentence") throw new ExecutionFailure("media-fetch setting transcriptUnit must be 'line' or 'sentence'.");
   const { id, url, duration: sourceDuration } = sourceOf(job);
   const rejected = rejectedSources(job);
   const missing = () => ({ output: { ...job, rejectedSources: [...rejected, id] }, port: "missing" });
+  const transcribe = async () => {
+    await tools.run("yt-dlp", ["-f", "ba[ext=m4a]/ba", "-o", "captions-audio", "--no-warnings", "--", url], { timeoutMs: downloadTimeoutMs });
+    await tools.run("whisper-ctranslate2", ["captions-audio", "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", "--word_timestamps", "True", "--output_format", "json", "--output_dir", "."], { timeoutMs: downloadTimeoutMs });
+    const spoken = await tools.readText("run", "captions-audio.json");
+    if (spoken === void 0) throw new Error("whisper wrote no captions-audio.json");
+    await tools.writeText("run", `captions.${languages[0]}.json3`, whisperToJson3(spoken));
+  };
   try {
     const infoArgs = !hotspots ? [] : ["--write-info-json", ...commentsToScan > 0 ? ["--write-comments", "--extractor-args", `youtube:max_comments=${commentsToScan},all,0,0;comment_sort=top`] : []];
     await yt2(["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", languages.join(","), "--sub-format", "json3", ...infoArgs, "-o", "captions", "--no-warnings", "--", url], timeout);
@@ -49217,14 +49325,22 @@ var captions = async (job, config, tools, outputKey) => {
     if (!isBlock(error)) return missing();
     const refused = `YouTube refused the captions request (bot check or rate limit): ${error.message.slice(-300)}`;
     try {
-      await tools.run("yt-dlp", ["-f", "ba[ext=m4a]/ba", "-o", "captions-audio", "--no-warnings", "--", url], { timeoutMs: downloadTimeoutMs });
-      await tools.run("whisper-ctranslate2", ["captions-audio", "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", "--word_timestamps", "True", "--output_format", "json", "--output_dir", "."], { timeoutMs: downloadTimeoutMs });
-      const spoken = await tools.readText("run", "captions-audio.json");
-      if (spoken === void 0) throw new Error("whisper wrote no captions-audio.json");
-      await tools.writeText("run", `captions.${languages[0]}.json3`, whisperToJson3(spoken));
+      await transcribe();
     } catch (fallback) {
       if (fallback instanceof ExecutionCancelled || fallback instanceof ExecutionLimitFailure) throw fallback;
       throw new ExecutionFailure(`${refused} (transcription fallback failed: ${reason(fallback).slice(-200)})`);
+    }
+  }
+  const captioned = async () => {
+    for (const language of languages) if (parseCaptions(await tools.readText("run", `captions.${language}.json3`)).length) return true;
+    return false;
+  };
+  if (transcribeUpTo > 0 && (sourceDuration ?? Infinity) <= transcribeUpTo && !await captioned()) {
+    try {
+      await transcribe();
+    } catch (fallback) {
+      if (fallback instanceof ExecutionCancelled || fallback instanceof ExecutionLimitFailure) throw fallback;
+      return missing();
     }
   }
   for (const language of languages) {
@@ -49335,12 +49451,182 @@ var download = async (job, config, tools, outputKey) => {
   const duration = await probe(tools, VIDEO_FILE, timeoutMs);
   return { output: { ...job, [outputKey]: { file: VIDEO_FILE, duration } }, port: "next" };
 };
-var modes = { search, captions, section, sections, download };
+var day = (timestamp) => typeof timestamp === "number" ? new Date(timestamp * 1e3).toISOString().slice(0, 10) : void 0;
+var twoDecimals = (value) => Math.round(value * 100) / 100;
+function indexDir(config) {
+  const dir = config.indexDir ?? DEFAULTS2.indexDir;
+  if (typeof dir !== "string" || !/^[a-z0-9][a-z0-9_-]*$/i.test(dir)) throw new ExecutionFailure("media-fetch setting indexDir must be a plain folder name (letters, digits, - and _).");
+  return dir;
+}
+async function readJson(tools, path) {
+  try {
+    const value = JSON.parse(await tools.readText("state", path) ?? "");
+    return isObject3(value) ? value : {};
+  } catch {
+    return {};
+  }
+}
+var index = async (job, config, tools, outputKey) => {
+  const channels = list(config, "indexChannels", 0).map((url) => positional(url, "indexChannels entry"));
+  const [perRun, listSize, timeoutMs] = [count(config, "indexPerRun", false, true), count(config, "indexListSize", true, true), count(config, "indexTimeoutMs", true)];
+  const [minDuration, maxDuration, listTimeout] = [count(config, "minDuration"), count(config, "maxDuration"), count(config, "captionsTimeoutMs", true)];
+  const dir = indexDir(config);
+  const fetchLines = captionFetcher(config, tools);
+  const started = Date.now();
+  const catalog = await readJson(tools, `${dir}/catalog.json`);
+  const queues = [];
+  for (const url of channels) {
+    try {
+      const { stdout } = await tools.run("yt-dlp", ["--flat-playlist", "-J", "--no-warnings", "--playlist-end", String(listSize), "--extractor-args", "youtubetab:approximate_date", "--", url], { timeoutMs: listTimeout });
+      const listing = JSON.parse(stdout);
+      const entries = isObject3(listing) && Array.isArray(listing.entries) ? listing.entries : [];
+      const stamp4 = ({ timestamp }) => typeof timestamp === "number" ? timestamp : -Infinity;
+      const owner = isObject3(listing) ? text(listing.channel, listing.uploader) : "";
+      queues.push(entries.filter((item) => isObject3(item) && typeof item.id === "string" && item.id !== "" && !(item.id in catalog) && typeof item.duration === "number" && item.duration >= minDuration && item.duration <= maxDuration).map((item) => ({ ...item, channel: text(item.channel, item.uploader, owner) })).sort((a, b) => stamp4(b) - stamp4(a)));
+    } catch (error) {
+      rethrowStop(error);
+    }
+  }
+  const todo = Array.from({ length: Math.max(0, ...queues.map((q2) => q2.length)) }, (_, i) => queues.map((q2) => q2[i]).filter(isObject3)).flat();
+  const seen = /* @__PURE__ */ new Set();
+  let [added, none, tried] = [0, 0, 0];
+  let stoppedBy = "done";
+  try {
+    for (const item of todo) {
+      const id = item.id;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      if (tried >= perRun) {
+        stoppedBy = "limit";
+        break;
+      }
+      if (Date.now() - started >= timeoutMs) {
+        stoppedBy = "time";
+        break;
+      }
+      tried++;
+      const meta = { title: text(item.title), channel: text(item.channel, item.uploader), duration: item.duration, ...day(item.timestamp) ? { uploaded: day(item.timestamp) } : {} };
+      let lines;
+      try {
+        lines = await fetchLines(id, `https://www.youtube.com/watch?v=${id}`, "idx");
+      } catch (error) {
+        rethrowStop(error);
+        if (isBlock(error)) {
+          stoppedBy = "block";
+          break;
+        }
+        continue;
+      }
+      if (lines.length) {
+        await tools.writeText("state", `${dir}/${id}.json`, JSON.stringify({ id, ...meta, lines: lines.map((line2) => [twoDecimals(line2.start), twoDecimals(line2.end), line2.text]) }));
+        added++;
+      } else none++;
+      catalog[id] = { ...meta, status: lines.length ? "ok" : "none" };
+    }
+  } finally {
+    await tools.writeText("state", `${dir}/catalog.json`, JSON.stringify(catalog));
+  }
+  const total = Object.values(catalog).filter((entry) => isObject3(entry) && entry.status === "ok").length;
+  return { output: { ...job, [outputKey]: { added, none, total, stoppedBy } }, port: "next" };
+};
+var words = (value) => value.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+var strings = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+var pairs = (tokens) => tokens.slice(1).map((token, i) => `${tokens[i]} ${token}`);
+function occurrences(tokens, sequence) {
+  let found = 0;
+  for (let i = 0; i + sequence.length <= tokens.length; i++) if (sequence.every((token, j) => tokens[i + j] === token)) found++;
+  return found;
+}
+var locate = async (job, config, tools, outputKey) => {
+  const dir = indexDir(config);
+  const fromKey = config.fromKey ?? DEFAULTS2.fromKey;
+  if (typeof fromKey !== "string" || fromKey === "") throw new ExecutionFailure("media-fetch setting fromKey must be a non-empty string.");
+  const minQuoteScore = config.minQuoteScore ?? DEFAULTS2.minQuoteScore;
+  if (typeof minQuoteScore !== "number" || !(minQuoteScore >= 0 && minQuoteScore <= 1)) throw new ExecutionFailure("media-fetch setting minQuoteScore must be a number from 0 to 1.");
+  const minHits = count(config, "minKeywordHits", true, true);
+  const window = count(config, "keywordWindow", true);
+  const brief = isObject3(job.brief) ? job.brief : {};
+  const show = typeof brief.show === "string" ? squash(brief.show) : "";
+  const quotes = strings(brief.quotes).map((quote) => ({ quote, tokens: words(quote) })).filter(({ tokens }) => tokens.length >= 3);
+  const keywords = strings(brief.keywords).map((keyword) => ({ keyword, tokens: words(keyword) })).filter(({ tokens }) => tokens.length);
+  const fallback = (Array.isArray(job[fromKey]) ? job[fromKey] : []).filter(isObject3);
+  const excluded = /* @__PURE__ */ new Set([...await usedIds(tools), ...rejectedSources(job)]);
+  const catalog = await readJson(tools, `${dir}/catalog.json`);
+  const ids = Object.entries(catalog).filter(([id, entry]) => isObject3(entry) && entry.status === "ok" && !excluded.has(id)).map(([id]) => id);
+  const videos = [];
+  if (quotes.length || keywords.length) {
+    for (const id of ids) {
+      const file = await readJson(tools, `${dir}/${id}.json`);
+      if (Array.isArray(file.lines)) videos.push({ id, title: text(file.title), channel: text(file.channel), duration: file.duration, uploaded: text(file.uploaded), lines: file.lines });
+    }
+  }
+  const found = (video, located, hint) => ({ output: { ...job, [outputKey]: summary(video), ...hint ? { hint } : {}, located }, port: "next" });
+  let bestQuote;
+  for (const video of videos) {
+    const tokens = video.lines.flatMap(([, , line2], at2) => words(line2).map((token) => ({ token, at: at2 })));
+    const grams = pairs(tokens.map(({ token }) => token));
+    for (const { quote, tokens: wanted } of quotes) {
+      const wantedGrams = new Set(pairs(wanted));
+      const hits = grams.flatMap((gram, i) => wantedGrams.has(gram) ? [{ i, gram }] : []);
+      for (const [k, hit] of hits.entries()) {
+        const inside = hits.slice(k).filter(({ i }) => i < hit.i + wanted.length + 3);
+        const score = new Set(inside.map(({ gram }) => gram)).size / wantedGrams.size;
+        if (score > (bestQuote?.score ?? -1)) bestQuote = { video, score, first: tokens[hit.i].at, last: tokens[inside.at(-1).i + 1].at, quote };
+      }
+    }
+  }
+  if (bestQuote && bestQuote.score >= minQuoteScore) {
+    const { video, first, last, quote } = bestQuote;
+    const score = twoDecimals(bestQuote.score);
+    return found(video, { method: "quote", searched: videos.length, score }, { start: video.lines[first][0], end: video.lines[last][1], text: video.lines.slice(first, last + 1).map(([, , line2]) => line2).join(" "), score, quote });
+  }
+  if (keywords.length) {
+    const shown = show ? videos.filter((video) => squash(video.title).includes(show)) : videos;
+    const pool = shown.length ? shown : videos;
+    const need = Math.min(minHits, keywords.length);
+    let best;
+    for (const video of pool) {
+      const tokens = video.lines.map(([, , line2]) => words(line2));
+      let to = 0;
+      for (const [from, [start]] of video.lines.entries()) {
+        to = Math.max(to, from);
+        while (video.lines[to + 1] && video.lines[to + 1][0] <= start + window) to++;
+        const inWindow = tokens.slice(from, to + 1).flat();
+        const counts = keywords.map(({ tokens: sequence }) => occurrences(inWindow, sequence));
+        const distinct = counts.filter(Boolean).length;
+        const total = counts.reduce((sum2, n) => sum2 + n, 0);
+        const better = !best || distinct > best.distinct || distinct === best.distinct && (total > best.total || total === best.total && video.uploaded > best.video.uploaded);
+        if (distinct >= need && better) best = { video, distinct, total, from, to, matched: keywords.filter((_, i) => counts[i]).map(({ keyword }) => keyword) };
+      }
+    }
+    if (best) {
+      const { video, distinct, from, to, matched } = best;
+      return found(video, { method: "keywords", searched: pool.length, score: distinct, matched }, { start: video.lines[from][0], end: video.lines[to][1], text: video.lines.slice(from, to + 1).map(([, , line2]) => line2).join(" "), matched, score: distinct });
+    }
+  }
+  const usable = fallback.filter((item) => typeof item.id === "string" && !excluded.has(item.id));
+  if (keywords.length) {
+    const named = (title) => keywords.filter(({ tokens }) => occurrences(words(text(title)), tokens) > 0).map(({ keyword }) => keyword);
+    const titled = [...usable, ...videos].map((item) => ({ item, matched: named(item.title) })).filter(({ matched }) => matched.length);
+    const hit = titled.find(({ item }) => show && squash(text(item.title)).includes(show)) ?? titled[0];
+    if (hit) return { output: { ...job, [outputKey]: summary(hit.item), located: { method: "title", searched: videos.length, matched: hit.matched } }, port: "next" };
+  }
+  const picked = usable.find((item) => item.id === brief.sourceId);
+  if (picked) return { output: { ...job, [outputKey]: summary(picked), located: { method: "pick", searched: ids.length } }, port: "next" };
+  const rising = usable.find((item) => show && squash(text(item.title)).includes(show)) ?? usable[0];
+  if (rising) return { output: { ...job, [outputKey]: summary(rising), located: { method: "rising", searched: ids.length } }, port: "next" };
+  throw new ExecutionFailure("media-fetch locate: no indexed scene matched and no fallback candidate was usable.");
+};
+var modes = { search, captions, section, sections, download, index, locate };
 async function execute10({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("media-fetch requires the tools capability.");
   const mode = config.mode ?? DEFAULTS2.mode;
-  if (mode !== "search" && mode !== "captions" && mode !== "section" && mode !== "sections" && mode !== "download") throw new ExecutionFailure("media-fetch setting mode must be 'search', 'captions', 'section', 'sections' or 'download'.");
+  if (typeof mode !== "string" || !Object.hasOwn(modes, mode)) throw new ExecutionFailure("media-fetch setting mode must be 'search', 'captions', 'section', 'sections', 'download', 'index' or 'locate'.");
   if (!isObject3(input)) throw new ExecutionFailure("media-fetch input (the job) must be a plain object.");
+  const onlyWhen = config.onlyWhen ?? DEFAULTS2.onlyWhen;
+  const condition = typeof onlyWhen === "string" ? /^(\w+)=(.*)$/s.exec(onlyWhen) : null;
+  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('media-fetch setting onlyWhen must be empty or "key=value" with a key of letters, digits and _.');
+  if (condition && String(input[condition[1]]) !== condition[2]) return { output: input, port: "next" };
   const outputKey = config.outputKey ?? (mode === "search" && config.pick === "list" ? "candidates" : OUTPUT_KEYS[mode]);
   if (typeof outputKey !== "string" || outputKey === "") throw new ExecutionFailure("media-fetch setting outputKey must be a non-empty string.");
   return modes[mode](input, config, tools, outputKey);
@@ -49694,9 +49980,9 @@ function findWord(list3, target) {
   const t = norm(target);
   return t === "" ? void 0 : list3.find((w) => norm(w.text) === t) ?? list3.find((w) => fuzzy(norm(w.text), t));
 }
-function lastBefore(words, t) {
+function lastBefore(words2, t) {
   let k = -1;
-  while (k + 1 < words.length && words[k + 1].start < t) k++;
+  while (k + 1 < words2.length && words2[k + 1].start < t) k++;
   return k;
 }
 function placeEffects(effects, spans, starts) {
@@ -49712,7 +49998,7 @@ function placeEffects(effects, spans, starts) {
   }
   return kept.map((e) => ({ ...e, storyTime: r3(e.storyTime) }));
 }
-function placeEmojis(emojis, words, sentences, spans, starts, issues) {
+function placeEmojis(emojis, words2, sentences, spans, starts, issues) {
   const total = sum(spans);
   const placed = [];
   for (const m of emojis) {
@@ -49721,7 +50007,7 @@ function placeEmojis(emojis, words, sentences, spans, starts, issues) {
       issues.push(`emoji ${m.name}: no sentence starts at ${m.sentenceStart}; dropped.`);
       continue;
     }
-    const word = findWord(words.slice(sentence.first, sentence.last + 1), m.word);
+    const word = findWord(words2.slice(sentence.first, sentence.last + 1), m.word);
     if (!word) {
       issues.push(`emoji ${m.name}: "${m.word}" is not in the sentence at ${sentence.start}; dropped.`);
       continue;
@@ -49753,7 +50039,7 @@ function placeEmojis(emojis, words, sentences, spans, starts, issues) {
     word: m.word
   }));
 }
-function normalizeStory(plan, words, sentences, laughs, options = {}) {
+function normalizeStory(plan, words2, sentences, laughs, options = {}) {
   const maxTotal = options.maxTotal ?? 55;
   const maxExtension = options.maxExtension ?? 10;
   const issues = [];
@@ -49765,20 +50051,20 @@ function normalizeStory(plan, words, sentences, laughs, options = {}) {
   const starts = spans.map((_, i) => sum(spans.slice(0, i)));
   const clips = spans.map((c, i) => {
     const sentence = sentences.find((s) => Math.abs(s.end - c.end) < 0.02);
-    const k = sentence ? sentence.last : lastBefore(words, c.end);
-    const word = words[k];
+    const k = sentence ? sentence.last : lastBefore(words2, c.end);
+    const word = words2[k];
     return {
       role: c.role,
       start: c.start,
       end: c.end,
       storyStart: r3(starts[i]),
       lastWord: { text: word?.text ?? "", start: word?.start ?? c.end },
-      nextWordStart: words[k + 1]?.start ?? null,
+      nextWordStart: words2[k + 1]?.start ?? null,
       refine: sentence !== void 0 && word !== void 0
     };
   });
   const effects = placeEffects(plan.effects, spans, starts);
-  const emojis = placeEmojis(plan.emojis, words, sentences, spans, starts, issues);
+  const emojis = placeEmojis(plan.emojis, words2, sentences, spans, starts, issues);
   return { clips, effects, emojis, total: r3(total), issues };
 }
 function endWindow(lastWord, nextWordStart) {
@@ -49820,14 +50106,14 @@ function stamp2(seconds2) {
   const two = (value) => String(value).padStart(2, "0");
   return `${Math.floor(cs / 36e4)}:${two(Math.floor(cs / 6e3) % 60)}:${two(Math.floor(cs / 100) % 60)}.${two(cs % 100)}`;
 }
-function wrap(words, maxChars, maxRows = Infinity) {
-  const text3 = words.join(" ");
+function wrap(words2, maxChars, maxRows = Infinity) {
+  const text3 = words2.join(" ");
   const count2 = Math.min(maxRows, Math.ceil(text3.length / maxChars));
   if (count2 <= 1) return [text3];
   const target = text3.length / count2;
   const rows = [];
   let row = [];
-  for (const word of words) {
+  for (const word of words2) {
     const joined = [...row, word].join(" ").length;
     if (row.length > 0 && rows.length < count2 - 1 && joined > target + 0.5 * word.length && row.join(" ").length >= target * 0.7) {
       rows.push(row);
@@ -49836,7 +50122,7 @@ function wrap(words, maxChars, maxRows = Infinity) {
     row.push(word);
   }
   rows.push(row);
-  return rows.map((words2) => words2.join(" "));
+  return rows.map((words3) => words3.join(" "));
 }
 function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline }) {
   const style = (name, size) => `Style: ${name},${font},${size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,-1,0,0,100,100,0,0,1,${outline},0,5,60,60,0,1`;
@@ -49862,12 +50148,12 @@ function storyTextAss(headline, captions2, { font, headlineSize, captionSize, ou
   ].join("\n");
 }
 function captionChunks(lines, maxWords = 6, wrapAt = 26) {
-  const chunks = lines.flatMap(({ words }) => {
-    const per = Math.ceil(words.length / Math.ceil(words.length / maxWords));
+  const chunks = lines.flatMap(({ words: words2 }) => {
+    const per = Math.ceil(words2.length / Math.ceil(words2.length / maxWords));
     const found = [];
-    for (let from = 0; from < words.length; from += per) {
-      const chunk = words.slice(from, from + per);
-      const next = words[from + per];
+    for (let from = 0; from < words2.length; from += per) {
+      const chunk = words2.slice(from, from + per);
+      const next = words2[from + per];
       const start = chunk[0].start;
       const last = chunk[chunk.length - 1].end;
       const end = next ? Math.min(next.start, last + 0.25) : last + 0.15;
@@ -50172,7 +50458,7 @@ function correctWord(text3, corrections, applied) {
 function storyCaptions(story, lines, corrections = [], applied) {
   return story.clips.flatMap((clip, i) => {
     const clipEnd = story.clips[i + 1]?.storyStart ?? story.total;
-    const spoken = lines.map(({ words }) => words.filter((w) => (w.start + w.end) / 2 >= clip.start && (w.start + w.end) / 2 < clip.end).map((w) => ({ text: correctWord(w.text, corrections, applied), start: r32(clip.storyStart + w.start - clip.start), end: r32(clip.storyStart + w.end - clip.start) }))).filter((words) => words.length > 0).map((words) => ({ start: words[0].start, end: words.at(-1).end, words }));
+    const spoken = lines.map(({ words: words2 }) => words2.filter((w) => (w.start + w.end) / 2 >= clip.start && (w.start + w.end) / 2 < clip.end).map((w) => ({ text: correctWord(w.text, corrections, applied), start: r32(clip.storyStart + w.start - clip.start), end: r32(clip.storyStart + w.end - clip.start) }))).filter((words2) => words2.length > 0).map((words2) => ({ start: words2[0].start, end: words2.at(-1).end, words: words2 }));
     return captionChunks(spoken).map((chunk) => ({ ...chunk, start: r32(Math.max(chunk.start, clip.storyStart)), end: r32(Math.min(chunk.end, clipEnd)) }));
   });
 }
@@ -50246,9 +50532,9 @@ async function renderStory(input, settings, tools) {
   if (lacking.length > 0) throw new ExecutionFailure(`video-edit story needs these sounds in ${manifest}: ${lacking.join(", ")}.`);
   const raw = await tools.readText("run", wordsFile);
   if (raw === void 0) throw new ExecutionFailure(`Words file ${wordsFile} was not found in the run folder.`);
-  const { lines, words, sentences, laughs } = readWords(raw, wordsFile);
+  const { lines, words: words2, sentences, laughs } = readWords(raw, wordsFile);
   const plan = validatePlan(input.story, [...library.keys()]);
-  const story = normalizeStory(plan, words, sentences, laughs);
+  const story = normalizeStory(plan, words2, sentences, laughs);
   const files = matchSources(story.clips, sources);
   const frame = settings.layout === "frame";
   const background = `${tools.stateDir}/backgrounds/${settings.background}.jpg`;
@@ -50322,7 +50608,7 @@ async function renderStory(input, settings, tools) {
     emojis: done.emojis.map((m, i) => ({ at: m.storyTime, until: m.until, name: m.name, glyph: m.glyph, funny: m.funny, word: m.word, sound: pops[i]?.sound ?? null })),
     emojisDropped: [...available].filter(([, found]) => !found).map(([name]) => name),
     sounds: [...audio, ...done.effects.map((e) => ({ sound: e.sound, at: e.storyTime }))].map(({ at: at2, sound }) => ({ at: at2, sound })).sort((a, b) => a.at - b.at),
-    ...applied.size > 0 ? { corrections: [...applied].map(([{ heard, meant }, words2]) => ({ heard, meant, words: words2 })) } : {},
+    ...applied.size > 0 ? { corrections: [...applied].map(([{ heard, meant }, words3]) => ({ heard, meant, words: words3 })) } : {},
     issues: done.issues
   };
   return { ...input, [settings.outputKey]: short };
@@ -50467,21 +50753,21 @@ function parseLines(raw, file) {
     throw bad("is not valid JSON");
   }
   if (!isObject6(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
-  return data.lines.map((line2, index) => {
+  return data.lines.map((line2, index2) => {
     const valid = isObject6(line2) && num3(line2.start) && num3(line2.end) && typeof line2.text === "string" && Array.isArray(line2.words) && line2.words.every((word) => isObject6(word) && num3(word.start) && num3(word.end));
-    if (!valid) throw bad(`has a malformed line at index ${index}`);
+    if (!valid) throw bad(`has a malformed line at index ${index2}`);
     return line2;
   });
 }
 var length2 = (spans) => spans.reduce((sum2, span) => sum2 + span.end - span.start, 0);
 var MIN_CAPTION = 0.2 - 1e-9;
-function keepSegments(words, moment, clip, { removePauses, maxPause, maxWordDuration }) {
-  const spoken = words.filter((word) => word.start >= moment.start && word.start <= moment.end).sort((a, b) => a.start - b.start);
+function keepSegments(words2, moment, clip, { removePauses, maxPause, maxWordDuration }) {
+  const spoken = words2.filter((word) => word.start >= moment.start && word.start <= moment.end).sort((a, b) => a.start - b.start);
   const kept = [];
   let cursor = moment.start;
   if (removePauses) {
-    spoken.forEach((next, index) => {
-      const prev = spoken[index - 1];
+    spoken.forEach((next, index2) => {
+      const prev = spoken[index2 - 1];
       const prevEnd = prev && Math.min(prev.end, prev.start + maxWordDuration);
       if (prevEnd === void 0 || next.start - prevEnd <= maxPause) return;
       const from = Math.max(prevEnd + maxPause / 2, cursor);
@@ -50572,8 +50858,8 @@ function ffmpegArgs(clipFile, segments, settings, sounds = []) {
     ...captions2 || headline !== "" ? ["subtitles=short.ass"] : []
   ].join(",");
   const mix = sounds.length === 0 ? "" : ";" + [
-    ...sounds.map(({ time, volume }, index) => `[${index + 1}:a]adelay=${Math.round(time * 1e3)}:all=1,volume=${Number((soundVolume * volume).toFixed(3))}[s${index + 1}]`),
-    `[ca]${sounds.map((_, index) => `[s${index + 1}]`).join("")}amix=inputs=${sounds.length + 1}:duration=first:normalize=0[outa]`
+    ...sounds.map(({ time, volume }, index2) => `[${index2 + 1}:a]adelay=${Math.round(time * 1e3)}:all=1,volume=${Number((soundVolume * volume).toFixed(3))}[s${index2 + 1}]`),
+    `[ca]${sounds.map((_, index2) => `[s${index2 + 1}]`).join("")}amix=inputs=${sounds.length + 1}:duration=first:normalize=0[outa]`
   ].join(";");
   return [
     "-y",
@@ -50731,7 +51017,7 @@ function titleSize(text3, width) {
 function frameTimes(moment, offset, count2) {
   const first = moment.start + (moment.end - moment.start) * 0.1;
   const span = (moment.end - moment.start) * 0.8;
-  return Array.from({ length: count2 }, (_, index) => first + span * (index + 0.5) / count2 - offset);
+  return Array.from({ length: count2 }, (_, index2) => first + span * (index2 + 0.5) / count2 - offset);
 }
 async function candidates(job, settings, tools) {
   const payoff = job.clip === void 0 && Array.isArray(job.clips) ? job.clips.find((item) => isObject7(item) && item.role === "payoff") : void 0;
@@ -50750,9 +51036,9 @@ async function candidates(job, settings, tools) {
   const graph = `[0:v]crop='min(iw,ih*9/16)':'min(ih,iw*16/9)',scale=${width}:${height}:flags=lanczos,split[full][half];[half]scale=${previewWidth}:-2[small]`;
   const coverFrames = [];
   const frames = [];
-  for (const [index, time] of times.entries()) {
-    const full = `cover-${index + 1}.jpg`;
-    const small = `cover-${index + 1}-small.jpg`;
+  for (const [index2, time] of times.entries()) {
+    const full = `cover-${index2 + 1}.jpg`;
+    const small = `cover-${index2 + 1}-small.jpg`;
     const output2 = ["-frames:v", "1", "-q:v", String(quality)];
     await tools.run("ffmpeg", [
       "-hide_banner",
@@ -50818,9 +51104,9 @@ function composeGraph(settings, focus, title) {
 async function compose(job, settings, tools) {
   const frames = job.coverFrames;
   if (!Array.isArray(frames) || frames.length === 0) throw new ExecutionFailure("Thumbnail coverFrames must be a non-empty array of file names.");
-  const names = frames.map((frame, index2) => fileName2(frame, `coverFrames[${index2}]`));
+  const names = frames.map((frame, index3) => fileName2(frame, `coverFrames[${index3}]`));
   const cover = object(job.cover, "cover");
-  const index = bounded(cover.index, "cover.index", 1, names.length, true);
+  const index2 = bounded(cover.index, "cover.index", 1, names.length, true);
   const focus = focusPixels(settings.width, settings.height, bounded(cover.focusX, "cover.focusX", 0, 1e3), bounded(cover.focusY, "cover.focusY", 0, 1e3));
   const meta = job.meta === void 0 ? {} : object(job.meta, "meta");
   if (meta.thumbnailText !== void 0 && typeof meta.thumbnailText !== "string") throw new ExecutionFailure("Thumbnail meta.thumbnailText must be text.");
@@ -50828,7 +51114,7 @@ async function compose(job, settings, tools) {
   if (title.split(" ").length > 3) throw new ExecutionFailure("Thumbnail meta.thumbnailText must be at most 3 words.");
   if (title) await tools.writeText("run", TITLE_FILE, title);
   const { timeoutMs } = settings;
-  const inputs = ["-i", names[index - 1], ...settings.arrow ? ["-i", ARROW_FILE] : []];
+  const inputs = ["-i", names[index2 - 1], ...settings.arrow ? ["-i", ARROW_FILE] : []];
   const graph = composeGraph(settings, focus, title);
   for (let quality = settings.quality; ; quality = Math.min(31, quality + 4)) {
     await tools.run("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", ...inputs, "-filter_complex", graph, "-frames:v", "1", "-q:v", String(quality), "thumbnail.jpg"], { timeoutMs });
@@ -51278,9 +51564,9 @@ async function runWorkflow(workflow, modules, input, options = {}) {
   if (!isValidTimeout(runOptions.agentTimeoutMs)) return failed(`agentTimeoutMs must be a positive integer no greater than ${maxRunTimeoutMs}.`, logs);
   if (!Array.isArray(modules)) return failed("Modules must be provided as an array.", logs);
   const inputValidation = validateContract("Workflow", workflow);
-  const moduleValidation = modules.flatMap((module, index) => {
+  const moduleValidation = modules.flatMap((module, index2) => {
     const result = validateContract("ModuleDefinition", module);
-    return result.errors.map((error) => `Module ${index + 1}: ${error}`);
+    return result.errors.map((error) => `Module ${index2 + 1}: ${error}`);
   });
   const validationErrors = [...inputValidation.errors, ...moduleValidation];
   if (!inputValidation.valid || moduleValidation.length > 0) return failed(validationErrors.join(" "), logs);
@@ -51665,7 +51951,7 @@ function createRunTools(options) {
       );
     });
   }
-  async function locate(area, path) {
+  async function locate2(area, path) {
     if (area !== "run" && area !== "state") throw new ExecutionFailure(`Unknown tool area ${JSON.stringify(area)}.`);
     const refuse = () => new ExecutionFailure(`Path ${JSON.stringify(path)} must be a relative path inside the ${area} folder.`);
     if (typeof path !== "string" || path === "" || path.includes("\0") || isAbsolute(path) || path.split(/[\\/]/).includes("..")) throw refuse();
@@ -51707,7 +51993,7 @@ function createRunTools(options) {
       });
     },
     async readText(area, path) {
-      const file = await locate(area, path);
+      const file = await locate2(area, path);
       const info = await stat2(file).catch((error) => {
         if (error.code === "ENOENT" || error.code === "ENOTDIR") return void 0;
         throw error;
@@ -51717,7 +52003,7 @@ function createRunTools(options) {
       return readFile2(file, "utf8");
     },
     async writeText(area, path, text3) {
-      const file = await locate(area, path);
+      const file = await locate2(area, path);
       await mkdir(dirname2(file), { recursive: true });
       const temp = join2(dirname2(file), `.tmp-${randomUUID2()}`);
       try {
@@ -54186,9 +54472,9 @@ function applyOperation(workflow, operation, workspace, idMap) {
   }
   if (op === "removeEdge") {
     const edgeId = nonEmptyString(operation.edgeId, "/edgeId");
-    const index = workflow.edges.findIndex(({ id }) => id === edgeId);
-    if (index < 0) fail2("UNKNOWN_EDGE", `Unknown edge ID: ${edgeId}.`);
-    workflow.edges.splice(index, 1);
+    const index2 = workflow.edges.findIndex(({ id }) => id === edgeId);
+    if (index2 < 0) fail2("UNKNOWN_EDGE", `Unknown edge ID: ${edgeId}.`);
+    workflow.edges.splice(index2, 1);
     return { change: { op, edgeId }, topologyChanged: true };
   }
   if (op === "importBlueprint") {
@@ -54691,7 +54977,7 @@ async function httpFailure(response, what) {
   const message2 = `${what} failed with HTTP ${response.status}.`;
   throw response.status === 429 || response.status >= 500 ? new TransientHttpFailure(message2) : new ExecutionFailure(message2);
 }
-async function readJson(response, what) {
+async function readJson2(response, what) {
   if (!response.ok) return httpFailure(response, what);
   try {
     return await response.json();
@@ -54748,7 +55034,7 @@ function createAccessTokenSource(options) {
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" }).toString()
     }, REQUEST_TIMEOUT_MS, "Google token refresh");
-    const body = await readJson(response, "Google token refresh");
+    const body = await readJson2(response, "Google token refresh");
     if (typeof body?.access_token !== "string" || body.access_token === "") throw new ExecutionFailure("Google token refresh returned an invalid response.");
     const seconds2 = typeof body.expires_in === "number" ? Math.max(body.expires_in - 60, 0) : 0;
     cached = { token: body.access_token, expiresAt: now() + seconds2 * 1e3 };
@@ -54947,7 +55233,7 @@ var KEPT_STATUS_FIELDS = ["embeddable", "license", "publicStatsViewable", "selfD
 async function apiGet(fetchImpl, accessToken, path, params, what) {
   const url = new URL(`${API_ROOT}/${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  return readJson(await timedFetch(fetchImpl, url.href, { headers: { authorization: `Bearer ${accessToken}` } }, REQUEST_TIMEOUT_MS3, what), what);
+  return readJson2(await timedFetch(fetchImpl, url.href, { headers: { authorization: `Bearer ${accessToken}` } }, REQUEST_TIMEOUT_MS3, what), what);
 }
 async function verifyChannelOwnership(fetchImpl, accessToken, handle) {
   const ids = async (params) => {
@@ -55079,7 +55365,7 @@ function createYouTubeDataApi(options) {
       const kept = Object.fromEntries(KEPT_STATUS_FIELDS.filter((field2) => video.status && field2 in video.status).map((field2) => [field2, video.status[field2]]));
       const url = new URL(`${API_ROOT}/videos`);
       url.searchParams.set("part", "status");
-      await readJson(await timedFetch(fetchImpl, url.href, {
+      await readJson2(await timedFetch(fetchImpl, url.href, {
         method: "PUT",
         headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json" },
         body: JSON.stringify({ id: videoId, status: { ...kept, privacyStatus: privacy } })

@@ -64,7 +64,7 @@ jobs:
           key: state-cartoon-clips-shorts-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: state-cartoon-clips-shorts-
       - name: Restore business assets
-        run: mkdir -p data/state/businesses/ed7654f3-0915-41d5-ac2d-990efcd69940 && cp -R businesses/cartoon-clips-shorts/state/. data/state/businesses/ed7654f3-0915-41d5-ac2d-990efcd69940/
+        run: mkdir -p data/state/businesses/ed7654f3-0915-41d5-ac2d-990efcd69940 && cp -R businesses/cartoon-clips-shorts/state/. data/state/businesses/ed7654f3-0915-41d5-ac2d-990efcd69940/ && cp -Rn businesses/cartoon-clips-shorts/seed/. data/state/businesses/ed7654f3-0915-41d5-ac2d-990efcd69940/
       - name: Write credentials for EpicVideoClips101
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_EPICVIDEOCLIPS101 }}

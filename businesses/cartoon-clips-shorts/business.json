@@ -12,93 +12,38 @@
           "moduleId": "start",
           "position": {
             "x": 40,
-            "y": 40
+            "y": 581
           },
           "config": {}
-        },
-        {
-          "id": "pick-show",
-          "moduleId": "random",
-          "position": {
-            "x": 335,
-            "y": 40
-          },
-          "config": {
-            "options": [
-              "Family Guy",
-              "Rick and Morty",
-              "Futurama",
-              "American Dad",
-              "Bob's Burgers",
-              "King of the Hill",
-              "South Park"
-            ]
-          }
-        },
-        {
-          "id": "find-episode",
-          "moduleId": "media-fetch",
-          "position": {
-            "x": 630,
-            "y": 50
-          },
-          "config": {
-            "mode": "search",
-            "excludeWords": [
-              "reaction",
-              "review",
-              "explained",
-              "recap",
-              "trailer",
-              "teaser",
-              "promo",
-              "sneak peek",
-              "first look",
-              "behind the scenes",
-              "interview",
-              "podcast",
-              "music video",
-              "lofi",
-              "lo-fi",
-              "everything we know"
-            ],
-            "queries": [
-              "https://www.youtube.com/channel/UC1MEMnZEDKqLPu-B-AHIsyw/search?query={show}",
-              "https://www.youtube.com/channel/UCgPClNr5VSYC3syrDUIlzLw/search?query={show}",
-              "https://www.youtube.com/channel/UCgCudMsK-kxYxB2RgiS3bzQ/search?query={show}",
-              "https://www.youtube.com/channel/UCsv4YOF2RBYh0NQ1vuHQ-hg/search?query={show}",
-              "https://www.youtube.com/channel/UC7R27sAWc_DqOldtI1JcYhQ/search?query={show}",
-              "https://www.youtube.com/channel/UC7fZ-QNFi7amcOncIl6owxA/search?query={show}",
-              "https://www.youtube.com/channel/UCE5mQnNl8Q4H2qcv4ikaXeA/search?query={show}"
-            ],
-            "titleIncludes": "{show}",
-            "minDuration": 90
-          }
         },
         {
           "id": "get-transcript",
           "moduleId": "media-fetch",
           "position": {
-            "x": 40,
-            "y": 322
+            "x": 630,
+            "y": 243
           },
           "config": {
             "mode": "captions",
-            "transcriptUnit": "sentence"
+            "transcriptUnit": "sentence",
+            "hotspots": true,
+            "commentsToScan": 300,
+            "transcribeUpTo": 1500
           }
         },
         {
           "id": "pick-moment",
           "moduleId": "agent",
           "position": {
-            "x": 335,
-            "y": 482
+            "x": 925,
+            "y": 89
           },
           "config": {
-            "prompt": "You pick the payoff of a story-style YouTube Short from a video of the show named in `show`. `transcript` lists the video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Choose the single most shocking, insane or unhinged self-contained moment, the kind that makes a viewer think 'how did that happen?': a character snapping, violence, an explosion or disaster, a betrayal, something gross, or an ordinary scene that spirals into chaos. It needs a build-up earlier in the video that leads to it. The payoff is 10 to 25 seconds, starting at a sentence's start time and ending at a sentence's end time, after the reaction has played out. Avoid recaps, intros, credits, ads, sponsor segments and moments that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
+            "prompt": "You pick the payoff of a story-style YouTube Short from a video of the show named in `brief.show`. `brief` says why this video was chosen (`route`, `angle`, `occasion`, `why`). `transcript` lists the video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. If `hint` is present, it is where the scene we were looking for is in this video (`hint.start`-`hint.end` seconds, matched from what is said): the payoff must contain it, extended to a self-contained moment around it. Otherwise use `hotspots`, the parts viewers replayed, laughed at or pointed to in comments (each `##` header gives a time range and why it is hot), and prefer a moment inside one of them. Choose the single most shocking, insane or unhinged self-contained moment, the kind that makes a viewer think 'how did that happen?': a character snapping, violence, an explosion or disaster, a betrayal, something gross, or an ordinary scene that spirals into chaos. It needs a build-up earlier in the video that leads to it. The payoff is 10 to 25 seconds, starting at a sentence's start time and ending at a sentence's end time, after the reaction has played out. When `brief.occasion` is set, prefer a moment that is really about that occasion; if this video has none, pick its best moment anyway. Avoid recaps, intros, credits, ads, sponsor segments and moments that need earlier plot. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 8 words\", \"why\": \"one sentence\"}.",
             "format": "json",
             "inputKeys": [
-              "show"
+              "brief",
+              "hint"
             ],
             "requiredKeys": [
               "start",
@@ -108,7 +53,8 @@
             ],
             "outputKey": "moment",
             "fileKeys": [
-              "transcript"
+              "transcript",
+              "hotspots"
             ]
           }
         },
@@ -116,8 +62,8 @@
           "id": "edit-short",
           "moduleId": "video-edit",
           "position": {
-            "x": 1220,
-            "y": 565
+            "x": 1810,
+            "y": 601
           },
           "config": {
             "mode": "story",
@@ -129,14 +75,14 @@
           "id": "write-metadata",
           "moduleId": "agent",
           "position": {
-            "x": 1515,
-            "y": 525
+            "x": 2105,
+            "y": 507
           },
           "config": {
-            "prompt": "Write YouTube Shorts metadata for a clip from the show named in `show`. `moment.hook` and `moment.why` describe the moment; `source.title` is the title of the source video. Return only JSON: {\"title\": \"at most 70 characters, a curiosity-gap title that makes the viewer need to see what happens, names the main character, true to the scene, for example 'Peter did WHAT to the car?' or 'Rick insults Jerry and then this happens', no emojis\", \"description\": \"3 to 5 sentences: open with a hook line that makes someone want to watch (YouTube shows about the first 100 characters), say what happens and who is in the scene, say why it is shocking without giving away the payoff, then end with a line crediting the show, such as Clip from <show>. Do not put hashtags in the description.\", \"hashtags\": [\"8 to 10 hashtag words without the # sign: first shorts, then the show name, then the main character, then other characters, the network or genre, and the moment's topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show name\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
+            "prompt": "Write YouTube Shorts metadata for a clip from the show named in `brief.show`. `brief` says why it was chosen; when `brief.occasion` is set and the scene is really about it, tie the title and description to that occasion (never invent a link); when `brief.route` is remake, write our own title and never copy `brief.remakeOf.title`. `moment.hook` and `moment.why` describe the moment; `source.title` is the title of the source video. Return only JSON: {\"title\": \"at most 70 characters, a curiosity-gap title that makes the viewer need to see what happens, names the main character, true to the scene, for example 'Peter did WHAT to the car?' or 'Rick insults Jerry and then this happens', no emojis\", \"description\": \"3 to 5 sentences: open with a hook line that makes someone want to watch (YouTube shows about the first 100 characters), say what happens and who is in the scene, say why it is shocking without giving away the payoff, then end with a line crediting the show, such as Clip from <show>. Do not put hashtags in the description.\", \"hashtags\": [\"8 to 10 hashtag words without the # sign: first shorts, then the show name, then the main character, then other characters, the network or genre, and the moment's topic; letters and digits only, no spaces\"], \"tags\": [\"5 to 8 lowercase search keywords including the show name\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
             "format": "json",
             "inputKeys": [
-              "show",
+              "brief",
               "source",
               "moment"
             ],
@@ -154,8 +100,8 @@
           "id": "publish",
           "moduleId": "youtube-publish",
           "position": {
-            "x": 1810,
-            "y": 525
+            "x": 2400,
+            "y": 507
           },
           "config": {
             "channelHandle": "@EpicVideoClips101",
@@ -167,8 +113,8 @@
           "id": "done",
           "moduleId": "output",
           "position": {
-            "x": 2105,
-            "y": 525
+            "x": 2695,
+            "y": 507
           },
           "config": {}
         },
@@ -176,8 +122,8 @@
           "id": "failed",
           "moduleId": "error",
           "position": {
-            "x": 1220,
-            "y": 401
+            "x": 1810,
+            "y": 109
           },
           "config": {
             "message": "Cartoon Clips run stopped: retries exhausted."
@@ -187,14 +133,14 @@
           "id": "plan-story",
           "moduleId": "agent",
           "position": {
-            "x": 630,
-            "y": 192
+            "x": 1220,
+            "y": 152
           },
           "config": {
-            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from a cartoon clip of the show in `show`, for a channel that posts the most shocking and insane cartoon moments. `moment` is the payoff already chosen as the climax (seconds in the video in `source`). `transcript` is the whole video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Build a story that opens on the shock and then jumps back to show how it happened: (1) hook: the 3 to 5 seconds at the peak of the payoff, the most shocking instant (the scream, the explosion, the moment it all goes wrong), shown first so the viewer thinks 'how did that happen?'; (2) intro: 3 to 7 seconds where the scene starts, before the build-up, so the story jumps back to the beginning; (3) beats: 2 to 4 short clips of 4 to 9 seconds, in order, between the intro and the payoff, that build up to it so each cut follows on from the previous one and the last beat leads straight into the payoff; (4) payoff: the given moment, ending only after the reaction has fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; aim for 40 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 6 words, the on-screen title: a curiosity hook about what happens, naming the main character\", \"clips\": [{\"role\": \"hook\" | \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
+            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from a cartoon clip of the show in `brief.show`, for a channel that posts the most shocking and insane cartoon moments. `moment` is the payoff already chosen as the climax (seconds in the video in `source`). `transcript` is the whole video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Build a story that opens on the shock and then jumps back to show how it happened: (1) hook: the 3 to 5 seconds at the peak of the payoff, the most shocking instant (the scream, the explosion, the moment it all goes wrong), shown first so the viewer thinks 'how did that happen?'; (2) intro: 3 to 7 seconds where the scene starts, before the build-up, so the story jumps back to the beginning; (3) beats: 2 to 4 short clips of 4 to 9 seconds, in order, between the intro and the payoff, that build up to it so each cut follows on from the previous one and the last beat leads straight into the payoff; (4) payoff: the given moment, ending only after the reaction has fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; aim for 40 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 6 words, the on-screen title: a curiosity hook about what happens, naming the main character, and tied to `brief.occasion` only when the scene is really about it (never invent a link)\", \"clips\": [{\"role\": \"hook\" | \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
             "format": "json",
             "inputKeys": [
-              "show",
+              "brief",
               "source",
               "moment"
             ],
@@ -214,33 +160,185 @@
           "id": "download-clips",
           "moduleId": "media-fetch",
           "position": {
-            "x": 925,
-            "y": 565
+            "x": 1515,
+            "y": 601
           },
           "config": {
             "mode": "sections"
           }
+        },
+        {
+          "id": "pick-route",
+          "moduleId": "random",
+          "position": {
+            "x": 335,
+            "y": 581
+          },
+          "config": {
+            "options": [
+              "main",
+              "main",
+              "main",
+              "main",
+              "main",
+              "main",
+              "calendar",
+              "calendar",
+              "remake",
+              "remake"
+            ],
+            "outputKey": "route"
+          }
+        },
+        {
+          "id": "index-catalog",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 630,
+            "y": 581
+          },
+          "config": {
+            "mode": "index",
+            "indexChannels": [
+              "https://www.youtube.com/channel/UC1MEMnZEDKqLPu-B-AHIsyw/videos",
+              "https://www.youtube.com/channel/UCgPClNr5VSYC3syrDUIlzLw/videos",
+              "https://www.youtube.com/channel/UCgCudMsK-kxYxB2RgiS3bzQ/videos",
+              "https://www.youtube.com/channel/UCsv4YOF2RBYh0NQ1vuHQ-hg/videos",
+              "https://www.youtube.com/channel/UC7R27sAWc_DqOldtI1JcYhQ/videos",
+              "https://www.youtube.com/channel/UC7fZ-QNFi7amcOncIl6owxA/videos",
+              "https://www.youtube.com/channel/UCE5mQnNl8Q4H2qcv4ikaXeA/videos"
+            ],
+            "indexPerRun": 10,
+            "indexListSize": 300,
+            "minDuration": 90,
+            "maxDuration": 10800
+          }
+        },
+        {
+          "id": "rising",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 925,
+            "y": 581
+          },
+          "config": {
+            "mode": "search",
+            "queries": [
+              "https://www.youtube.com/channel/UC1MEMnZEDKqLPu-B-AHIsyw/videos",
+              "https://www.youtube.com/channel/UCgPClNr5VSYC3syrDUIlzLw/videos",
+              "https://www.youtube.com/channel/UCgCudMsK-kxYxB2RgiS3bzQ/videos",
+              "https://www.youtube.com/channel/UCsv4YOF2RBYh0NQ1vuHQ-hg/videos",
+              "https://www.youtube.com/channel/UC7R27sAWc_DqOldtI1JcYhQ/videos",
+              "https://www.youtube.com/channel/UC7fZ-QNFi7amcOncIl6owxA/videos",
+              "https://www.youtube.com/channel/UCE5mQnNl8Q4H2qcv4ikaXeA/videos"
+            ],
+            "pick": "list",
+            "listSize": 25,
+            "sort": "velocity",
+            "maxAgeDays": 21,
+            "maxResults": 40,
+            "minDuration": 90,
+            "maxDuration": 10800,
+            "excludeWords": [
+              "reaction",
+              "review",
+              "explained",
+              "recap",
+              "trailer",
+              "teaser",
+              "promo",
+              "sneak peek",
+              "first look",
+              "behind the scenes",
+              "interview",
+              "podcast",
+              "music video",
+              "lofi",
+              "lo-fi",
+              "everything we know"
+            ],
+            "outputKey": "rising"
+          }
+        },
+        {
+          "id": "trending-shorts",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 1220,
+            "y": 581
+          },
+          "config": {
+            "mode": "search",
+            "onlyWhen": "route=remake",
+            "queries": [
+              "https://www.youtube.com/results?search_query=Family+Guy&sp=EgQIAxgB",
+              "https://www.youtube.com/results?search_query=Rick+and+Morty&sp=EgQIAxgB",
+              "https://www.youtube.com/results?search_query=Futurama&sp=EgQIAxgB",
+              "https://www.youtube.com/results?search_query=American+Dad&sp=EgQIAxgB",
+              "https://www.youtube.com/results?search_query=Bobs+Burgers&sp=EgQIAxgB",
+              "https://www.youtube.com/results?search_query=King+of+the+Hill&sp=EgQIAxgB",
+              "https://www.youtube.com/results?search_query=South+Park&sp=EgQIAxgB"
+            ],
+            "pick": "list",
+            "listSize": 10,
+            "sort": "velocity",
+            "maxAgeDays": 7,
+            "maxResults": 30,
+            "minDuration": 10,
+            "maxDuration": 180,
+            "withCaptions": 5,
+            "excludeWords": [
+              "reaction",
+              "review",
+              "explained",
+              "theory",
+              "tier list",
+              "ranking",
+              "compilation",
+              "trailer"
+            ],
+            "outputKey": "trendingShorts"
+          }
+        },
+        {
+          "id": "research-brief",
+          "moduleId": "agent",
+          "position": {
+            "x": 1515,
+            "y": 454
+          },
+          "config": {
+            "prompt": "You plan the next YouTube Short for a channel that posts the most shocking and insane moments from adult animated shows. We can only clip these shows, from their official channels: Family Guy, Rick and Morty, Futurama, American Dad, Bob's Burgers, King of the Hill, South Park. `today` is today's date. `route` says which kind of Short this run makes:\n- main: what is hot right now. `rising` lists official uploads from the last three weeks, fastest-rising first (`velocity` = views per day, `ageDays`, `uploaded`, `views`). Use web search (at most 4 searches) to find which of these shows is in the news this week: a new season or episode, a premiere, finale or special, or an episode people are talking about. Choose from `rising`: prefer an upload of a show that is in the news, otherwise the highest velocity. Set `sourceId` to its id; leave `quotes` and `keywords` empty.\n- calendar: a seasonal Short. Find the next occasion within 21 days of `today` that people in the UK or US celebrate (for example Halloween, Bonfire Night, Thanksgiving, Black Friday, Christmas, New Year, Valentine's Day, Easter, the Super Bowl). Choose the show with a famous episode or scene for it (web search '<show> <occasion> episode' if unsure). Set `occasion` to its name and date, and `keywords` to 3 to 6 words or short phrases that characters would actually SAY in such a scene (for example 'trick or treat', 'costume', 'halloween', 'pumpkin', 'haunted'). If no occasion is within 21 days, plan a main Short instead and say so in `why`.\n- remake: `trendingShorts` lists other channels' cartoon Shorts from the last week, fastest-rising first, each with `captions` (what is said in it). Choose the best-performing one whose dialogue is distinctive and comes from one of our shows. Identify the show and, using web search if useful (the quotes, the title, wiki transcripts), the episode. Many trending Shorts come from episodes that are not on the official channels, so give the finder several chances: set `quotes` to the 2 most distinctive lines (at least 6 words each, copied exactly from `captions`) from each of up to 3 of the best captioned Shorts of our shows, best first; whichever is found in an official upload is used; `keywords` to 3 to 5 distinctive words spoken in the scene; and `remakeOf` to its id and title. If none is usable, plan a main Short instead and say so in `why`.\nIf `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"route\": \"main\" | \"calendar\" | \"remake\", \"show\": \"one of the shows\", \"angle\": \"release\" | \"buzz\" | \"rising\" | \"seasonal\" | \"remake\", \"sourceId\": \"an id from rising, or empty\", \"quotes\": [\"...\"], \"keywords\": [\"...\"], \"occasion\": \"name and date, or empty\", \"remakeOf\": {\"id\": \"...\", \"title\": \"...\"} or null, \"why\": \"two or three sentences: what the data and searches showed, and why this choice\"}.",
+            "format": "json",
+            "inputKeys": [
+              "route",
+              "rising",
+              "trendingShorts"
+            ],
+            "requiredKeys": [
+              "route",
+              "show",
+              "why"
+            ],
+            "outputKey": "brief",
+            "webSearch": true,
+            "includeDate": true
+          }
+        },
+        {
+          "id": "locate",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 1810,
+            "y": 406
+          },
+          "config": {
+            "mode": "locate",
+            "fromKey": "rising"
+          }
         }
       ],
       "edges": [
-        {
-          "id": "start--next--pick-show",
-          "source": "start",
-          "sourcePort": "next",
-          "target": "pick-show"
-        },
-        {
-          "id": "pick-show--next--find-episode",
-          "source": "pick-show",
-          "sourcePort": "next",
-          "target": "find-episode"
-        },
-        {
-          "id": "find-episode--next--get-transcript",
-          "source": "find-episode",
-          "sourcePort": "next",
-          "target": "get-transcript"
-        },
         {
           "id": "get-transcript--next--pick-moment",
           "source": "get-transcript",
@@ -252,12 +350,6 @@
           "source": "get-transcript",
           "sourcePort": "missing",
           "target": "retry-episode"
-        },
-        {
-          "id": "retry-episode--retry--find-episode",
-          "source": "retry-episode",
-          "sourcePort": "retry",
-          "target": "find-episode"
         },
         {
           "id": "retry-episode--exhausted--failed",
@@ -354,6 +446,72 @@
           "source": "download-clips",
           "sourcePort": "next",
           "target": "edit-short"
+        },
+        {
+          "id": "start--next--pick-route",
+          "source": "start",
+          "sourcePort": "next",
+          "target": "pick-route"
+        },
+        {
+          "id": "pick-route--next--index-catalog",
+          "source": "pick-route",
+          "sourcePort": "next",
+          "target": "index-catalog"
+        },
+        {
+          "id": "index-catalog--next--rising",
+          "source": "index-catalog",
+          "sourcePort": "next",
+          "target": "rising"
+        },
+        {
+          "id": "rising--next--trending-shorts",
+          "source": "rising",
+          "sourcePort": "next",
+          "target": "trending-shorts"
+        },
+        {
+          "id": "trending-shorts--next--research-brief",
+          "source": "trending-shorts",
+          "sourcePort": "next",
+          "target": "research-brief"
+        },
+        {
+          "id": "research-brief--next--locate",
+          "source": "research-brief",
+          "sourcePort": "next",
+          "target": "locate"
+        },
+        {
+          "id": "research-brief--invalid--retry-brief",
+          "source": "research-brief",
+          "sourcePort": "invalid",
+          "target": "retry-brief"
+        },
+        {
+          "id": "retry-brief--retry--research-brief",
+          "source": "retry-brief",
+          "sourcePort": "retry",
+          "target": "research-brief"
+        },
+        {
+          "id": "retry-brief--exhausted--failed",
+          "source": "retry-brief",
+          "sourcePort": "exhausted",
+          "target": "failed"
+        },
+        {
+          "id": "locate--next--get-transcript",
+          "source": "locate",
+          "sourcePort": "next",
+          "target": "get-transcript"
+        },
+        {
+          "id": "retry-episode--retry--locate",
+          "source": "retry-episode",
+          "sourcePort": "retry",
+          "target": "locate"
         }
       ],
       "operators": [
@@ -361,8 +519,8 @@
           "id": "retry-episode",
           "kind": "retry",
           "position": {
-            "x": 369,
-            "y": 370
+            "x": 1549,
+            "y": 322
           },
           "maxRetries": 3
         },
@@ -370,8 +528,8 @@
           "id": "retry-moment",
           "kind": "retry",
           "position": {
-            "x": 664,
-            "y": 334
+            "x": 1254,
+            "y": 40
           },
           "maxRetries": 3
         },
@@ -379,8 +537,8 @@
           "id": "retry-metadata",
           "kind": "retry",
           "position": {
-            "x": 959,
-            "y": 400
+            "x": 1549,
+            "y": 185
           },
           "maxRetries": 3
         },
@@ -388,15 +546,24 @@
           "id": "retry-story",
           "kind": "retry",
           "position": {
-            "x": 959,
-            "y": 197
+            "x": 1549,
+            "y": 48
           },
           "maxRetries": 3
+        },
+        {
+          "id": "retry-brief",
+          "kind": "retry",
+          "position": {
+            "x": 1254,
+            "y": 469
+          },
+          "maxRetries": 2
         }
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-19T13:02:09.313Z"
+    "updatedAt": "2026-10-19T17:51:03.997Z"
   },
   "modules": [
     {
@@ -562,6 +729,12 @@
           "label": "Web search",
           "type": "boolean",
           "default": false
+        },
+        {
+          "key": "includeDate",
+          "label": "Include today's date",
+          "type": "boolean",
+          "default": false
         }
       ],
       "defaults": {
@@ -572,7 +745,8 @@
         "imageKeys": [],
         "fileKeys": [],
         "outputKey": "",
-        "webSearch": false
+        "webSearch": false,
+        "includeDate": false
       },
       "outputs": [
         {
@@ -628,6 +802,10 @@
           "webSearch": {
             "type": "boolean",
             "title": "Web search"
+          },
+          "includeDate": {
+            "title": "Include today's date",
+            "type": "boolean"
           }
         }
       }
@@ -790,7 +968,9 @@
             "captions",
             "section",
             "sections",
-            "download"
+            "download",
+            "index",
+            "locate"
           ]
         },
         {
@@ -981,6 +1161,100 @@
           "label": "First wait after a block (s)",
           "type": "number",
           "default": 30
+        },
+        {
+          "key": "maxAgeDays",
+          "label": "Maximum upload age (days, 0 = any)",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "sort",
+          "label": "List order",
+          "type": "select",
+          "default": "views",
+          "options": [
+            "views",
+            "velocity"
+          ]
+        },
+        {
+          "key": "onlyWhen",
+          "label": "Run only when (key=value)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "withCaptions",
+          "label": "Items with captions text",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "indexChannels",
+          "label": "Index channels",
+          "type": "json",
+          "default": []
+        },
+        {
+          "key": "indexPerRun",
+          "label": "Videos indexed per run",
+          "type": "number",
+          "default": 20
+        },
+        {
+          "key": "indexListSize",
+          "label": "Channel uploads listed",
+          "type": "number",
+          "default": 400
+        },
+        {
+          "key": "indexDir",
+          "label": "Index folder",
+          "type": "string",
+          "default": "index"
+        },
+        {
+          "key": "indexTimeoutMs",
+          "label": "Index time limit (ms)",
+          "type": "number",
+          "default": 240000
+        },
+        {
+          "key": "fromKey",
+          "label": "Fallback list (job key)",
+          "type": "string",
+          "default": "rising"
+        },
+        {
+          "key": "minQuoteScore",
+          "label": "Least quote match (0-1)",
+          "type": "number",
+          "default": 0.6
+        },
+        {
+          "key": "minKeywordHits",
+          "label": "Least keywords in a scene",
+          "type": "number",
+          "default": 2
+        },
+        {
+          "key": "keywordWindow",
+          "label": "Keyword window (s)",
+          "type": "number",
+          "default": 60
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": null
+        },
+        {
+          "key": "transcribeUpTo",
+          "label": "Transcribe uncaptioned videos up to (s)",
+          "type": "number",
+          "default": 0
         }
       ],
       "defaults": {
@@ -1030,7 +1304,21 @@
         "clipTail": 5,
         "payoffTail": 15,
         "blockedRetries": 3,
-        "blockedWaitSeconds": 30
+        "blockedWaitSeconds": 30,
+        "maxAgeDays": 0,
+        "sort": "views",
+        "onlyWhen": "",
+        "withCaptions": 0,
+        "indexChannels": [],
+        "indexPerRun": 20,
+        "indexListSize": 400,
+        "indexDir": "index",
+        "indexTimeoutMs": 240000,
+        "fromKey": "rising",
+        "minQuoteScore": 0.6,
+        "minKeywordHits": 2,
+        "keywordWindow": 60,
+        "transcribeUpTo": 0
       },
       "outputs": [
         {
@@ -1059,7 +1347,9 @@
               "captions",
               "section",
               "sections",
-              "download"
+              "download",
+              "index",
+              "locate"
             ]
           },
           "queries": {
@@ -1176,6 +1466,70 @@
           },
           "blockedWaitSeconds": {
             "title": "First wait after a block (s)",
+            "type": "number"
+          },
+          "maxAgeDays": {
+            "title": "Maximum upload age (days, 0 = any)",
+            "type": "number"
+          },
+          "sort": {
+            "title": "List order",
+            "type": "string",
+            "enum": [
+              "views",
+              "velocity"
+            ]
+          },
+          "onlyWhen": {
+            "title": "Run only when (key=value)",
+            "type": "string"
+          },
+          "withCaptions": {
+            "title": "Items with captions text",
+            "type": "number"
+          },
+          "indexChannels": {
+            "title": "Index channels",
+            "type": "array"
+          },
+          "indexPerRun": {
+            "title": "Videos indexed per run",
+            "type": "number"
+          },
+          "indexListSize": {
+            "title": "Channel uploads listed",
+            "type": "number"
+          },
+          "indexDir": {
+            "title": "Index folder",
+            "type": "string"
+          },
+          "indexTimeoutMs": {
+            "title": "Index time limit (ms)",
+            "type": "number"
+          },
+          "fromKey": {
+            "title": "Fallback list (job key)",
+            "type": "string"
+          },
+          "minQuoteScore": {
+            "title": "Least quote match (0-1)",
+            "type": "number"
+          },
+          "minKeywordHits": {
+            "title": "Least keywords in a scene",
+            "type": "number"
+          },
+          "keywordWindow": {
+            "title": "Keyword window (s)",
+            "type": "number"
+          },
+          "outputKey": {
+            "title": "Output key",
+            "type": "string"
+          },
+          "transcribeUpTo": {
+            "title": "Transcribe uncaptioned videos up to (s)",
             "type": "number"
           }
         }
