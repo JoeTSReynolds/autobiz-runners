@@ -47242,6 +47242,7 @@ function starterModules() {
       field("crf", "Quality (CRF)", "number", 20),
       field("renderTimeoutMs", "Render time limit (ms)", "number", 6e5),
       field("background", "Story background", "string", "brick"),
+      field("layout", "Story layout", "select", "box", ["box", "frame"]),
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
       field("outputKey", "Output key", "string", "short")
@@ -49887,6 +49888,8 @@ var SIZE = BOX.x1 - BOX.x0;
 var K = SIZE / 1080;
 var SHAKE_PX = Math.round(14 * K);
 var STICKER = { w: 340, canvas: 540, x: 540, y: BOX.y1 };
+var FRAME_H = 608;
+var FRAME_STICKER_Y = (1920 + FRAME_H) / 2;
 var EXIT = 0.2;
 var RUN = ["-y", "-v", "error", "-filter_threads", "2", "-filter_complex_threads", "2"];
 var THREADS = ["-threads", "4"];
@@ -49903,12 +49906,14 @@ var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.
 var r32 = (x) => Math.round(x * 1e3) / 1e3;
 var n3 = (x) => Number(x.toFixed(3));
 var n4 = (x) => Number(x.toFixed(4));
-function boxGraph({ frames, first, last, intro, effects }, cmdsFile) {
+function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "box") {
+  const frame = layout === "frame";
+  const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : [K, SHAKE_PX, SIZE, SIZE];
   const length3 = frames / FPS;
   const dIn = 0.2;
   const dOut = first ? 0.25 : 0.2;
-  const blurIn = 12 * K;
-  const blurOut = (first ? 30 : 12) * K;
+  const blurIn = 12 * k1;
+  const blurOut = (first ? 30 : 12) * k1;
   const zooms = [
     ...effects.filter((e) => e.visual === "zoom").map((e) => `0.18*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.35),2)`),
     ...first ? [] : [`0.25*max(0,1-time/${dIn})`],
@@ -49926,10 +49931,10 @@ function boxGraph({ frames, first, last, intro, effects }, cmdsFile) {
     if (!first && t < dIn) cmds.push(`${n4(Math.max(0, t - 1e-3))} gblur@b sigma ${n4(blurIn * (1 - t / dIn) + 0.1)};`);
     else if (!last && t >= length3 - dOut - 1e-6) cmds.push(`${n4(t - 1e-3)} gblur@b sigma ${n4(blurOut * Math.min(1, (t - (length3 - dOut) + 1 / FPS) / dOut))};`);
   }
-  const chain = [`fps=${FPS}`, "crop='min(iw,ih)':'min(iw,ih)'", `scale=${SIZE}:${SIZE}`, "setsar=1"];
+  const chain = frame ? [`scale=${w}:${h}:force_original_aspect_ratio=decrease`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2`, "setsar=1"] : [`fps=${FPS}`, "crop='min(iw,ih)':'min(iw,ih)'", `scale=${SIZE}:${SIZE}`, "setsar=1"];
   if (zooms.length || shakes.length) {
     chain.push(
-      `zoompan=z='1+${[...zooms, `0.04*${shake}`].join("+")}':x='iw/2-(iw/zoom/2)+${SHAKE_PX}*sin(time*131.7)*${shake}':y='ih/2-(ih/zoom/2)+${SHAKE_PX}*sin(time*173.3+1.3)*${shake}':d=1:s=${SIZE}x${SIZE}:fps=${FPS}`
+      `zoompan=z='1+${[...zooms, `0.04*${shake}`].join("+")}':x='iw/2-(iw/zoom/2)+${shakePx}*sin(time*131.7)*${shake}':y='ih/2-(ih/zoom/2)+${shakePx}*sin(time*173.3+1.3)*${shake}':d=1:s=${w}x${h}:fps=${FPS}`
     );
   }
   if (cmds.length) {
@@ -49940,13 +49945,13 @@ function boxGraph({ frames, first, last, intro, effects }, cmdsFile) {
     const amount = `min(1,${flashes.join("+")})`;
     chain.push(`eq=brightness='0.5*${amount}':contrast='1-${amount}':saturation='1-${amount}':eval=frame`);
   }
-  chain.push("format=yuv420p");
+  const video = frame ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]` : `[0:v]${[...chain, "format=yuv420p"].join(",")}[v]`;
   const audio = [
     `[0:a]${STEREO}[a0]`,
     ...effects.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=0.8[s${k}]`),
     effects.length ? `[a0]${effects.map((_, k) => `[s${k}]`).join("")}amix=inputs=${effects.length + 1}:duration=first:normalize=0,alimiter=limit=0.95[aout]` : "[a0]anull[aout]"
   ];
-  return { graph: `[0:v]${chain.join(",")}[v];${audio.join(";")}`, cmds: cmds.length ? cmds.join("\n") + "\n" : "" };
+  return { graph: `${video};${audio.join(";")}`, cmds: cmds.length ? cmds.join("\n") + "\n" : "" };
 }
 function boxArgs(o) {
   return [
@@ -49958,7 +49963,7 @@ function boxArgs(o) {
     o.file,
     ...o.soundFiles.flatMap((file) => ["-i", file]),
     "-filter_complex",
-    boxGraph(o.piece, o.cmdsFile).graph,
+    boxGraph(o.piece, o.cmdsFile, o.layout).graph,
     "-map",
     "[v]",
     "-map",
@@ -50079,7 +50084,7 @@ function soundPlan(story, seconds2) {
   });
   return { transitions, pops };
 }
-function stickerChain(input, { at: at2, until }) {
+function stickerChain(input, { at: at2, until }, y) {
   const u = `(t-${n3(at2)})`;
   const out = n3(Math.max(0.35, until - at2 - EXIT));
   const scale = `if(lt(${u},0.2),1.2*(1-pow(1-${u}/0.2,2)),if(lt(${u},0.35),1.2-0.2*(${u}-0.2)/0.15,if(lt(${u},${out}),1,max(0,1-(${u}-${out})/${EXIT}))))`;
@@ -50087,21 +50092,25 @@ function stickerChain(input, { at: at2, until }) {
   const { w, canvas } = STICKER;
   return {
     chain: `[${input}:v]format=rgba,scale=${w}:${w}:flags=lanczos,pad=${canvas}:${canvas}:${(canvas - w) / 2}:${(canvas - w) / 2}:color=black@0,setpts=PTS+${n3(at2)}/TB,rotate=a='${angle}':c=none:ow=${canvas}:oh=${canvas}:bilinear=1,scale=w='max(2,trunc(${canvas}*(${scale})/2)*2)':h=-1:eval=frame:flags=bilinear[e${input}]`,
-    overlay: `overlay=x='${STICKER.x}-w/2':y='${STICKER.y}-h/2+6*sin(2*PI*1.2*${u}+1)':eval=frame:enable='between(t,${n3(at2)},${n3(until)})'`
+    overlay: `overlay=x='${STICKER.x}-w/2':y='${y}-h/2+6*sin(2*PI*1.2*${u}+1)':eval=frame:enable='between(t,${n3(at2)},${n3(until)})'`
   };
 }
-function finalArgs(total, stickers, audio) {
+function finalArgs(total, stickers, audio, layout = "box") {
+  const frame = layout === "frame";
+  const base = frame ? 1 : 2;
   const video = [
-    `[1:v]format=yuv420p,ass=${FILES.particles}[bg]`,
-    "[0:v]setpts=PTS-STARTPTS[box]",
-    `[bg][box]overlay=${BOX.x0}:${BOX.y0}:shortest=1,drawbox=x=${BOX.x0 - 4}:y=${BOX.y0 - 4}:w=${SIZE + 8}:h=${SIZE + 8}:color=white@0.85:t=4[b0]`,
+    ...frame ? ["[0:v]setpts=PTS-STARTPTS[b0]"] : [
+      `[1:v]format=yuv420p,ass=${FILES.particles}[bg]`,
+      "[0:v]setpts=PTS-STARTPTS[box]",
+      `[bg][box]overlay=${BOX.x0}:${BOX.y0}:shortest=1,drawbox=x=${BOX.x0 - 4}:y=${BOX.y0 - 4}:w=${SIZE + 8}:h=${SIZE + 8}:color=white@0.85:t=4[b0]`
+    ],
     ...stickers.flatMap((sticker, j) => {
-      const { chain, overlay } = stickerChain(2 + j, sticker);
-      return [chain, `[b${j}][e${2 + j}]${overlay}[b${j + 1}]`];
+      const { chain, overlay } = stickerChain(base + j, sticker, frame ? FRAME_STICKER_Y : STICKER.y);
+      return [chain, `[b${j}][e${base + j}]${overlay}[b${j + 1}]`];
     }),
     `[b${stickers.length}]ass=${FILES.text},format=yuv420p[v]`
   ];
-  const first = 2 + stickers.length;
+  const first = base + stickers.length;
   const sound = [
     `[0:a]asetpts=PTS-STARTPTS,${STEREO}[a0]`,
     ...audio.map(({ at: at2, skip, volume }, j) => `[${first + j}:a]${STEREO},${skip > 0 ? `atrim=start=${skip.toFixed(3)},asetpts=PTS-STARTPTS,` : ""}adelay=${Math.round(at2 * 1e3)}:all=1,volume=${volume}[s${j}]`),
@@ -50112,14 +50121,7 @@ function finalArgs(total, stickers, audio) {
     ...THREADS,
     "-i",
     FILES.boxes,
-    "-loop",
-    "1",
-    "-framerate",
-    String(FPS),
-    "-t",
-    total.toFixed(3),
-    "-i",
-    FILES.background,
+    ...frame ? [] : ["-loop", "1", "-framerate", String(FPS), "-t", total.toFixed(3), "-i", FILES.background],
     ...stickers.flatMap(({ file, at: at2, until }) => ["-loop", "1", "-framerate", String(FPS), "-t", (until - at2 + 0.3).toFixed(3), "-i", file]),
     ...audio.flatMap(({ file }) => ["-i", file]),
     "-filter_complex",
@@ -50248,8 +50250,9 @@ async function renderStory(input, settings, tools) {
   const plan = validatePlan(input.story, [...library.keys()]);
   const story = normalizeStory(plan, words, sentences, laughs);
   const files = matchSources(story.clips, sources);
+  const frame = settings.layout === "frame";
   const background = `${tools.stateDir}/backgrounds/${settings.background}.jpg`;
-  if (!await present(tools, background, timeoutMs)) throw new ExecutionFailure(`video-edit story background ${background} was not found in the business state folder.`);
+  if (!frame && !await present(tools, background, timeoutMs)) throw new ExecutionFailure(`video-edit story background ${background} was not found in the business state folder.`);
   const ends = [];
   const notes = [];
   for (const [i, clip] of story.clips.entries()) {
@@ -50270,7 +50273,7 @@ async function renderStory(input, settings, tools) {
     const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, last: i === timed.clips.length - 1, intro: i === 1, effects };
     const cmdsFile = `story-box${i}.cmds`;
     const out = `story-box${i}.mp4`;
-    await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile).cmds);
+    await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout).cmds);
     await ffmpeg(boxArgs({
       file: files[i].file,
       seek: r32(clip.start - files[i].offset),
@@ -50278,13 +50281,14 @@ async function renderStory(input, settings, tools) {
       soundFiles: effects.map((e) => `${sfx}/${library.get(e.sound).file}`),
       cmdsFile,
       out,
-      crf: settings.crf
+      crf: settings.crf,
+      layout: settings.layout
     }));
     boxes.push(out);
   }
   await tools.writeText("run", FILES.list, concatList(boxes));
   await ffmpeg(concatArgs(FILES.list, FILES.boxes));
-  await ffmpeg(backgroundArgs(background, FILES.background));
+  if (!frame) await ffmpeg(backgroundArgs(background, FILES.background));
   const available = /* @__PURE__ */ new Map();
   for (const name of new Set(timed.emojis.map((m) => m.name))) {
     let found = await present(tools, emojiPath(name), timeoutMs);
@@ -50303,13 +50307,13 @@ async function renderStory(input, settings, tools) {
   const emojis = settleEmojis(timed.emojis.filter((m) => available.get(m.name)), timed.total);
   const done = { ...timed, emojis };
   const seed = settings.storySeed !== "" ? settings.storySeed : isObject5(input.source) && typeof input.source.id === "string" ? input.source.id : "";
-  await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
+  if (!frame) await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
   const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline };
   const applied = /* @__PURE__ */ new Map();
   await tools.writeText("run", FILES.text, storyTextAss(plan.headline, storyCaptions(done, lines, plan.corrections, applied), text3));
   const { transitions, pops } = soundPlan(done, (sound) => library.get(sound).seconds);
   const audio = [...transitions, ...pops.filter((pop) => pop !== null)].map((a) => ({ ...a, file: `${sfx}/${library.get(a.sound).file}` }));
-  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio));
+  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout));
   const short = {
     file: FILES.output,
     duration: done.total,
@@ -50350,6 +50354,7 @@ var DEFAULTS3 = {
   crf: 20,
   renderTimeoutMs: 6e5,
   background: "brick",
+  layout: "box",
   emojiDir: "emoji",
   storySeed: "",
   outputKey: "short"
@@ -50388,6 +50393,7 @@ var RULES = {
   crf: [between(0, 51), "a number from 0 to 51"],
   renderTimeoutMs: [positive, "a positive number of milliseconds"],
   background: [folderName, "a plain file name without the .jpg, such as brick"],
+  layout: [(value) => value === "box" || value === "frame", "'box' or 'frame'"],
   emojiDir: [folderName, "a plain folder name"],
   storySeed: [str, "a string"],
   outputKey: [(value) => typeof value === "string" && value !== "", "a non-empty string"]

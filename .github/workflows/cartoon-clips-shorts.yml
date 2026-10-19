@@ -23,6 +23,19 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
+      - name: Check YouTube token for EpicVideoClips101
+        env:
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_EPICVIDEOCLIPS101 }}
+          CLIENT_ID: ${{ secrets.YOUTUBE_DATA_API_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.YOUTUBE_DATA_API_CLIENT_SECRET }}
+        run: |
+          response=$(curl -sS --retry 3 https://oauth2.googleapis.com/token -d grant_type=refresh_token \
+            --data-urlencode "client_id=$CLIENT_ID" --data-urlencode "client_secret=$CLIENT_SECRET" \
+            --data-urlencode "refresh_token=$(printf '%s' "$YOUTUBE_TOKEN" | jq -r .refresh_token)")
+          if ! printf '%s' "$response" | jq -e .access_token > /dev/null 2>&1; then
+            echo "::error::Google rejected the YouTube token for @EpicVideoClips101: $(printf '%s' "$response" | jq -c '{error, error_description}' 2>/dev/null). Run npm run youtube:authorize -- @EpicVideoClips101 in autobiz-manager, then update the YOUTUBE_TOKEN_EPICVIDEOCLIPS101 secret."
+            exit 1
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -50,6 +63,8 @@ jobs:
           path: data/state
           key: state-cartoon-clips-shorts-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: state-cartoon-clips-shorts-
+      - name: Restore business assets
+        run: mkdir -p data/state/businesses/ed7654f3-0915-41d5-ac2d-990efcd69940 && cp -R businesses/cartoon-clips-shorts/state/. data/state/businesses/ed7654f3-0915-41d5-ac2d-990efcd69940/
       - name: Write credentials for EpicVideoClips101
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_EPICVIDEOCLIPS101 }}
