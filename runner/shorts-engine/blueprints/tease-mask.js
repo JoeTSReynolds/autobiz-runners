@@ -1,5 +1,5 @@
 // Open loop: an ink panel slides up over the scene and glitches, with a line of text and a masked number
-// ("??¢") that scrambles through symbols and pulses until the scene ends. Resolve it later with a reveal blueprint.
+// ("??", plus `unit` if set) that scrambles through symbols and pulses until the scene ends. Resolve it later with a reveal blueprint.
 BP.define("tease-mask", {
   overlay: true,
   covers: 0.5, // the panel fills the frame 0.5 s after it starts
@@ -10,9 +10,9 @@ BP.define("tease-mask", {
   },
   html: (p) => `<div class="tm" style="position:absolute;inset:0;background-color:var(--dark)">
     <div class="pad t tm-txt" style="top:300px;color:var(--light);font-size:64px">${p.lines.map((l) => `<div class="line">${l}</div>`).join("")}</div>
-    <div class="pad d tm-num" style="top:560px;font-size:560px;color:var(--accent-text)">??${p.unit || "¢"}</div></div>`,
+    <div class="pad d tm-num" style="top:560px;font-size:560px;color:var(--accent-text)">??${p.unit || ""}</div></div>`,
   animate(c) {
-    const { tl, p } = c, unit = p.unit || "¢", t = c.at(p.textAt), t0 = t + 0.2, dur = c.sceneEnd - t0, node = c.q(".tm-num"), o = { p: 0 };
+    const { tl, p } = c, unit = p.unit || "", t = c.at(p.textAt), t0 = t + 0.2, dur = c.sceneEnd - t0, node = c.q(".tm-num"), o = { p: 0 };
     tl.fromTo(c.sel(".tm"), { yPercent: 100 }, { yPercent: 0, duration: 0.45, ease: "expo.out" }, c.start);
     tl.to(c.sel(".tm"), { keyframes: [-30, 22, -12, 0].map((x) => ({ x, duration: 0.05, ease: "steps(1)" })) }, c.start + 0.45);
     c.sfx(c.start, "whoosh-big", { dur: 0.5 });

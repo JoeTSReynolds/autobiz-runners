@@ -43,8 +43,6 @@ def retry(port, limit, redo):
     for _ in range(limit):
         if port != "invalid" and port != "missing":
             return port
-        if port == "missing":
-            job["agentErrors"] = ["that pick had no readable source pages or usable images; choose a different candidate"]
         port = redo()
     return port
 

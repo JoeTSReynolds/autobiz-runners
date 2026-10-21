@@ -48,6 +48,14 @@ def feeds(job, cfg, run, state):
     return ("next" if cands else "missing"), {"candidates": cands, "laneContext": context, "recentHooks": (jread(state / "hooks.json", []))[-3:]}, out
 
 
+def drop_pick(job, why):
+    # a dead end for this story: remove it from the candidates and say why, so the next pick cannot repeat it
+    pick = job.get("pick") or {}
+    cand = next((c for c in job.get("candidates", []) if c["id"] == pick.get("id")), {})
+    rest = [c for c in job.get("candidates", []) if c["id"] != pick.get("id")]
+    return {"candidates": rest, "agentErrors": [f"{cand.get('title', pick.get('id'))!r} {why}; it was removed from the candidates, so choose a different one"]}
+
+
 def sources(job, cfg, run, state):
     pick = job.get("pick") or {}
     cand = next((c for c in job.get("candidates", []) if c["id"] == pick.get("id")), None)
@@ -56,7 +64,7 @@ def sources(job, cfg, run, state):
     code, out = sh(sys.executable, here / "sources.py", run / "sources", *[s["url"] for s in cand["sources"]][:3])
     ok = [s for s in jread(run / "sources" / "sources.json", []) if s["ok"]]
     if not ok:
-        return "missing", {}, out
+        return "missing", drop_pick(job, "had no readable source pages"), out
     text = "\n\n".join(f"## {s['id']}: {s['title']} ({s['url']})\n" + (run / "sources" / s["file"]).read_text()[:12000] for s in ok)
     (run / "sources.txt").write_text(text)  # one plain file at the run root, for an agent's fileKeys
     return "next", {"sources": [{k: s[k] for k in ("id", "url", "title")} for s in ok], "sourcesText": "sources.txt"}, out
@@ -92,7 +100,9 @@ def images(job, cfg, run, state):
         if not code:
             cands.append({k: r.get(k) for k in ("provider", "title", "page", "license", "artist", "description")} | {"n": n})
             previews.append(f"preview{n}.jpg")
-    return ("next" if cands else "missing"), {"imageCandidates": cands, "imagePreviews": previews}, f"{len(cands)} image candidates"
+    if not cands:
+        return "missing", drop_pick(job, "had no free-licence images"), "0 image candidates"
+    return "next", {"imageCandidates": cands, "imagePreviews": previews}, f"{len(cands)} image candidates"
 
 
 def brief(job, cfg, run, state):
@@ -213,6 +223,11 @@ def record(job, cfg, run, state):
         hooks.append(job["storyboard"]["hook"])
     (state / "covered.json").write_text(json.dumps(covered[-300:], indent=1, ensure_ascii=False))
     (state / "hooks.json").write_text(json.dumps(hooks[-20:]))
+    wish = (job.get("storyboard") or {}).get("wish")
+    if wish:  # the animation the storyboard writer wanted and did not have: what to build next
+        wishes = jread(state / "wishes.json", [])
+        wishes.append({"date": time.strftime("%Y-%m-%d"), "lane": job.get("lane"), "wish": wish})
+        (state / "wishes.json").write_text(json.dumps(wishes[-200:], indent=1, ensure_ascii=False))
     return "next", {}, f"recorded; {len(covered)} stories covered"
 
 

@@ -48688,6 +48688,12 @@ var WorkspaceRepository = class {
     const interrupted = this.database.transaction(() => {
       for (const { document } of active) {
         const run2 = JSON.parse(document);
+        const at2 = run2.checkpoint && run2.workflow.nodes.find((node) => node.id === run2.checkpoint.nodeId);
+        if (run2.status === "waiting" && at2 && run2.modules.find((module) => module.id === at2.moduleId)?.kind === "approval") {
+          run2.logs.push({ id: `${run2.id}:restart:${Date.now()}`, time: (/* @__PURE__ */ new Date()).toISOString(), nodeId: at2.id, moduleName: "Runtime", level: "info", message: "Server restarted; still waiting for approval.", attempt: 1 });
+          update.run(run2.status, JSON.stringify(run2), run2.id);
+          continue;
+        }
         run2.status = "interrupted";
         run2.error = "Process restarted before this run finished.";
         run2.finishedAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -48857,6 +48863,8 @@ function parseReply(reply, requiredKeys) {
   const missing = requiredKeys.filter((key) => !Object.hasOwn(value, key));
   return missing.length ? { reason: `Agent reply is missing required keys: ${missing.join(", ")}.` } : { value };
 }
+var MAX_ATTEMPTS = 3;
+var RETRY_NOTE = "This is a retry. `previousAttempts` lists your earlier answers and why each was rejected: do not repeat them, and fix every reason.";
 async function execute4({ input, config, module }, { agent, tools }) {
   if (!agent) throw new ExecutionFailure("Agent module requires an explicitly configured agent adapter.");
   const prompt = typeof config.prompt === "string" ? config.prompt : "";
@@ -48876,12 +48884,36 @@ async function execute4({ input, config, module }, { agent, tools }) {
   }
   const texts = isObject(value) ? await fileTexts(value, fileKeys, tools) : {};
   const sent = isObject(value) && (inputKeys.length > 0 || fileKeys.length > 0) ? { ...Object.fromEntries([...inputKeys, "agentErrors"].filter((key) => Object.hasOwn(value, key)).map((key) => [key, value[key]])), ...texts } : value;
+  const slot = outputKey || "reply";
+  const kept = (key) => isObject(value) && isObject(value[key]) ? value[key] : {};
+  const history = Array.isArray(kept("agentHistory")[slot]) ? [...kept("agentHistory")[slot]] : [];
+  const reasons = isObject(value) && Array.isArray(value.agentErrors) && value.agentErrors.length > 0 ? value.agentErrors : void 0;
+  const last = Object.hasOwn(kept("agentLastReply"), slot) ? kept("agentLastReply")[slot] : outputKey && isObject(value) ? value[outputKey] : void 0;
+  if (reasons && last !== void 0) history.push({ answer: last, rejectedBecause: reasons });
+  const attempts = history.slice(-MAX_ATTEMPTS);
+  const retrying = attempts.length > 0 && reasons !== void 0;
+  const sentWithHistory = retrying && isObject(sent) ? { ...sent, previousAttempts: attempts } : sent;
+  const promptToSend = retrying ? `${prompt}
+
+${RETRY_NOTE}` : prompt;
+  const remember = (output2, raw) => {
+    const put = (key, v) => {
+      const map = { ...kept(key) };
+      if (v === void 0) delete map[slot];
+      else map[slot] = v;
+      if (Object.keys(map).length > 0) output2[key] = map;
+      else delete output2[key];
+    };
+    put("agentHistory", attempts.length > 0 ? attempts : void 0);
+    put("agentLastReply", raw);
+    return output2;
+  };
   const names = isObject(value) ? imageNames(value, imageKeys) : [];
   const now = /* @__PURE__ */ new Date();
   const today = `${now.toISOString().slice(0, 10)} (${now.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" })})`;
-  const frozenInput = deepFreeze(cloneJson(config.includeDate === true && isObject(sent) ? { ...sent, today } : sent));
+  const frozenInput = deepFreeze(cloneJson(config.includeDate === true && isObject(sentWithHistory) ? { ...sentWithHistory, today } : sentWithHistory));
   const frozenConfig = deepFreeze(cloneJson(config));
-  const result = names.length > 0 ? await agent(prompt, frozenInput, frozenConfig, names) : await agent(prompt, frozenInput, frozenConfig);
+  const result = names.length > 0 ? await agent(promptToSend, frozenInput, frozenConfig, names) : await agent(promptToSend, frozenInput, frozenConfig);
   if (!result || !Number.isFinite(result.cost) || result.cost < 0) {
     throw new ExecutionFailure("Agent adapter returned an invalid cost; expected a finite nonnegative amount.");
   }
@@ -48892,11 +48924,11 @@ async function execute4({ input, config, module }, { agent, tools }) {
     if (!("value" in parsed)) {
       if (!module?.outputs.some((port) => port.id === "invalid") || !isObject(value)) throw new ExecutionFailure(parsed.reason);
       const earlier = Array.isArray(value.agentErrors) ? value.agentErrors : [];
-      return { output: { ...value, agentErrors: [...earlier, parsed.reason] }, port: "invalid", cost: result.cost };
+      return { output: remember({ ...value, agentErrors: [...earlier, parsed.reason] }, reply), port: "invalid", cost: result.cost };
     }
     reply = parsed.value;
   }
-  return { output: outputKey && isObject(value) ? { ...value, [outputKey]: reply } : reply, port: "next", cost: result.cost };
+  return { output: outputKey && isObject(value) ? remember({ ...value, [outputKey]: reply }) : reply, port: "next", cost: result.cost };
 }
 
 // modules/approval/index.ts
@@ -52200,9 +52232,14 @@ var RunService = class {
   async close() {
     const finishedAt = (/* @__PURE__ */ new Date()).toISOString();
     for (const [id, active] of this.active) {
+      const run2 = this.repository.getRun(id);
+      if (run2?.status === "waiting" && active.approval) {
+        active.parked = true;
+        active.controller.abort("Server is shutting down.");
+        continue;
+      }
       active.controller.abort("Server is shutting down.");
       active.approval?.(false);
-      const run2 = this.repository.getRun(id);
       if (!run2 || !["queued", "running", "waiting"].includes(run2.status)) continue;
       run2.status = "cancelled";
       run2.error = "Server shut down before this run finished.";
@@ -52215,6 +52252,10 @@ var RunService = class {
     const run2 = this.repository.getRun(id);
     if (!run2 || run2.status !== "waiting") return void 0;
     const active = this.active.get(id);
+    if (!active && run2.checkpoint) {
+      this.launch(id, run2.checkpoint, approved);
+      return structuredClone(this.repository.getRun(id));
+    }
     if (!active?.approval) return void 0;
     active.approval(approved);
     active.approval = void 0;
@@ -52251,23 +52292,31 @@ var RunService = class {
     this.launch(run2.id, checkpoint);
     return structuredClone(run2);
   }
-  launch(id, startAt) {
+  launch(id, startAt, decided) {
     const run2 = this.repository.getRun(id);
     if (!run2) return;
     const active = { controller: new AbortController() };
     this.active.set(id, active);
     run2.status = "running";
     this.repository.saveRun(run2);
-    const task = this.execute(run2, active, startAt);
+    const task = this.execute(run2, active, startAt, decided);
     this.tasks.add(task);
     void task.catch(this.onError).finally(() => {
       this.active.delete(id);
       this.tasks.delete(task);
     });
   }
-  async execute(run2, active, startAt) {
+  async execute(run2, active, startAt, decided) {
     let providerCostUnreported = false;
+    let pending = decided;
     const approve = (node) => new Promise((resolve7) => {
+      if (pending !== void 0 && node.id === startAt?.nodeId) {
+        const decision = pending;
+        pending = void 0;
+        this.appendLog(run2.id, { id: `${run2.id}:approval:${node.id}:${Date.now()}`, time: (/* @__PURE__ */ new Date()).toISOString(), nodeId: node.id, moduleName: "Approval", level: "info", message: `${decision ? "Approved" : "Rejected"} after a server restart; resuming from this step.`, attempt: 1 });
+        resolve7(decision);
+        return;
+      }
       const current = this.repository.getRun(run2.id);
       if (!current || active.controller.signal.aborted) {
         resolve7(false);
@@ -52276,7 +52325,9 @@ var RunService = class {
       current.status = "waiting";
       this.repository.saveRun(current);
       active.approval = resolve7;
-      active.controller.signal.addEventListener("abort", () => resolve7(false), { once: true });
+      active.controller.signal.addEventListener("abort", () => {
+        if (!active.parked) resolve7(false);
+      }, { once: true });
       this.appendLog(run2.id, {
         id: `${run2.id}:approval:${node.id}:${Date.now()}`,
         time: (/* @__PURE__ */ new Date()).toISOString(),
@@ -52317,6 +52368,7 @@ var RunService = class {
         onCheckpoint: (checkpoint) => this.saveCheckpoint(run2.id, checkpoint)
       });
     } catch (error) {
+      if (active.parked) return;
       const latest2 = this.repository.getRun(run2.id);
       if (latest2 && latest2.status !== "cancelled") {
         latest2.status = active.controller.signal.aborted ? "cancelled" : "failed";
@@ -52327,7 +52379,7 @@ var RunService = class {
       return;
     }
     const latest = this.repository.getRun(run2.id);
-    if (!latest || latest.status === "cancelled") return;
+    if (!latest || latest.status === "cancelled" || active.parked) return;
     if (providerCostUnreported) {
       const agentNode = run2.workflow.nodes.find((node) => run2.modules.find((module) => module.id === node.moduleId)?.kind === "agent");
       if (agentNode) {

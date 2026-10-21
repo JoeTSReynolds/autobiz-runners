@@ -300,6 +300,18 @@ window.BP = (() => {
           if (v.length < (s.min || 0) || v.length > (s.max || 99)) errs.push(`${at}: ${v.length} items, need ${s.min || 0}..${s.max || 99}`);
           v.forEach((item, i) => check(s.of, item, `${at}[${i}]`, errs));
         }
+      } else if (t === "actor") {
+        const kinds = ["asset", "image", "label"].filter((k) => v && v[k] !== undefined);
+        if (!v || typeof v !== "object" || kinds.length !== 1) errs.push(`${at}: an actor needs exactly one of asset, image or label`);
+        else {
+          for (const k of Object.keys(v)) if (!["asset", "image", "label", "focus", "tint", "name"].includes(k)) errs.push(`${at}.${k}: not an actor field (asset, image, label, focus, tint, name)`);
+          if (v.asset !== undefined && !(window.ASSETS || {})[v.asset]) errs.push(`${at}.asset: "${v.asset}" is not an asset (have: ${Object.keys(window.ASSETS || {}).join(", ")})`);
+          if (v.label !== undefined && (typeof v.label !== "string" || !v.label || v.label.length > 12)) errs.push(`${at}.label: expected text of 1..12 chars`);
+          if (v.tint !== undefined && !["accent", "light", "mid"].includes(v.tint)) errs.push(`${at}.tint: one of accent, light, mid`);
+          if (v.tint !== undefined && v.asset === undefined) errs.push(`${at}.tint: only assets take a tint`);
+          if (v.name !== undefined && (typeof v.name !== "string" || !v.name || v.name.length > 18)) errs.push(`${at}.name: expected text of 1..18 chars`);
+          if (v.focus !== undefined && (v.image === undefined || [v.focus.x, v.focus.y].some((n) => typeof n !== "number" || n < 0 || n > 1))) errs.push(`${at}.focus: a point {x, y} between 0 and 1, for images only`);
+        }
       } else errs.push(`${at}: blueprint declares unknown slot type ${t}`);
     }
     return errs;

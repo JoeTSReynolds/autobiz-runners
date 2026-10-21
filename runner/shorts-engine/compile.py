@@ -38,6 +38,13 @@ looks = [f"{p['blueprint']} {p['params']['layout']}" if isinstance(p.get("params
 for look in sorted(set(looks)):
     if looks.count(look) > 2:
         errs.append(f"{looks.count(look)} scenes open with {look}, max 2; show the others with a different blueprint from the catalogue (a chart, timeline, diagram or measured photo)")
+# motion: the story's own actions (an impact, a flow, an orbit) carry it, not text and charts alone
+MOTION = {f.stem for f in (here / "blueprints" / "motion").glob("*.js")}
+used = sorted(set(names) & MOTION)
+if len(MOTION) >= 3 and len(used) < 3:
+    errs.append(f"use at least 3 different motion blueprints (marked motion in the catalogue) and cast the story's own actors in them; this uses {len(used)}: {', '.join(used) or 'none'}")
+if "wish" in sb and (not isinstance(sb["wish"], str) or len(sb["wish"]) > 160):
+    errs.append("wish: one line of text, at most 160 chars")
 # the first frame decides the swipe: open on a picture, not text on a blank ground
 # (statement and question photos are dimmed backdrops, so they still read as a blank frame)
 TEXT_ONLY = {"statement", "question", "timeline-years"}
@@ -50,7 +57,7 @@ if len(names) < 5:
     errs.append(f"only {len(names)} different blueprints ({', '.join(names)}); use at least 5 so the video keeps changing")
 files = {}
 for n in names:
-    f = next((d / f"{n}.js" for d in (here / "blueprints" / sb.get("lane", ""), here / "blueprints") if (d / f"{n}.js").is_file()), None)
+    f = next((d / f"{n}.js" for d in (here / "blueprints" / sb.get("lane", ""), here / "blueprints", here / "blueprints" / "motion") if (d / f"{n}.js").is_file()), None)
     if f: files[n] = f
     else: errs.append(f"blueprint {n!r} has no file in blueprints/ or blueprints/{sb.get('lane')}/")
 if errs:
@@ -65,7 +72,7 @@ for s in sb["scenes"]:
         out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", str(assets / img)], capture_output=True, text=True, check=True).stdout
         dims[img] = [int(n) for n in out.strip().split(",")[:2]]
 (root / "storyboard.js").write_text("window.STORYBOARD = " + json.dumps(sb, ensure_ascii=False) + ";\nwindow.IMAGES = " + json.dumps(dims) + "; // [width, height] for focus-point mapping\n")
-for f in list(lane.iterdir()) + [here / "lanes" / "gsap.min.js", here / "lanes" / "grain.png", here / "kit.js", here / "driver.js"]:
+for f in list(lane.iterdir()) + [here / "lanes" / "gsap.min.js", here / "lanes" / "grain.png", here / "kit.js", here / "actors.js", here / "driver.js"]:
     shutil.copy(f, assets / f.name)
 (assets / "bp").mkdir(exist_ok=True)
 for n, f in files.items():

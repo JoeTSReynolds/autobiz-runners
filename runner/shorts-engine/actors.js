@@ -1,0 +1,101 @@
+// Actors: what a motion blueprint moves around. A storyboard fills an actor slot with one of
+//   { asset: "<name>", tint?: "accent" | "light" | "mid" }   a curated flat icon (ASSETS below)
+//   { image: "<file from the brief>", focus?: {x, y} }        a photo, framed as a circle
+//   { label: "<short text>" }                                 a solid accent block with a word
+// plus an optional `name`, a caption under it. Assets draw in four colours that follow the ground:
+// --af (body), --as (shade), --ah (accent), --ab (cut-outs, the ground colour).
+// Icons use no ids, gradients or clip paths, so a clone (a shatter shard) renders exactly like the original.
+window.ASSETS = {
+  planet: `<circle cx="50" cy="50" r="46" fill="var(--af)"/><path d="M50 4A46 46 0 0 1 50 96A28 46 0 0 0 50 4Z" fill="var(--as)"/><ellipse cx="34" cy="36" rx="12" ry="5" fill="var(--as)" opacity=".55"/><ellipse cx="44" cy="62" rx="16" ry="5" fill="var(--as)" opacity=".55"/><ellipse cx="26" cy="52" rx="6" ry="3" fill="var(--as)" opacity=".55"/>`,
+  "ringed-planet": `<ellipse cx="50" cy="52" rx="49" ry="13" fill="none" stroke="var(--as)" stroke-width="5"/><circle cx="50" cy="50" r="31" fill="var(--af)"/><path d="M50 19A31 31 0 0 1 50 81A19 31 0 0 0 50 19Z" fill="var(--as)"/><path d="M1 52A49 13 0 0 0 99 52" fill="none" stroke="var(--ah)" stroke-width="5"/>`,
+  moon: `<circle cx="50" cy="50" r="44" fill="var(--af)"/><path d="M50 6A44 44 0 0 1 50 94A26 44 0 0 0 50 6Z" fill="var(--as)"/><circle cx="34" cy="34" r="9" fill="var(--as)"/><circle cx="30" cy="62" r="6" fill="var(--as)"/><circle cx="52" cy="70" r="4" fill="var(--as)"/><circle cx="56" cy="28" r="4" fill="var(--as)"/>`,
+  asteroid: `<path d="M22 18L48 8L74 14L92 36L88 64L70 88L40 92L14 76L8 46Z" fill="var(--as)"/><path d="M22 18L48 8L74 14L92 36L60 30L36 34L8 46Z" fill="var(--af)" opacity=".5"/><circle cx="36" cy="56" r="10" fill="var(--ab)" opacity=".45"/><circle cx="64" cy="66" r="6" fill="var(--ab)" opacity=".45"/><circle cx="66" cy="40" r="5" fill="var(--ab)" opacity=".45"/>`,
+  comet: `<path d="M8 92L58 34L66 42Z" fill="var(--ah)" opacity=".35"/><path d="M18 96L60 40L70 48Z" fill="var(--ah)" opacity=".6"/><path d="M4 76L56 32L62 40Z" fill="var(--as)" opacity=".5"/><circle cx="70" cy="30" r="20" fill="var(--af)"/><circle cx="64" cy="26" r="6" fill="var(--as)"/>`,
+  sun: `<circle cx="50" cy="50" r="28" fill="var(--ah)"/><g fill="var(--ah)"><rect x="47" y="2" width="6" height="14"/><rect x="47" y="84" width="6" height="14"/><rect x="2" y="47" width="14" height="6"/><rect x="84" y="47" width="14" height="6"/><rect x="47" y="2" width="6" height="14" transform="rotate(45 50 50)"/><rect x="47" y="2" width="6" height="14" transform="rotate(135 50 50)"/><rect x="47" y="2" width="6" height="14" transform="rotate(225 50 50)"/><rect x="47" y="2" width="6" height="14" transform="rotate(315 50 50)"/></g>`,
+  rocket: `<path d="M50 4C64 16 68 34 66 62L34 62C32 34 36 16 50 4Z" fill="var(--af)"/><path d="M50 4C58 10 62 18 64 26L36 26C38 18 42 10 50 4Z" fill="var(--ah)"/><circle cx="50" cy="40" r="7" fill="var(--ab)"/><circle cx="50" cy="40" r="4" fill="var(--as)"/><path d="M34 50L20 70L34 66Z M66 50L80 70L66 66Z" fill="var(--as)"/><path d="M40 62L50 96L60 62Z" fill="var(--ah)"/><path d="M45 62L50 82L55 62Z" fill="var(--af)"/>`,
+  satellite: `<rect x="38" y="38" width="24" height="24" fill="var(--af)"/><rect x="2" y="40" width="30" height="20" fill="var(--as)"/><rect x="68" y="40" width="30" height="20" fill="var(--as)"/><g stroke="var(--ab)" stroke-width="2"><path d="M12 40V60M22 40V60M78 40V60M88 40V60M2 50H32M68 50H98"/></g><path d="M32 50H38M62 50H68" stroke="var(--af)" stroke-width="3"/><path d="M50 38V22" stroke="var(--af)" stroke-width="3"/><path d="M38 22A12 12 0 0 0 62 22Z" fill="var(--ah)"/>`,
+  lander: `<path d="M30 30H70L76 58H24Z" fill="var(--af)"/><rect x="40" y="18" width="20" height="12" fill="var(--as)"/><path d="M50 18V6" stroke="var(--af)" stroke-width="3"/><circle cx="50" cy="6" r="4" fill="var(--ah)"/><g stroke="var(--as)" stroke-width="4" fill="none"><path d="M28 56L12 90M72 56L88 90M40 58L34 90M60 58L66 90"/></g><path d="M6 90H20M80 90H94" stroke="var(--af)" stroke-width="4"/><rect x="36" y="38" width="28" height="10" fill="var(--ah)"/>`,
+  capsule: `<path d="M34 10H66L82 72H18Z" fill="var(--af)"/><path d="M18 72H82C82 84 70 92 50 92C30 92 18 84 18 72Z" fill="var(--ah)"/><rect x="42" y="26" width="16" height="16" fill="var(--ab)"/><path d="M40 4H60V10H40Z" fill="var(--as)"/>`,
+  phone: `<rect x="24" y="4" width="52" height="92" rx="9" fill="var(--af)"/><rect x="29" y="12" width="42" height="72" fill="var(--ab)"/><rect x="42" y="7" width="16" height="3" rx="1.5" fill="var(--as)"/><rect x="42" y="88" width="16" height="3" rx="1.5" fill="var(--as)"/><rect x="33" y="18" width="34" height="10" fill="var(--ah)"/><rect x="33" y="32" width="26" height="4" fill="var(--as)"/><rect x="33" y="40" width="30" height="4" fill="var(--as)"/>`,
+  laptop: `<rect x="16" y="16" width="68" height="46" fill="var(--af)"/><rect x="21" y="21" width="58" height="36" fill="var(--ab)"/><path d="M6 66H94L88 78H12Z" fill="var(--as)"/><rect x="26" y="27" width="28" height="7" fill="var(--ah)"/><rect x="26" y="38" width="40" height="4" fill="var(--as)"/>`,
+  server: `<rect x="18" y="6" width="64" height="88" fill="var(--af)"/><g fill="var(--ab)"><rect x="24" y="12" width="52" height="20"/><rect x="24" y="40" width="52" height="20"/><rect x="24" y="68" width="52" height="20"/></g><g fill="var(--ah)"><circle cx="31" cy="22" r="3"/><circle cx="31" cy="50" r="3"/><circle cx="31" cy="78" r="3"/></g><g fill="var(--as)"><rect x="40" y="20" width="30" height="4"/><rect x="40" y="48" width="30" height="4"/><rect x="40" y="76" width="30" height="4"/></g>`,
+  cloud: `<path d="M26 74C12 74 4 64 4 54C4 42 14 34 26 36C30 22 42 14 56 16C72 18 82 30 82 44C92 46 96 54 96 61C96 69 90 74 82 74Z" fill="var(--af)"/><path d="M26 74H82C90 74 96 69 96 61L4 61C6 69 14 74 26 74Z" fill="var(--as)"/>`,
+  chip: `<rect x="22" y="22" width="56" height="56" fill="var(--as)"/><rect x="34" y="34" width="32" height="32" fill="var(--ah)"/><g fill="var(--af)"><rect x="28" y="8" width="6" height="12"/><rect x="40" y="8" width="6" height="12"/><rect x="54" y="8" width="6" height="12"/><rect x="66" y="8" width="6" height="12"/><rect x="28" y="80" width="6" height="12"/><rect x="40" y="80" width="6" height="12"/><rect x="54" y="80" width="6" height="12"/><rect x="66" y="80" width="6" height="12"/><rect x="8" y="28" width="12" height="6"/><rect x="8" y="40" width="12" height="6"/><rect x="8" y="54" width="12" height="6"/><rect x="8" y="66" width="12" height="6"/><rect x="80" y="28" width="12" height="6"/><rect x="80" y="40" width="12" height="6"/><rect x="80" y="54" width="12" height="6"/><rect x="80" y="66" width="12" height="6"/></g>`,
+  database: `<path d="M16 18V82C16 90 32 96 50 96C68 96 84 90 84 82V18Z" fill="var(--af)"/><ellipse cx="50" cy="18" rx="34" ry="12" fill="var(--as)"/><path d="M16 40C16 48 32 54 50 54C68 54 84 48 84 40M16 62C16 70 32 76 50 76C68 76 84 70 84 62" fill="none" stroke="var(--ab)" stroke-width="4"/><circle cx="72" cy="46" r="3" fill="var(--ah)"/>`,
+  document: `<path d="M18 4H62L82 24V96H18Z" fill="var(--af)"/><path d="M62 4V24H82Z" fill="var(--as)"/><g fill="var(--as)"><rect x="28" y="34" width="44" height="5"/><rect x="28" y="46" width="38" height="5"/><rect x="28" y="70" width="40" height="5"/><rect x="28" y="82" width="30" height="5"/></g><rect x="26" y="56" width="48" height="8" fill="var(--ah)"/>`,
+  lock: `<path d="M30 44V30C30 18 39 10 50 10C61 10 70 18 70 30V44" fill="none" stroke="var(--as)" stroke-width="9"/><rect x="18" y="42" width="64" height="52" fill="var(--af)"/><circle cx="50" cy="62" r="7" fill="var(--ab)"/><rect x="47" y="64" width="6" height="16" fill="var(--ab)"/><rect x="18" y="42" width="64" height="7" fill="var(--ah)"/>`,
+  shield: `<path d="M50 4L88 18V46C88 70 72 86 50 96C28 86 12 70 12 46V18Z" fill="var(--af)"/><path d="M50 4L88 18V46C88 70 72 86 50 96Z" fill="var(--as)"/><path d="M32 50L45 63L70 36" fill="none" stroke="var(--ah)" stroke-width="9"/>`,
+  robot: `<path d="M50 4V16" stroke="var(--as)" stroke-width="4"/><circle cx="50" cy="6" r="5" fill="var(--ah)"/><rect x="18" y="16" width="64" height="50" fill="var(--af)"/><rect x="26" y="28" width="48" height="20" fill="var(--ab)"/><circle cx="39" cy="38" r="6" fill="var(--ah)"/><circle cx="61" cy="38" r="6" fill="var(--ah)"/><rect x="38" y="54" width="24" height="5" fill="var(--as)"/><rect x="8" y="30" width="10" height="20" fill="var(--as)"/><rect x="82" y="30" width="10" height="20" fill="var(--as)"/><path d="M28 66H72L66 96H34Z" fill="var(--as)"/>`,
+  person: `<circle cx="50" cy="28" r="20" fill="var(--af)"/><path d="M12 96C12 70 28 54 50 54C72 54 88 70 88 96Z" fill="var(--af)"/><path d="M50 54C72 54 88 70 88 96H64C64 76 58 62 50 54Z" fill="var(--as)"/>`,
+  building: `<rect x="22" y="10" width="56" height="86" fill="var(--af)"/><rect x="62" y="10" width="16" height="86" fill="var(--as)"/><g fill="var(--ab)"><rect x="30" y="20" width="8" height="8"/><rect x="46" y="20" width="8" height="8"/><rect x="30" y="36" width="8" height="8"/><rect x="46" y="36" width="8" height="8"/><rect x="30" y="52" width="8" height="8"/><rect x="46" y="52" width="8" height="8"/><rect x="30" y="68" width="8" height="8"/><rect x="46" y="68" width="8" height="8"/></g><rect x="38" y="82" width="12" height="14" fill="var(--ah)"/>`,
+  coin: `<circle cx="50" cy="50" r="44" fill="var(--ah)"/><circle cx="50" cy="50" r="32" fill="none" stroke="var(--ab)" stroke-width="4" opacity=".5"/><path d="M58 34C54 30 40 30 40 40C40 50 60 48 60 60C60 70 44 70 40 66M50 24V76" fill="none" stroke="var(--ab)" stroke-width="6"/>`,
+  virus: `<g stroke="var(--as)" stroke-width="5"><path d="M50 4V20M50 80V96M4 50H20M80 50H96M17 17L29 29M71 71L83 83M17 83L29 71M71 29L83 17"/></g><g fill="var(--ah)"><circle cx="50" cy="4" r="5"/><circle cx="50" cy="96" r="5"/><circle cx="4" cy="50" r="5"/><circle cx="96" cy="50" r="5"/><circle cx="17" cy="17" r="5"/><circle cx="83" cy="83" r="5"/><circle cx="17" cy="83" r="5"/><circle cx="83" cy="17" r="5"/></g><circle cx="50" cy="50" r="30" fill="var(--af)"/><circle cx="42" cy="44" r="7" fill="var(--as)"/><circle cx="58" cy="60" r="5" fill="var(--as)"/>`,
+  tower: `<path d="M50 30L30 96H38L50 52L62 96H70Z" fill="var(--af)"/><path d="M38 76H62" stroke="var(--af)" stroke-width="4"/><circle cx="50" cy="26" r="7" fill="var(--ah)"/><g fill="none" stroke="var(--ah)" stroke-width="5"><path d="M34 12A22 22 0 0 0 34 40M66 12A22 22 0 0 1 66 40"/><path d="M22 2A36 36 0 0 0 22 50M78 2A36 36 0 0 1 78 50" opacity=".5"/></g>`,
+  packet: `<rect x="14" y="14" width="72" height="72" fill="var(--ah)"/><g fill="var(--ab)" opacity=".7"><rect x="26" y="28" width="48" height="7"/><rect x="26" y="44" width="36" height="7"/><rect x="26" y="60" width="44" height="7"/></g>`,
+  envelope: `<rect x="8" y="20" width="84" height="60" fill="var(--af)"/><path d="M8 20L50 54L92 20" fill="none" stroke="var(--as)" stroke-width="6"/><rect x="8" y="74" width="84" height="6" fill="var(--ah)"/>`,
+  rock: `<path d="M14 70L22 34L46 18L74 24L90 52L80 80L44 88Z" fill="var(--as)"/><path d="M22 34L46 18L74 24L60 40L34 46Z" fill="var(--af)" opacity=".55"/><path d="M60 40L90 52L80 80Z" fill="var(--ab)" opacity=".25"/>`,
+};
+
+window.ACT = (() => {
+  const TINT = { accent: "--af:var(--ah)", light: "--af:var(--light);--as:var(--mid)", mid: "--af:var(--mid)" };
+  // Centre-positioned actor of `size` px at (x, y). The visual is `.act-v` (what shatter clones); the name sits outside it.
+  function html(a, size, cls, x, y) {
+    let v;
+    if (a.asset) {
+      v = `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block;overflow:visible;${TINT[a.tint] || ""}">${ASSETS[a.asset]}</svg>`;
+    } else if (a.image) {
+      const m = kit.cover(a.image, size, size), [fx, fy] = m.px(a.focus || { x: 0.5, y: 0.5 });
+      const ix = Math.min(0, Math.max(size - m.iw, size / 2 - fx + m.ox)), iy = Math.min(0, Math.max(size - m.ih, size / 2 - fy + m.oy));
+      // the ring is a second hard circle under the photo (no soft shadow), so shards keep it
+      v = `<div style="position:absolute;inset:-10px;border-radius:50%;background-color:var(--ah)"></div><div style="position:absolute;inset:0;border-radius:50%;overflow:hidden;background-color:var(--ab)"><img src="assets/${a.image}" style="position:absolute;left:${ix}px;top:${iy}px;width:${m.iw}px;height:${m.ih}px" /></div>`;
+    } else {
+      v = `<div style="position:absolute;inset:${size * 0.12}px 0;background-color:var(--ah);color:var(--ink);display:flex;align-items:center;justify-content:center"><b class="d" data-fitw="${Math.round(size * 0.84)}" style="font-size:${Math.round(size * 0.26)}px;white-space:nowrap">${a.label}</b></div>`;
+    }
+    const name = a.name ? `<div class="t act-name" style="position:absolute;left:50%;top:100%;transform:translate(-50%,${Math.round(size * 0.1)}px);white-space:nowrap;font-size:46px;color:var(--af)">${a.name}</div>` : "";
+    return `<div class="act ${cls}" style="position:absolute;left:${x - size / 2}px;top:${y - size / 2}px;width:${size}px;height:${size}px"><div class="act-v" style="position:absolute;inset:0">${v}</div>${name}</div>`;
+  }
+
+  // Break the actor's visual into seeded radial shards from an impact point (ix, iy as fractions of its box):
+  // crack lines flash in just before `t`, then the shards fly out with spin and gravity and fade.
+  // o: { ix, iy, rings, sectors, force, gravity, dur, seed }. Returns the impact point in frame coordinates.
+  function shatter(c, sel, t, o = {}) {
+    const { tl } = c, wrap = c.q(sel), el = wrap.querySelector(".act-v"), W = wrap.offsetWidth, H = wrap.offsetHeight;
+    let seed = o.seed || 11;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const ix = o.ix ?? 0.5, iy = o.iy ?? 0.5, R = Math.max(W, H), sectors = o.sectors || 9;
+    const rings = [0, 0.16, 0.38, 0.7, 1.6];
+    const angs = Array.from({ length: sectors }, (_, k) => ((k + (rnd() - 0.5) * 0.55) / sectors) * Math.PI * 2);
+    // vertices are shared between neighbouring shards, so the pieces tile with no gaps
+    const vx = rings.map((r, i) => angs.map((a) => { const rr = i === 0 ? 0 : r * (1 + (rnd() - 0.5) * (i === rings.length - 1 ? 0 : 0.3)); return [ix * W + Math.cos(a) * rr * R, iy * H + Math.sin(a) * rr * R]; }));
+    const pct = ([x, y]) => `${((x / W) * 100).toFixed(2)}% ${((y / H) * 100).toFixed(2)}%`;
+    const dur = o.dur ?? 1.6, force = o.force ?? 560, g = o.gravity ?? 420;
+    tl.set(el, { autoAlpha: 0 }, t);
+    for (let i = 0; i < rings.length - 1; i++) for (let k = 0; k < sectors; k++) {
+      const k2 = (k + 1) % sectors, pts = i === 0 ? [vx[0][k], vx[1][k], vx[1][k2]] : [vx[i][k], vx[i + 1][k], vx[i + 1][k2], vx[i][k2]];
+      const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      if (cx < -W * 0.2 || cx > W * 1.2 || cy < -H * 0.2 || cy > H * 1.2) continue; // fully outside the actor: nothing to show
+      const s = el.cloneNode(true);
+      s.classList.add("shard");
+      Object.assign(s.style, { clipPath: `polygon(${pts.map(pct).join(",")})`, transformOrigin: `${cx}px ${cy}px` });
+      el.parentNode.appendChild(s);
+      const dx = cx - ix * W, dy = cy - iy * H, d = Math.hypot(dx, dy) || 1, v = force * (0.55 + rnd() * 0.9) * (0.7 + i * 0.15);
+      const tx = (dx / d) * v, ty = (dy / d) * v, d2 = dur * (0.8 + rnd() * 0.4);
+      tl.set(s, { autoAlpha: 0 }, 0).set(s, { autoAlpha: 1 }, t);
+      tl.fromTo(s, { x: 0, rotation: 0, scale: 1 }, { x: tx, rotation: (rnd() - 0.5) * 260, scale: 0.8 + rnd() * 0.3, duration: d2, ease: "power2.out", immediateRender: false }, t);
+      tl.fromTo(s, { y: 0 }, { keyframes: [{ y: ty * 0.75, duration: d2 * 0.45, ease: "power2.out" }, { y: ty + g, duration: d2 * 0.55, ease: "power2.in" }], immediateRender: false }, t);
+      tl.to(s, { opacity: 0, duration: d2 * 0.35, ease: "none" }, t + d2 * 0.65);
+    }
+    // crack lines along the shard seams, drawn in the last 0.18 s before the break
+    const seams = angs.map((_, k) => `M${vx.slice(0, 4).map((r) => r[k].map((n) => n.toFixed(1)).join(" ")).join("L")}`).join("");
+    const crack = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    crack.setAttribute("width", W); crack.setAttribute("height", H);
+    Object.assign(crack.style, { position: "absolute", left: 0, top: 0, overflow: "visible" });
+    crack.innerHTML = `<path d="${seams}" fill="none" stroke="var(--ab)" stroke-width="5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>`;
+    el.appendChild(crack);
+    tl.to(crack.firstChild, { attr: { "stroke-dashoffset": 0 }, duration: 0.18, ease: "power2.in" }, t - 0.18);
+    c.sfx(t - 0.18, "scratch", { dur: 0.2, gain: 0.12 });
+    return [parseFloat(wrap.style.left) + ix * W, parseFloat(wrap.style.top) + iy * H];
+  }
+
+  return { html, shatter, names: () => Object.keys(ASSETS) };
+})();

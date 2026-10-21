@@ -8,7 +8,9 @@ import vm from "node:vm";
 const lane = process.argv[2], here = path.dirname(new URL(import.meta.url).pathname), defs = [];
 const ctx = { BP: { define: (name, def) => defs.push({ name, def }) }, window: {} };
 vm.createContext(ctx);
-const files = [path.join(here, "blueprints"), path.join(here, "blueprints", lane)]
+vm.runInContext(fs.readFileSync(path.join(here, "actors.js"), "utf8"), ctx); // the asset names actor slots accept
+const motionDir = path.join(here, "blueprints", "motion");
+const files = [path.join(here, "blueprints"), path.join(here, "blueprints", lane), motionDir]
   .filter((d) => fs.existsSync(d))
   .flatMap((d) => fs.readdirSync(d).filter((f) => f.endsWith(".js")).map((f) => path.join(d, f)));
 const about = {};
@@ -28,13 +30,16 @@ const fmt = (s) => {
   if (s.type === "anchor") return `anchor${o}`;
   if (s.type === "point") return `point {x, y} in image coordinates 0..1${o}`;
   if (s.type === "image") return `image file name${o}`;
+  if (s.type === "actor") return `actor${o}: {asset: name, tint?} | {image: file, focus?} | {label: text ≤12} (+ optional name ≤18)`;
   if (s.type === "object") return `object${o}: { ${Object.entries(s.of).map(([k, v]) => `${k}: ${fmt(v)}`).join("; ")} }`;
   if (s.type === "list") return `list of ${s.min ?? 0}..${s.max ?? "n"}${o}: { ${Object.entries(s.of).map(([k, v]) => `${k}: ${fmt(v)}`).join("; ")} }`;
   return s.type + o;
 };
 console.log(`Blueprints for the ${lane} lane. An *anchor* is a word spoken in the same scene ("word", or "word#1" for its second use); the visual happens exactly when that word is said.\n`);
+const motion = new Set(fs.existsSync(motionDir) ? fs.readdirSync(motionDir).filter((f) => f.endsWith(".js")).map((f) => f.slice(0, -3)) : []);
+console.log(`**Actors.** Motion blueprints (marked *motion*) animate actors you cast. An actor is one of: \`{"asset": "<name>"}\` a flat icon, optionally \`"tint": "accent" | "light" | "mid"\` (accent = the lane's red/orange, e.g. Mars); \`{"image": "<file from the brief>", "focus": {x, y}}\` a photo framed as a circle (use the image's points for focus); or \`{"label": "<word>"}\` a solid block with up to 12 chars, for things with no picture. Any actor may add \`"name"\`, a caption under it (≤18 chars). Assets: ${Object.keys(ctx.window.ASSETS).join(", ")}.\n`);
 for (const { name, def } of defs) {
-  console.log(`### ${name}${def.overlay ? " (overlay: lands on top of the previous part)" : ""}\n${about[name] || ""}\n`);
+  console.log(`### ${name}${motion.has(name) ? " (motion)" : ""}${def.overlay ? " (overlay: lands on top of the previous part)" : ""}\n${about[name] || ""}\n`);
   for (const [k, s] of Object.entries(def.slots)) console.log(`- \`${k}\`: ${fmt(s)}`);
   console.log("");
 }

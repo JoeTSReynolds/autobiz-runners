@@ -174,36 +174,30 @@
    "transition": "whip",
    "parts": [
     {
-     "blueprint": "bars",
+     "blueprint": "flow",
      "params": {
-      "layout": "versus",
-      "head": {
-       "text": "TSMC says",
-       "at": "tsmc"
-      },
-      "photo": {
+      "head": [
+       "Chips to",
+       "AI data centres"
+      ],
+      "source": {
        "image": "fab14b.jpg",
-       "place": "Fab 14B, Tainan, Taiwan",
-       "banner": "→ AI data centres",
-       "bannerAt": "ai",
        "focus": {
         "x": 0.5263,
         "y": 0.5
-       }
-      },
-      "rows": [
-       {
-        "text": "Demand",
-        "value": 82,
-        "at": "demand",
-        "highlight": true,
-        "over": "outruns"
        },
-       {
-        "text": "Supply",
-        "value": 75
-       }
-      ]
+       "name": "TSMC fabs"
+      },
+      "sink": {
+       "asset": "server",
+       "name": "AI data centres"
+      },
+      "item": {
+       "asset": "chip"
+      },
+      "burst": "outruns",
+      "result": "Demand > supply",
+      "resultAt": "supply"
      }
     }
    ]
@@ -213,38 +207,20 @@
    "say": "Next quarter? It expects up to $54 billion.",
    "parts": [
     {
-     "blueprint": "bars",
+     "blueprint": "stack",
      "params": {
-      "layout": "forecast",
-      "head": {
-       "text": "Revenue per quarter"
-      },
-      "rows": [
-       {
-        "text": "$33.1B",
-        "value": 33.1,
-        "label": "Q3 2025"
-       },
-       {
-        "text": "$46.7B",
-        "value": 46.7,
-        "label": "Q3 2026"
-       },
-       {
-        "text": "$52.3–54.3B",
-        "value": 54.3,
-        "label": "Q4 2026, TSMC’s forecast",
-        "at": "54",
-        "highlight": true
-       }
+      "head": [
+       "Next quarter:",
+       "up to $54 billion"
       ],
-      "big": {
-       "lines": [
-        "Another",
-        "record?"
-       ],
-       "at": "billion"
-      }
+      "item": {
+       "asset": "coin"
+      },
+      "total": 54,
+      "unit": "billion",
+      "at": "billion",
+      "result": "Another record?",
+      "resultAt": "billion"
      }
     }
    ]
@@ -314,29 +290,44 @@
      }
     },
     {
-     "blueprint": "statement",
+     "blueprint": "network",
+     "at": "maybe#1",
      "params": {
-      "lines": [
+      "head": [
+       "New fabs",
+       "close the gap"
+      ],
+      "nodes": [
        {
-        "text": "New fabs"
+        "who": {
+         "asset": "building",
+         "name": "Taiwan"
+        }
        },
        {
-        "text": "close the gap"
+        "who": {
+         "asset": "building",
+         "name": "Arizona"
+        }
+       },
+       {
+        "who": {
+         "asset": "building",
+         "name": "Japan"
+        }
+       },
+       {
+        "who": {
+         "asset": "server",
+         "name": "AI demand"
+        }
        }
       ],
-      "visual": "list",
-      "items": [
-       {
-        "text": "Arizona",
-        "at": "arizona"
-       },
-       {
-        "text": "Japan",
-        "at": "japan"
-       }
-      ]
-     },
-     "at": "maybe#1"
+      "from": 0,
+      "signalAt": "arizona",
+      "result": "Gap closing?",
+      "resultAt": "gap"
+     }
     },
     {
      "blueprint": "wafer-rival",

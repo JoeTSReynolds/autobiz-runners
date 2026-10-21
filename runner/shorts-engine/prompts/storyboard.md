@@ -48,6 +48,12 @@ and is always framed as "could", "maybe" or "what if", never as fact.
   blueprint (photo-hook, photo-target, photo-measure, big-number or split with an image, doc, phone, a chart),
   or `tease-three` with an `image` (set its `focus` from the image's points). Never open with `statement`,
   `question` or `timeline-years`; use them later in the video.
+- **Show the story happening.** Use at least 3 different *motion* blueprints (marked in the catalogue). They
+  animate what the narration describes: a rock slamming into Mars is `collide`, data pouring off phones is
+  `flow`, a moon captured by a planet is `orbit`. Cast the story's own actors into them: a photo from the brief
+  (framed as a circle, with its `focus` from the image's points), a matching asset, or a short label for
+  things with no picture. Put the motion on the sentence that says the action, with its beat (`at`) on the
+  action word ("slammed", "leaked", "captured").
 - **Text needs reading time.** Text that appears must stay on screen at least 1 second, plus 0.25 s
   for each word beyond three, before its scene (or its part) ends. So reveal text early in a sentence,
   never on a scene's last words.
@@ -79,6 +85,7 @@ An anchor is a word from the same scene's `say`: the visual happens exactly when
 {
   "title": "<short title>",
   "hook": "<pattern name>",
+  "wish": "<optional: one line naming an animation or asset you wanted for this story and did not have>",
   "credit": "<one line for the video description (not shown on screen): sources and image credits from the brief, by artist or agency and licence, never file names like img1>",
   "scenes": [
     { "id": "hook", "say": "...", "parts": [ { "blueprint": "...", "params": { ... } },

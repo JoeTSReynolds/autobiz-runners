@@ -41,24 +41,30 @@
    "transition": "zoom",
    "parts": [
     {
-     "blueprint": "photo-measure",
+     "blueprint": "scale",
      "params": {
-      "image": "pit-lro.png",
-      "a": {
-       "x": 0.398,
-       "y": 0.508
-      },
-      "b": {
-       "x": 0.602,
-       "y": 0.508
-      },
-      "label": "~90 m",
-      "labelAt": "90",
-      "place": [
-       "Marius Hills pit,",
-       "Ocean of Storms"
+      "head": [
+       "A hole",
+       "in the Moon"
       ],
-      "placeAt": "volcanic"
+      "subject": {
+       "image": "pit-lro.png",
+       "focus": {
+        "x": 0.5,
+        "y": 0.508
+       },
+       "name": "Marius Hills pit"
+      },
+      "reference": {
+       "label": "Pitch",
+       "name": "Football pitch"
+      },
+      "ratio": 0.86,
+      "subjectSize": "~90 m",
+      "referenceSize": "105 m",
+      "at": "metres",
+      "result": "Ocean of Storms",
+      "resultAt": "ocean"
      }
     }
    ]
@@ -114,30 +120,43 @@
    "say": "[excited] Now NASA has picked a mission called Gimli to go and find out. A lander and a rover will probe the ground with radar, seismic sensors and a gravity meter.",
    "parts": [
     {
-     "blueprint": "xsec-mission",
+     "blueprint": "scan",
      "params": {
-      "title": "Gimli",
-      "titleAt": "gimli",
-      "sub": "Lander and rover, Planetary Science Institute",
-      "tubeAt": "find",
-      "landAt": "lander",
-      "instruments": [
+      "head": [
+       "Gimli will",
+       "find out"
+      ],
+      "subject": {
+       "asset": "moon",
+       "name": "Marius Hills"
+      },
+      "marks": [
        {
-        "label": "Radar",
-        "kind": "radar",
-        "at": "radar"
+        "text": "Radar",
+        "at": "radar",
+        "where": {
+         "x": 0.32,
+         "y": 0.3
+        }
        },
        {
-        "label": "Seismic",
-        "kind": "seismic",
-        "at": "seismic"
+        "text": "Seismic",
+        "at": "seismic",
+        "where": {
+         "x": 0.66,
+         "y": 0.52
+        }
        },
        {
-        "label": "Gravity",
-        "kind": "gravity",
-        "at": "gravity"
+        "text": "Gravity",
+        "at": "gravity",
+        "where": {
+         "x": 0.42,
+         "y": 0.76
+        }
        }
-      ]
+      ],
+      "result": "Lander + rover"
      }
     }
    ]
@@ -207,16 +226,26 @@
        {
         "label": "Radiation",
         "at": "radiation"
-       },
-       {
-        "label": "Micrometeorites",
-        "at": "meteorites"
-       },
-       {
-        "label": "Heat and cold",
-        "at": "heat"
        }
       ]
+     }
+    },
+    {
+     "blueprint": "collide",
+     "at": "meteorites",
+     "params": {
+      "mover": {
+       "asset": "asteroid",
+       "name": "Micrometeorites"
+      },
+      "target": {
+       "asset": "shield",
+       "name": "Lava tube"
+      },
+      "at": "brutal",
+      "shatter": "mover",
+      "result": "Shielded",
+      "resultAt": "cold"
      }
     }
    ]
