@@ -47554,11 +47554,21 @@ function createConfiguredAgent(env = process.env) {
 }
 var wantsWebSearch = (config) => config?.webSearch === true;
 var webSearchMaxTurns = 12;
+var settingsText = (config) => `Configuration: ${JSON.stringify(isRecord(config) ? Object.fromEntries(Object.entries(config).filter(([key]) => key !== "prompt")) : config)}`;
 var agentText = (prompt, input, config) => `${prompt}
 
 Input: ${JSON.stringify(input)}
 
-Configuration: ${JSON.stringify(config)}`;
+${settingsText(config)}`;
+var isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+function splitForCache(input, config) {
+  if (!isRecord(input)) return { stable: input };
+  const volatile = /* @__PURE__ */ new Set(["agentErrors", "previousAttempts", "retryNote", ...isRecord(config) && typeof config.outputKey === "string" && config.outputKey ? [config.outputKey] : []]);
+  const pick = (keep) => Object.fromEntries(Object.entries(input).filter(([key]) => volatile.has(key) === keep));
+  const retry = pick(true);
+  return { stable: pick(false), ...Object.keys(retry).length ? { retry } : {} };
+}
+var cacheMark = { type: "ephemeral", ttl: "1h" };
 async function readImage(path) {
   const bytes = await readFile(path);
   const type = imageTypes.find(({ magic }) => magic.every((byte, index2) => bytes[index2] === byte));
@@ -47596,7 +47606,15 @@ function createClaudeCliAgent(model, timeoutMs, env) {
       const { mime, data } = await readImage(path);
       return { type: "image", source: { type: "base64", media_type: mime, data } };
     }));
-    const message2 = JSON.stringify({ type: "user", message: { role: "user", content: [{ type: "text", text: agentText(prompt, input, config) }, ...imageBlocks] } });
+    const { stable, retry } = splitForCache(input, config);
+    const cached = [{ type: "text", text: `${prompt}
+
+Input: ${JSON.stringify(stable)}` }, ...imageBlocks];
+    cached[cached.length - 1] = { ...cached[cached.length - 1], cache_control: cacheMark };
+    const tail = `${retry ? `Retry input: ${JSON.stringify(retry)}
+
+` : ""}${settingsText(config)}`;
+    const message2 = JSON.stringify({ type: "user", message: { role: "user", content: [...cached, { type: "text", text: tail }] } });
     if (Buffer.byteLength(message2) > requestLimitBytes) throw new Error("Agent provider request exceeds the 1 MiB payload limit.");
     const { stdout, stderr, code } = await runClaude(args(wantsWebSearch(config)), childEnv, `${message2}
 `, timeoutMs);
@@ -48892,10 +48910,8 @@ async function execute4({ input, config, module }, { agent, tools }) {
   if (reasons && last !== void 0) history.push({ answer: last, rejectedBecause: reasons });
   const attempts = history.slice(-MAX_ATTEMPTS);
   const retrying = attempts.length > 0 && reasons !== void 0;
-  const sentWithHistory = retrying && isObject(sent) ? { ...sent, previousAttempts: attempts } : sent;
-  const promptToSend = retrying ? `${prompt}
-
-${RETRY_NOTE}` : prompt;
+  const sentWithHistory = retrying && isObject(sent) ? { ...sent, previousAttempts: attempts, retryNote: RETRY_NOTE } : sent;
+  const promptToSend = prompt;
   const remember = (output2, raw) => {
     const put = (key, v) => {
       const map = { ...kept(key) };
