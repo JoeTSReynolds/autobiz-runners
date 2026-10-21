@@ -43602,7 +43602,7 @@ var require_static = __commonJS({
   "node_modules/@fastify/static/index.js"(exports, module) {
     "use strict";
     var path = __require("node:path");
-    var { fileURLToPath } = __require("node:url");
+    var { fileURLToPath: fileURLToPath2 } = __require("node:url");
     var { statSync } = __require("node:fs");
     var { readdir: readdir2, stat: stat4 } = __require("node:fs/promises");
     var { basename: basename3 } = __require("node:path");
@@ -44004,13 +44004,13 @@ var require_static = __commonJS({
         return root;
       }
       if (root instanceof URL && root.protocol === "file:") {
-        return fileURLToPath(root);
+        return fileURLToPath2(root);
       }
       if (Array.isArray(root)) {
         const result = [];
         for (let i = 0, il = root.length; i < il; ++i) {
           if (root[i] instanceof URL && root[i].protocol === "file:") {
-            result.push(fileURLToPath(root[i]));
+            result.push(fileURLToPath2(root[i]));
           } else {
             result.push(root[i]);
           }
@@ -44306,6 +44306,7 @@ var import_fastify = __toESM(require_fastify(), 1);
 var import_static2 = __toESM(require_static(), 1);
 import { existsSync as existsSync2 } from "node:fs";
 import { dirname as dirname5, join as join8, resolve as resolve5 } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // packages/contracts/src/index.ts
 var import_ajv2 = __toESM(require_ajv(), 1);
@@ -44570,7 +44571,8 @@ var schema_default = {
             "video-edit",
             "thumbnail",
             "youtube-publish",
-            "instagram-publish"
+            "instagram-publish",
+            "shorts"
           ]
         },
         version: {
@@ -44657,7 +44659,8 @@ var schema_default = {
             "video-edit",
             "thumbnail",
             "youtube-publish",
-            "instagram-publish"
+            "instagram-publish",
+            "shorts"
           ]
         },
         version: {
@@ -45004,7 +45007,8 @@ var schema_default = {
               "video-edit",
               "thumbnail",
               "youtube-publish",
-              "instagram-publish"
+              "instagram-publish",
+              "shorts"
             ]
           }
         },
@@ -45149,7 +45153,8 @@ var schema_default = {
             "video-edit",
             "thumbnail",
             "youtube-publish",
-            "instagram-publish"
+            "instagram-publish",
+            "shorts"
           ]
         },
         version: {
@@ -45293,7 +45298,8 @@ var schema_default = {
             "video-edit",
             "thumbnail",
             "youtube-publish",
-            "instagram-publish"
+            "instagram-publish",
+            "shorts"
           ]
         },
         version: {
@@ -45938,7 +45944,8 @@ var schema_default = {
             "video-edit",
             "thumbnail",
             "youtube-publish",
-            "instagram-publish"
+            "instagram-publish",
+            "shorts"
           ]
         },
         cursor: {
@@ -47257,7 +47264,7 @@ function starterModules() {
       field("crf", "Quality (CRF)", "number", 20),
       field("renderTimeoutMs", "Render time limit (ms)", "number", 6e5),
       field("background", "Story background", "string", "brick"),
-      field("layout", "Story layout", "select", "box", ["box", "frame"]),
+      field("layout", "Story layout", "select", "box", ["box", "frame", "card"]),
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
       field("outputKey", "Output key", "string", "short")
@@ -47290,7 +47297,17 @@ function starterModules() {
       field("shareToFeed", "Share to feed", "boolean", true),
       field("maxHashtags", "Most hashtags (0-30)", "number", 5),
       field("outputKey", "Output key", "string", "instagram")
-    ], ["next"])
+    ], ["next"]),
+    seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, and records what was published.", [
+      field("mode", "Mode", "select", "feeds", ["feeds", "sources", "facts", "images", "brief", "render", "record"]),
+      field("lane", "Lane (empty keeps job.lane)", "string", ""),
+      field("hours", "Feed window (hours)", "number", 72),
+      field("minFacts", "Fewest checked facts", "number", 5),
+      field("voice", "Voice", "select", "kokoro", ["kokoro", "elevenlabs"]),
+      field("elevenModel", "ElevenLabs model", "string", "eleven_v4_turbo"),
+      field("render", "Render the video", "boolean", true),
+      field("timeoutMs", "Time limit (ms)", "number", 18e5)
+    ], ["next", "invalid", "missing"])
   ];
 }
 function starterWorkflow() {
@@ -49004,10 +49021,10 @@ function list(config, key, min) {
   }
   return value;
 }
-function count(config, key, positive2 = false, whole = false) {
+function count(config, key, positive2 = false, whole2 = false) {
   const value = config[key] ?? DEFAULTS2[key];
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || positive2 && value === 0 || whole && !Number.isInteger(value)) {
-    throw new ExecutionFailure(`media-fetch setting ${key} must be a ${positive2 ? "positive" : "non-negative"} ${whole ? "integer" : "number"}.`);
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || positive2 && value === 0 || whole2 && !Number.isInteger(value)) {
+    throw new ExecutionFailure(`media-fetch setting ${key} must be a ${positive2 ? "positive" : "non-negative"} ${whole2 ? "integer" : "number"}.`);
   }
   return value;
 }
@@ -50124,8 +50141,8 @@ function wrap(words2, maxChars, maxRows = Infinity) {
   rows.push(row);
   return rows.map((words3) => words3.join(" "));
 }
-function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline }) {
-  const style = (name, size) => `Style: ${name},${font},${size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,-1,0,0,100,100,0,0,1,${outline},0,5,60,60,0,1`;
+function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline, headlineDark }) {
+  const style = (name, size, dark = false) => `Style: ${name},${font},${size},${dark ? "&H00000000,&H00000000" : "&H00FFFFFF,&H00FFFFFF"},&H00000000,&H00000000,-1,${dark ? 0 : -1},0,0,100,100,0,0,1,${dark ? 0 : outline},0,5,60,60,0,1`;
   const event = (start, end, name, x, y, text3) => `Dialogue: 0,${stamp2(start)},${stamp2(end)},${name},,0,0,0,,{\\an5\\pos(${x},${y})}${text3}`;
   const title = clean(headline);
   return [
@@ -50137,7 +50154,7 @@ function storyTextAss(headline, captions2, { font, headlineSize, captionSize, ou
     "",
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-    style("Head", headlineSize),
+    style("Head", headlineSize, headlineDark),
     style("Cap", captionSize),
     "",
     "[Events]",
@@ -50176,6 +50193,7 @@ var SHAKE_PX = Math.round(14 * K);
 var STICKER = { w: 340, canvas: 540, x: 540, y: BOX.y1 };
 var FRAME_H = 608;
 var FRAME_STICKER_Y = (1920 + FRAME_H) / 2 + 0.3 * STICKER.w;
+var CARD = { size: 1080, y: 420, color: "0xECECEC" };
 var EXIT = 0.2;
 var RUN = ["-y", "-v", "error", "-filter_threads", "2", "-filter_complex_threads", "2"];
 var THREADS = ["-threads", "4"];
@@ -50194,7 +50212,8 @@ var n3 = (x) => Number(x.toFixed(3));
 var n4 = (x) => Number(x.toFixed(4));
 function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "box") {
   const frame = layout === "frame";
-  const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : [K, SHAKE_PX, SIZE, SIZE];
+  const card = layout === "card";
+  const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : card ? [1, 14, CARD.size, CARD.size] : [K, SHAKE_PX, SIZE, SIZE];
   const length3 = frames / FPS;
   const dIn = 0.2;
   const dOut = first ? 0.25 : 0.2;
@@ -50217,7 +50236,7 @@ function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "b
     if (!first && t < dIn) cmds.push(`${n4(Math.max(0, t - 1e-3))} gblur@b sigma ${n4(blurIn * (1 - t / dIn) + 0.1)};`);
     else if (!last && t >= length3 - dOut - 1e-6) cmds.push(`${n4(t - 1e-3)} gblur@b sigma ${n4(blurOut * Math.min(1, (t - (length3 - dOut) + 1 / FPS) / dOut))};`);
   }
-  const chain = frame ? [`scale=${w}:${h}:force_original_aspect_ratio=decrease`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2`, "setsar=1"] : [`fps=${FPS}`, "crop='min(iw,ih)':'min(iw,ih)'", `scale=${SIZE}:${SIZE}`, "setsar=1"];
+  const chain = frame ? [`scale=${w}:${h}:force_original_aspect_ratio=decrease`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2`, "setsar=1"] : card ? ["crop='min(iw,ih)':'min(iw,ih)'", `scale=${w}:${h}`, "setsar=1"] : [`fps=${FPS}`, "crop='min(iw,ih)':'min(iw,ih)'", `scale=${SIZE}:${SIZE}`, "setsar=1"];
   if (zooms.length || shakes.length) {
     chain.push(
       `zoompan=z='1+${[...zooms, `0.04*${shake}`].join("+")}':x='iw/2-(iw/zoom/2)+${shakePx}*sin(time*131.7)*${shake}':y='ih/2-(ih/zoom/2)+${shakePx}*sin(time*173.3+1.3)*${shake}':d=1:s=${w}x${h}:fps=${FPS}`
@@ -50231,7 +50250,7 @@ function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "b
     const amount = `min(1,${flashes.join("+")})`;
     chain.push(`eq=brightness='0.5*${amount}':contrast='1-${amount}':saturation='1-${amount}':eval=frame`);
   }
-  const video = frame ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]` : `[0:v]${[...chain, "format=yuv420p"].join(",")}[v]`;
+  const video = frame ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]` : card ? `[0:v]fps=${FPS},${[...chain, `pad=1080:1920:0:${CARD.y}:color=${CARD.color}`, "format=yuv420p"].join(",")}[v]` : `[0:v]${[...chain, "format=yuv420p"].join(",")}[v]`;
   const audio = [
     `[0:a]${STEREO}[a0]`,
     ...effects.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=0.8[s${k}]`),
@@ -50382,7 +50401,7 @@ function stickerChain(input, { at: at2, until }, y) {
   };
 }
 function finalArgs(total, stickers, audio, layout = "box") {
-  const frame = layout === "frame";
+  const frame = layout !== "box";
   const base = frame ? 1 : 2;
   const video = [
     ...frame ? ["[0:v]setpts=PTS-STARTPTS[b0]"] : [
@@ -50536,9 +50555,10 @@ async function renderStory(input, settings, tools) {
   const plan = validatePlan(input.story, [...library.keys()]);
   const story = normalizeStory(plan, words2, sentences, laughs);
   const files = matchSources(story.clips, sources);
-  const frame = settings.layout === "frame";
+  const plainBg = settings.layout !== "box";
+  const card = settings.layout === "card";
   const background = `${tools.stateDir}/backgrounds/${settings.background}.jpg`;
-  if (!frame && !await present(tools, background, timeoutMs)) throw new ExecutionFailure(`video-edit story background ${background} was not found in the business state folder.`);
+  if (!plainBg && !await present(tools, background, timeoutMs)) throw new ExecutionFailure(`video-edit story background ${background} was not found in the business state folder.`);
   const ends = [];
   const notes = [];
   for (const [i, clip] of story.clips.entries()) {
@@ -50552,7 +50572,8 @@ async function renderStory(input, settings, tools) {
     if (levels.length < 2) notes.push(`clip ${i + 1} (${clip.role}): no audio level could be measured; kept the end at ${clip.end}.`);
     ends.push(levels.length < 2 ? clip.end : quietestStart(levels, 0.02, search2.from));
   }
-  const timed = retime({ ...story, issues: [...story.issues, ...notes] }, ends);
+  const retimed = retime({ ...story, issues: [...story.issues, ...notes] }, ends);
+  const timed = card ? { ...retimed, emojis: [] } : retimed;
   const boxes = [];
   for (const [i, clip] of timed.clips.entries()) {
     const effects = timed.effects.filter((e) => e.clip === i).map((e) => ({ t0: n4(e.storyTime - clip.storyStart), sound: e.sound, visual: e.visual }));
@@ -50574,7 +50595,7 @@ async function renderStory(input, settings, tools) {
   }
   await tools.writeText("run", FILES.list, concatList(boxes));
   await ffmpeg(concatArgs(FILES.list, FILES.boxes));
-  if (!frame) await ffmpeg(backgroundArgs(background, FILES.background));
+  if (!plainBg) await ffmpeg(backgroundArgs(background, FILES.background));
   const available = /* @__PURE__ */ new Map();
   for (const name of new Set(timed.emojis.map((m) => m.name))) {
     let found = await present(tools, emojiPath(name), timeoutMs);
@@ -50593,8 +50614,8 @@ async function renderStory(input, settings, tools) {
   const emojis = settleEmojis(timed.emojis.filter((m) => available.get(m.name)), timed.total);
   const done = { ...timed, emojis };
   const seed = settings.storySeed !== "" ? settings.storySeed : isObject5(input.source) && typeof input.source.id === "string" ? input.source.id : "";
-  if (!frame) await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
-  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline };
+  if (!plainBg) await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
+  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline, headlineDark: card };
   const applied = /* @__PURE__ */ new Map();
   await tools.writeText("run", FILES.text, storyTextAss(plan.headline, storyCaptions(done, lines, plan.corrections, applied), text3));
   const { transitions, pops } = soundPlan(done, (sound) => library.get(sound).seconds);
@@ -50679,7 +50700,7 @@ var RULES = {
   crf: [between(0, 51), "a number from 0 to 51"],
   renderTimeoutMs: [positive, "a positive number of milliseconds"],
   background: [folderName, "a plain file name without the .jpg, such as brick"],
-  layout: [(value) => value === "box" || value === "frame", "'box' or 'frame'"],
+  layout: [(value) => value === "box" || value === "frame" || value === "card", "'box', 'frame' or 'card'"],
   emojiDir: [folderName, "a plain folder name"],
   storySeed: [str, "a string"],
   outputKey: [(value) => typeof value === "string" && value !== "", "a non-empty string"]
@@ -51405,6 +51426,69 @@ async function execute14({ input, config, node }, { instagram, tools }) {
   return done(published);
 }
 
+// modules/shorts/index.ts
+var DEFAULTS7 = {
+  mode: "feeds",
+  lane: "",
+  hours: 72,
+  minFacts: 5,
+  voice: "kokoro",
+  elevenModel: "eleven_v4_turbo",
+  render: true,
+  timeoutMs: 18e5
+};
+var MODES = ["feeds", "sources", "facts", "images", "brief", "render", "record"];
+var VOICES = ["kokoro", "elevenlabs"];
+var PORTS = ["next", "invalid", "missing"];
+var LOG_TAIL = 1e3;
+var ENGINE_DIR = decodeURIComponent(new URL("./shorts-engine/", import.meta.url).pathname);
+var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var whole = (value, min, max) => typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
+function readSettings5(config) {
+  const merged = { ...DEFAULTS7, ...config };
+  const { mode, lane, hours, minFacts, voice, elevenModel, render: render2, timeoutMs } = merged;
+  if (typeof mode !== "string" || !MODES.includes(mode)) throw new ExecutionFailure(`Shorts setting mode must be one of ${MODES.join(", ")}.`);
+  if (typeof lane !== "string") throw new ExecutionFailure("Shorts setting lane must be text (empty keeps job.lane).");
+  if (!whole(hours, 1, 240)) throw new ExecutionFailure("Shorts setting hours must be a whole number from 1 to 240.");
+  if (!whole(minFacts, 1, 20)) throw new ExecutionFailure("Shorts setting minFacts must be a whole number from 1 to 20.");
+  if (typeof voice !== "string" || !VOICES.includes(voice)) throw new ExecutionFailure(`Shorts setting voice must be one of ${VOICES.join(", ")}.`);
+  if (typeof elevenModel !== "string" || elevenModel.trim() === "") throw new ExecutionFailure("Shorts setting elevenModel must be a non-empty string.");
+  if (typeof render2 !== "boolean") throw new ExecutionFailure("Shorts setting render must be true or false.");
+  if (!whole(timeoutMs, 1, 36e5)) throw new ExecutionFailure("Shorts setting timeoutMs must be a whole number of milliseconds up to 3600000.");
+  return { mode, lane, timeoutMs, engine: { hours, minFacts, voice, elevenModel, render: render2 } };
+}
+function readResult(text3) {
+  let parsed;
+  try {
+    parsed = text3 === void 0 ? void 0 : JSON.parse(text3);
+  } catch {
+  }
+  const log = isObject10(parsed) && typeof parsed.log === "string" ? parsed.log : "";
+  if (!isObject10(parsed) || typeof parsed.port !== "string" || !PORTS.includes(parsed.port) || !isObject10(parsed.output)) {
+    throw new ExecutionFailure(`Shorts engine wrote no usable result (shorts-result.json).${log ? ` Log tail: ${log.slice(-LOG_TAIL)}` : ""}`);
+  }
+  return { port: parsed.port, output: parsed.output, log };
+}
+async function execute15({ input, config }, { tools }) {
+  if (!tools) throw new ExecutionFailure("Shorts module requires the tools capability.");
+  const { mode, lane, timeoutMs, engine } = readSettings5(config);
+  if (!isObject10(input)) throw new ExecutionFailure("Shorts input must be a job object.");
+  const job = lane === "" ? input : { ...input, lane };
+  const at2 = (name) => `${tools.runDir}/${name}`;
+  await tools.writeText("run", "shorts-job.json", JSON.stringify(job));
+  await tools.writeText("run", "shorts-config.json", JSON.stringify(engine));
+  try {
+    await tools.run("python3", [`${ENGINE_DIR}stage.py`, mode, "--run", tools.runDir, "--state", tools.stateDir, "--job", at2("shorts-job.json"), "--config", at2("shorts-config.json"), "--out", at2("shorts-result.json")], { timeoutMs });
+  } catch (error) {
+    if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure || error instanceof ExecutionFailure) throw error;
+    throw new ExecutionFailure(`Shorts ${mode} failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const result = readResult(await tools.readText("run", "shorts-result.json"));
+  const output2 = { ...job, ...result.output };
+  if (result.port === "next") delete output2.agentErrors;
+  return { output: output2, port: result.port };
+}
+
 // services/control-plane/module_registry/index.ts
 var moduleRegistry = deepFreeze({
   start: { execute, capabilities: [] },
@@ -51420,7 +51504,8 @@ var moduleRegistry = deepFreeze({
   "video-edit": { execute: execute11, capabilities: ["tools"] },
   thumbnail: { execute: execute12, capabilities: ["tools"] },
   "youtube-publish": { execute: execute13, capabilities: ["youtube", "tools"] },
-  "instagram-publish": { execute: execute14, capabilities: ["instagram", "tools"] }
+  "instagram-publish": { execute: execute14, capabilities: ["instagram", "tools"] },
+  shorts: { execute: execute15, capabilities: ["tools"] }
 });
 
 // packages/runtime/src/provider.ts
@@ -51439,7 +51524,8 @@ function runBounded(promise, signal, deadline, limit = providerTimeoutMs) {
       action();
     };
     const abort = () => finish(() => reject(new ExecutionCancelled()));
-    const timer = setTimeout(() => finish(() => reject(new ExecutionLimitFailure(message2))), Math.min(limit, untilDeadline));
+    const wait = Math.min(limit, untilDeadline);
+    const timer = Number.isFinite(wait) ? setTimeout(() => finish(() => reject(new ExecutionLimitFailure(message2))), wait) : void 0;
     if (signal?.aborted) {
       abort();
       return;
@@ -51492,9 +51578,9 @@ var printable = (value) => typeof value === "string" ? value : json(value);
 function shorten(text3, max) {
   return text3.length > max ? `${text3.slice(0, max - 1)}\u2026` : text3;
 }
-var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function summarizeOutput(input, output2) {
-  if (!isObject10(input) || !isObject10(output2)) return shorten(printable(output2), 300);
+  if (!isObject11(input) || !isObject11(output2)) return shorten(printable(output2), 300);
   const changed = Object.keys(output2).filter((key) => json(output2[key]) !== json(input[key])).map((key) => `${key}=${shorten(json(output2[key]), 120)}`);
   const removed = Object.keys(input).filter((key) => !(key in output2)).map((key) => `${key} removed`);
   return [...changed, ...removed].join(", ") || "no changes";
@@ -51713,7 +51799,15 @@ async function executeNode(module, node, input, config, context, depth) {
   const { agent, approve, tools, youtube, instagram, signal, agentTimeoutMs } = context.options;
   const available = {
     agent: agent && ((prompt, value, settings, images) => runBounded(agent(prompt, value, settings, images), signal, context.deadline, agentTimeoutMs)),
-    approve: approve && ((approvalNode, value) => runBounded(approve(approvalNode, value), signal, context.deadline, Infinity)),
+    // waiting on a person is not run time: the wait has no deadline and the clock resumes with what was left
+    approve: approve && (async (approvalNode, value) => {
+      const waitStart = Date.now();
+      try {
+        return await runBounded(approve(approvalNode, value), signal, Infinity, Infinity);
+      } finally {
+        context.deadline += Date.now() - waitStart;
+      }
+    }),
     tools: tools && boundTools(tools, signal, context.deadline),
     youtube: youtube && boundYouTube(youtube, signal, context.deadline),
     instagram: instagram && boundInstagram(instagram, signal, context.deadline),
@@ -51867,7 +51961,10 @@ import { spawn as spawn2 } from "node:child_process";
 import { createHash, randomUUID as randomUUID2 } from "node:crypto";
 import { lstat as lstat2, mkdir, readFile as readFile2, realpath as realpath2, rename, rm as rm2, stat as stat2, writeFile } from "node:fs/promises";
 import { basename as basename2, dirname as dirname2, isAbsolute, join as join2, resolve, sep as sep2 } from "node:path";
-var toolNames = ["yt-dlp", "ffmpeg", "ffprobe", "whisper-ctranslate2"];
+var toolNames = ["yt-dlp", "ffmpeg", "ffprobe", "whisper-ctranslate2", "python3", "node", "npx"];
+var HYPERFRAMES_VERSION = "0.8.174";
+var hyperframesCommands = ["check", "lint", "render", "snapshot"];
+var toolEnvKeys = { python3: ["PEXELS_API_KEY", "PIXABAY_API_KEY", "ELEVEN_LABS_API_KEY"] };
 var defaultTimeoutMs2 = 6e5;
 var resetTimeoutMs = 12e4;
 var maxTimerMs = 2147483647;
@@ -51883,16 +51980,27 @@ function createRunTools(options) {
   const stateDir = resolve(options.stateDir);
   const maxOutputBytes = options.maxOutputBytes ?? defaultMaxOutputBytes;
   const killGraceMs = options.killGraceMs ?? 5e3;
+  async function checkScript(tool, path) {
+    const roots = await Promise.all((options.scriptRoots ?? []).map((root) => realpath2(root).catch(() => void 0)));
+    let real;
+    if (path && isAbsolute(path)) real = await realpath2(path).catch(() => void 0);
+    const ok = real !== void 0 && (await stat2(real)).isFile() && roots.some((root) => root !== void 0 && real.startsWith(root + sep2));
+    if (!ok) throw new ExecutionFailure(`${tool} may only run a script file inside the shorts engine (got ${JSON.stringify(path ?? "")}).`);
+  }
   async function run2(tool, args, runOptions = {}) {
     const { timeoutMs = defaultTimeoutMs2, signal } = runOptions;
     if (!toolNames.includes(tool)) throw new ExecutionFailure(`${JSON.stringify(tool)} is not an allowed tool.`);
     if (!Array.isArray(args) || args.some((arg) => typeof arg !== "string" || arg.includes("\0"))) throw new ExecutionFailure(`${tool} arguments must be strings without NUL characters.`);
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new ExecutionFailure(`${tool} needs a positive time limit.`);
+    if (tool === "python3" || tool === "node") await checkScript(tool, args[0]);
+    if (tool === "npx" && !(args[0] === "--yes" && args[1] === `hyperframes@${HYPERFRAMES_VERSION}` && hyperframesCommands.includes(args[2] ?? ""))) {
+      throw new ExecutionFailure(`npx may only run "--yes hyperframes@${HYPERFRAMES_VERSION}" with ${hyperframesCommands.join(", ")}.`);
+    }
     if (signal?.aborted) throw new ExecutionCancelled();
     await mkdir(runDir, { recursive: true });
     if (signal?.aborted) throw new ExecutionCancelled();
     const env = { LANG: "C.UTF-8", LC_ALL: "C.UTF-8" };
-    for (const key of ["PATH", "HOME", "TMPDIR"]) if (process.env[key] !== void 0) env[key] = process.env[key];
+    for (const key of ["PATH", "HOME", "TMPDIR", ...toolEnvKeys[tool] ?? []]) if (process.env[key] !== void 0) env[key] = process.env[key];
     return new Promise((resolvePromise, reject) => {
       const child = spawn2(options.executables?.[tool] ?? tool, [...args], { cwd: runDir, env, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"] });
       const stdout = [];
@@ -52199,7 +52307,7 @@ var RunService = class {
           return response;
         } : void 0,
         approve,
-        tools: media2 && createRunTools({ runDir, stateDir: join3(media2.dataDir, "state", "businesses", storageKey(run2.businessId)), executables: media2.toolExecutables, networkResetCommand: media2.networkResetCommand }),
+        tools: media2 && createRunTools({ runDir, stateDir: join3(media2.dataDir, "state", "businesses", storageKey(run2.businessId)), executables: media2.toolExecutables, scriptRoots: media2.scriptRoots, networkResetCommand: media2.networkResetCommand }),
         youtube: media2?.youtube?.(runDir),
         instagram: media2?.instagram?.(runDir),
         timeoutMs: this.timeoutMs,
@@ -54629,7 +54737,7 @@ function list2(items, args) {
 function read(tool, args, workspace, agentConfigured) {
   switch (tool) {
     case "autobiz_get_capabilities":
-      return { schemaVersion: 1, agentConfigured, moduleKinds: ["start", "transform", "review", "agent", "approval", "output", "error", "composite", "random", "media-fetch", "video-edit", "thumbnail", "youtube-publish", "instagram-publish"], operators: arrowOperatorPorts, tools: AUTHORING_TOOLS.map(({ name }) => name), layout: { algorithm: "dagre", version: 1, direction: "left-to-right", agentPositioning: false }, limits: { maxOperations: 500, maxRetries: 100, maxPageSize: 100 }, businessSettingsAreMetadata: true };
+      return { schemaVersion: 1, agentConfigured, moduleKinds: ["start", "transform", "review", "agent", "approval", "output", "error", "composite", "random", "media-fetch", "video-edit", "thumbnail", "youtube-publish", "instagram-publish", "shorts"], operators: arrowOperatorPorts, tools: AUTHORING_TOOLS.map(({ name }) => name), layout: { algorithm: "dagre", version: 1, direction: "left-to-right", agentPositioning: false }, limits: { maxOperations: 500, maxRetries: 100, maxPageSize: 100 }, businessSettingsAreMetadata: true };
     case "autobiz_list_modules":
       return list2(workspace.modules.filter((module) => !args.kind || module.kind === args.kind).map(({ id, name, description, kind, version }) => ({ id, name, description, kind, version })), args);
     case "autobiz_get_module": {
@@ -55638,7 +55746,7 @@ async function createApp(options = {}) {
   const dataDir = resolve5(options.dataDir || process.env.AUTOBIZ_DATA_DIR || dirname5(databasePath));
   const repository = new WorkspaceRepository(databasePath);
   const configuredAgent = options.agent ?? createConfiguredAgent();
-  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
+  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), toolExecutables: toolExecutables(), scriptRoots: [shortsEngineDir()], networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
   repository.markActiveRunsInterrupted();
   const cloudSync = runnersRepo ? createCloudSync({ repo: runnersRepo, dataDir, repository, gh: options.cloudSync?.gh }) : void 0;
   app.decorate("workspaceRepository", repository);
@@ -55774,6 +55882,14 @@ function createYouTube(dataDir, env = process.env) {
     headless: env.YOUTUBE_STUDIO_HEADLESS !== "0"
   });
   return (runDir) => createYouTubeCapability({ api, studio, runDir });
+}
+function shortsEngineDir() {
+  const bundled = fileURLToPath(new URL("./shorts-engine/", import.meta.url));
+  return existsSync2(bundled) ? bundled : fileURLToPath(new URL("../../../modules/shorts/shorts-engine/", import.meta.url));
+}
+function toolExecutables(env = process.env) {
+  const python = env.AUTOBIZ_PYTHON?.trim();
+  return python ? { python3: python } : void 0;
 }
 
 // apps/server/src/headless.ts

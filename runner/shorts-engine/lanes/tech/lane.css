@@ -1,0 +1,9 @@
+/* Tech lane, "Fab": silicon, ink, one signal orange, Archivo (variable width). */
+@font-face { font-family: "Archivo"; src: url("archivo.woff2") format("woff2"); font-weight: 100 900; font-stretch: 62% 125%; }
+:root { --dark: #111111; --light: #e9e7e2; --accent-deep: #b33500; --accent: #ff4f00; --tint: #ff9f70; --mid: #77746e; --deep: #2b2a28; --ink: #111111; }
+#root { font-family: "Archivo"; }
+.d { font-stretch: 62%; font-weight: 800; letter-spacing: -0.02em; line-height: 0.9; font-variant-numeric: tabular-nums; }
+.t { font-stretch: 100%; font-weight: 600; font-size: 54px; line-height: 1.15; letter-spacing: -0.01em; }
+.lbl { font-stretch: 100%; font-weight: 700; font-size: 40px; }
+.cap { font-stretch: 75%; font-weight: 800; font-size: 82px; line-height: 1.05; letter-spacing: -0.01em; }
+.cap span { margin-right: 22px; }

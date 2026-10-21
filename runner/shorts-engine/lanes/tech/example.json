@@ -1,0 +1,402 @@
+{
+ "lane": "tech",
+ "title": "TSMC Q3 2026",
+ "voice": "TX3LPaxmHKxFdv7VOQHJ",
+ "credit": "Sources: TSMC Q3 2026 results, SEC Form 6-K, 15 Oct 2026. Photos: 4300streetcar (CC BY 4.0), Fritzchens Fritz (CC0), via Wikimedia Commons.",
+ "hook": "masked-number",
+ "scenes": [
+  {
+   "id": "hook",
+   "say": "[excited] TSMC just made nearly $24 billion in profit. In three months! [mischievously] But one number in its report is even crazier.",
+   "parts": [
+    {
+     "blueprint": "photo-hook",
+     "params": {
+      "image": "fab18.jpg",
+      "focus": {
+       "x": 0.5,
+       "y": 0.5222
+      },
+      "lead": [
+       "TSMC, the world’s biggest contract",
+       "chipmaker, made in profit:"
+      ],
+      "slamAt": "just",
+      "num": {
+       "to": 23.9,
+       "prefix": "$",
+       "suffix": "B",
+       "at": "nearly",
+       "pulseAt": "profit"
+      },
+      "when": {
+       "text": "in 3 months",
+       "at": "three"
+      }
+     }
+    },
+    {
+     "blueprint": "tease-mask",
+     "params": {
+      "lines": [
+       "One number in the report",
+       "is even crazier"
+      ],
+      "textAt": "one",
+      "pulseAt": "crazier"
+     },
+     "at": "but"
+    }
+   ]
+  },
+  {
+   "id": "revenue",
+   "say": "Sales hit $46.7 billion. That's up 41% in a single year.",
+   "transition": "glitch",
+   "parts": [
+    {
+     "blueprint": "bars",
+     "params": {
+      "layout": "compare",
+      "head": {
+       "text": "Revenue, July to September"
+      },
+      "rows": [
+       {
+        "text": "$33.1B",
+        "value": 33.1,
+        "label": "2025"
+       },
+       {
+        "text": "$46.7B",
+        "value": 46.7,
+        "label": "2026",
+        "at": "46.7",
+        "highlight": true,
+        "pulseAt": "billion"
+       }
+      ],
+      "big": {
+       "lines": [
+        "+41%"
+       ],
+       "at": "41",
+       "shakeAt": "single"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "nodes",
+   "say": "[impressed] And the tiniest chips are doing the heavy lifting. 3 and 5 nanometre made 61% of wafer sales. Brand new 2 nanometre is already at 8.",
+   "transition": "zoom",
+   "parts": [
+    {
+     "blueprint": "chip-dive",
+     "params": {
+      "photo": "lid.jpg",
+      "xray": "xray.jpg",
+      "focus": {
+       "x": 0.6724,
+       "y": 0.3542
+      },
+      "mark": {
+       "a": {
+        "x": 0.404,
+        "y": 0.8021
+       },
+       "b": {
+        "x": 0.8324,
+        "y": 0.8458
+       }
+      },
+      "lock": {
+       "a": {
+        "x": 0.5707,
+        "y": 0.2099
+       },
+       "b": {
+        "x": 0.7741,
+        "y": 0.5
+       },
+       "tag": "7 nm chiplet, made by TSMC",
+       "at": "chips"
+      },
+      "xrayAt": "tiniest",
+      "scanAt": "tiniest"
+     }
+    },
+    {
+     "blueprint": "wafer-share",
+     "params": {
+      "head": "Share of wafer sales",
+      "groups": [
+       {
+        "label": "3 nanometre",
+        "pct": 33,
+        "color": "accent",
+        "at": "3"
+       },
+       {
+        "label": "5 nanometre",
+        "pct": 28,
+        "color": "tint",
+        "at": "5"
+       },
+       {
+        "label": "2 nanometre, new",
+        "pct": 8,
+        "color": "white",
+        "at": "brand",
+        "pulseAt": "8"
+       },
+       {
+        "label": "Older",
+        "pct": 31,
+        "color": "mid",
+        "at": "61",
+        "dim": true
+       }
+      ],
+      "big": {
+       "text": "61%",
+       "at": "61"
+      }
+     },
+     "at": "3"
+    }
+   ]
+  },
+  {
+   "id": "demand",
+   "say": "Those chips end up in AI data centres. [serious] And TSMC says demand still outruns supply.",
+   "transition": "whip",
+   "parts": [
+    {
+     "blueprint": "bars",
+     "params": {
+      "layout": "versus",
+      "head": {
+       "text": "TSMC says",
+       "at": "tsmc"
+      },
+      "photo": {
+       "image": "fab14b.jpg",
+       "place": "Fab 14B, Tainan, Taiwan",
+       "banner": "→ AI data centres",
+       "bannerAt": "ai",
+       "focus": {
+        "x": 0.5263,
+        "y": 0.5
+       }
+      },
+      "rows": [
+       {
+        "text": "Demand",
+        "value": 82,
+        "at": "demand",
+        "highlight": true,
+        "over": "outruns"
+       },
+       {
+        "text": "Supply",
+        "value": 75
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "next",
+   "say": "Next quarter? It expects up to $54 billion.",
+   "parts": [
+    {
+     "blueprint": "bars",
+     "params": {
+      "layout": "forecast",
+      "head": {
+       "text": "Revenue per quarter"
+      },
+      "rows": [
+       {
+        "text": "$33.1B",
+        "value": 33.1,
+        "label": "Q3 2025"
+       },
+       {
+        "text": "$46.7B",
+        "value": 46.7,
+        "label": "Q3 2026"
+       },
+       {
+        "text": "$52.3–54.3B",
+        "value": 54.3,
+        "label": "Q4 2026, TSMC’s forecast",
+        "at": "54",
+        "highlight": true
+       }
+      ],
+      "big": {
+       "lines": [
+        "Another",
+        "record?"
+       ],
+       "at": "billion"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "whatif",
+   "say": "[curious] So what happens when AI needs more chips than one company can make?",
+   "transition": "zoom",
+   "parts": [
+    {
+     "blueprint": "question",
+     "params": {
+      "lines": [
+       {
+        "text": "What happens"
+       },
+       {
+        "text": "when AI needs",
+        "at": "ai"
+       },
+       {
+        "text": "more chips",
+        "at": "more"
+       },
+       {
+        "text": "than one",
+        "at": "than"
+       },
+       {
+        "text": "company",
+        "at": "company"
+       },
+       {
+        "text": "can make?",
+        "at": "make"
+       }
+      ],
+      "accentFrom": 3,
+      "image": "macro.jpg",
+      "focus": {
+       "x": 0.7051,
+       "y": 0.5
+      },
+      "shake": true
+     }
+    }
+   ]
+  },
+  {
+   "id": "futures",
+   "say": "Maybe prices climb. Maybe new fabs in Arizona and Japan close the gap. [dramatic] Or maybe, a rival finally catches up.",
+   "transition": "glitch",
+   "parts": [
+    {
+     "blueprint": "statement",
+     "params": {
+      "lines": [
+       {
+        "text": "Prices"
+       },
+       {
+        "text": "climb"
+       }
+      ],
+      "visual": "rise-line",
+      "visualAt": "prices"
+     }
+    },
+    {
+     "blueprint": "statement",
+     "params": {
+      "lines": [
+       {
+        "text": "New fabs"
+       },
+       {
+        "text": "close the gap"
+       }
+      ],
+      "visual": "list",
+      "items": [
+       {
+        "text": "Arizona",
+        "at": "arizona"
+       },
+       {
+        "text": "Japan",
+        "at": "japan"
+       }
+      ]
+     },
+     "at": "maybe#1"
+    },
+    {
+     "blueprint": "wafer-rival",
+     "params": {
+      "head": [
+       "A rival",
+       "catches up"
+      ],
+      "rivalAt": "rival",
+      "bounceAt": "catches"
+     },
+     "at": "or"
+    }
+   ]
+  },
+  {
+   "id": "wafer",
+   "say": "[excited] Okay, that crazy number. Picture every dollar as a silicon wafer. [whispers] 51 cents of it... was pure profit. That's what happens when almost nobody else can make what you make.",
+   "transition": "flash",
+   "parts": [
+    {
+     "blueprint": "wafer-reveal",
+     "params": {
+      "to": 51,
+      "heroAt": "51",
+      "lead": [
+       "of every dollar",
+       "was pure profit"
+      ],
+      "bill": {
+       "text": "$1",
+       "at": "dollar",
+       "waferAt": "silicon"
+      },
+      "pureAt": "pure",
+      "close": {
+       "lines": [
+        "When almost nobody else can",
+        "make what you make"
+       ],
+       "at": "that's",
+       "emphasisAt": "nobody"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "outro",
+   "say": "Follow for what happens next.",
+   "transition": "zoom",
+   "parts": [
+    {
+     "blueprint": "follow-wafer",
+     "params": {
+      "sub": "for what the chip race does next",
+      "followAt": "follow"
+     }
+    }
+   ]
+  }
+ ]
+}

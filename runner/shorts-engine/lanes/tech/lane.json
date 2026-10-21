@@ -1,0 +1,33 @@
+{
+ "scope": "Consequential technology products, research, security, safety, and policy.",
+ "selection": "Technical relevance, significance, novelty, and impact matter. Documented security campaigns, consequential health or safety changes, research, and policy can qualify. A company-authored post is neither automatically important nor disqualified; weigh its concrete change and limitations.",
+ "feeds": [
+  {
+   "id": "openai",
+   "url": "https://openai.com/news/rss.xml",
+   "primary": true
+  },
+  {
+   "id": "google",
+   "url": "https://blog.google/rss/",
+   "primary": true
+  },
+  {
+   "id": "nvidia",
+   "url": "https://blogs.nvidia.com/feed/",
+   "primary": true
+  },
+  {
+   "id": "ars-technology",
+   "url": "https://feeds.arstechnica.com/arstechnica/technology-lab"
+  },
+  {
+   "id": "the-register-ai",
+   "url": "https://api.theregister.com/api/v1/article?limit=25&orderBy=published&query=tag%3A%22ai+and+ml%22&remapper=rss&site_id=2"
+  },
+  {
+   "id": "wired-ai",
+   "url": "https://www.wired.com/feed/tag/ai/latest/rss"
+  }
+ ]
+}

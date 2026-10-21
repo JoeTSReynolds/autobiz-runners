@@ -2,15 +2,7 @@
 name: "Cartoon Clips Shorts"
 on:
   schedule:
-    - cron: '17 9 * * *'
-      timezone: 'Europe/London'
-    - cron: '17 12 * * *'
-      timezone: 'Europe/London'
-    - cron: '17 15 * * *'
-      timezone: 'Europe/London'
-    - cron: '17 18 * * *'
-      timezone: 'Europe/London'
-    - cron: '17 21 * * *'
+    - cron: '17 16 * * *'
       timezone: 'Europe/London'
   workflow_dispatch:
 concurrency:
@@ -76,10 +68,15 @@ jobs:
       - name: Write credentials for EpicVideoClips101
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_EPICVIDEOCLIPS101 }}
+          STUDIO_COOKIES: ${{ secrets.YOUTUBE_STUDIO_COOKIES_EPICVIDEOCLIPS101 }}
         run: |
           umask 077
           mkdir -p data/state/youtube-tokens
           printf '%s' "$YOUTUBE_TOKEN" > data/state/youtube-tokens/EpicVideoClips101.json
+          if [ -n "$STUDIO_COOKIES" ] && [ ! -d data/state/youtube-studio/EpicVideoClips101 ]; then
+            printf '%s' "$STUDIO_COOKIES" | base64 -d | gunzip > data/studio-cookies.sqlite
+            echo "YOUTUBE_STUDIO_FIREFOX_COOKIES=$PWD/data/studio-cookies.sqlite" >> "$GITHUB_ENV"
+          fi
       - name: "Run Cartoon Clips Shorts"
         env:
           AUTOBIZ_RUN_TIMEOUT_MS: '3600000'

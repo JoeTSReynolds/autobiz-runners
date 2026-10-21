@@ -1,0 +1,10 @@
+/* Space lane, "Mission" (NASA 1975 Graphics Standards Manual): black, paper, NASA red, Nimbus Sans. */
+@font-face { font-family: "Nimbus Sans"; src: url("NimbusSans-Regular.otf"); font-weight: 400; }
+@font-face { font-family: "Nimbus Sans"; src: url("NimbusSans-Bold.otf"); font-weight: 700; }
+:root { --dark: #0b0b0b; --light: #f3f2ec; --accent-deep: #b0241b; --accent: #e03c31; --rock: #c9c7bf; --mid: #77756f; --dim: #9a988f; --ink: #111111; }
+#root { font-family: "Nimbus Sans"; }
+.d { font-weight: 700; letter-spacing: -0.035em; line-height: 0.95; }
+.t { font-weight: 400; font-size: 50px; line-height: 1.18; letter-spacing: -0.01em; }
+.lbl { font-size: 42px; font-weight: 700; letter-spacing: -0.02em; }
+.cap { font-weight: 700; font-size: 80px; line-height: 1.05; letter-spacing: -0.03em; }
+.cap span { margin-right: 20px; }

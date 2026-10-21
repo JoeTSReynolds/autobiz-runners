@@ -1,0 +1,24 @@
+{
+ "scope": "Substantial discoveries in astronomy, space exploration, Earth science, and basic physical science; mission events when a concrete outcome is known. Exclude routine schedules, minor image releases, speculative claims, and medical advice.",
+ "selection": "Prefer a new measured result, consequential mission outcome, or important change in scientific understanding. Distinguish a proposed mission or study from a completed observation. A striking image alone is not a significant story.",
+ "feeds": [
+  {
+   "id": "nasa",
+   "url": "https://www.nasa.gov/feed/",
+   "primary": true
+  },
+  {
+   "id": "esa-space-science",
+   "url": "https://www.esa.int/rssfeed/Our_Activities/Space_Science",
+   "primary": true
+  },
+  {
+   "id": "ars-science",
+   "url": "https://feeds.arstechnica.com/arstechnica/science"
+  },
+  {
+   "id": "bbc-science",
+   "url": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml"
+  }
+ ]
+}

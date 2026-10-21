@@ -1,0 +1,270 @@
+{
+ "lane": "space",
+ "title": "Moon cave",
+ "voice": "JBFqnCBsd6RMkjVDRZzb",
+ "hook": "hidden-thing",
+ "credit": "Images: NASA/GSFC/Arizona State University (LRO). Sources: NASA, Planetary Science Institute; Horvath et al. 2022 (LRO Diviner).",
+ "scenes": [
+  {
+   "id": "hook",
+   "say": "[curious] There's a hole in the Moon. [mysterious] And what might be hiding underneath could change how humans live there.",
+   "parts": [
+    {
+     "blueprint": "photo-target",
+     "params": {
+      "headline": [
+       "There’s a hole",
+       "in the Moon"
+      ],
+      "image": "moon.jpg",
+      "target": {
+       "x": 0.1133,
+       "y": 0.39
+      },
+      "ringAt": "hole",
+      "dive": true
+     }
+    },
+    {
+     "blueprint": "tease-void",
+     "at": "hiding",
+     "params": {
+      "qAt": "underneath",
+      "shakeAt": "change"
+     }
+    }
+   ]
+  },
+  {
+   "id": "size",
+   "say": "It's about 90 metres across, sitting in a volcanic plain called the Ocean of Storms.",
+   "transition": "zoom",
+   "parts": [
+    {
+     "blueprint": "photo-measure",
+     "params": {
+      "image": "pit-lro.png",
+      "a": {
+       "x": 0.398,
+       "y": 0.508
+      },
+      "b": {
+       "x": 0.602,
+       "y": 0.508
+      },
+      "label": "~90 m",
+      "labelAt": "90",
+      "place": [
+       "Marius Hills pit,",
+       "Ocean of Storms"
+      ],
+      "placeAt": "volcanic"
+     }
+    }
+   ]
+  },
+  {
+   "id": "history",
+   "say": "Japan's Kaguya orbiter spotted it in 2008. [intrigued] Then in 2017, radar and gravity data hinted at something big. An empty space, below the surface.",
+   "transition": "whip",
+   "parts": [
+    {
+     "blueprint": "timeline-years",
+     "params": {
+      "rows": [
+       {
+        "year": "2008",
+        "text": "Japan’s Kaguya orbiter photographs the pit",
+        "at": "kaguya"
+       },
+       {
+        "year": "2017",
+        "text": "Radar and gravity data hint at an empty space below",
+        "at": "2017",
+        "count": true
+       },
+       {
+        "year": "2026",
+        "text": "NASA picks a mission to go and check",
+        "at": "below",
+        "accent": true
+       }
+      ],
+      "emphasis": {
+       "row": 1,
+       "at": "empty"
+      },
+      "snap": {
+       "image": "pit-lro.png",
+       "focus": {
+        "x": 0.5,
+        "y": 0.5
+       },
+       "at": "spotted",
+       "ringsAt": "radar",
+       "voidAt": "hinted",
+       "zoomAt": "big"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "mission",
+   "say": "[excited] Now NASA has picked a mission called Gimli to go and find out. A lander and a rover will probe the ground with radar, seismic sensors and a gravity meter.",
+   "parts": [
+    {
+     "blueprint": "xsec-mission",
+     "params": {
+      "title": "Gimli",
+      "titleAt": "gimli",
+      "sub": "Lander and rover, Planetary Science Institute",
+      "tubeAt": "find",
+      "landAt": "lander",
+      "instruments": [
+       {
+        "label": "Radar",
+        "kind": "radar",
+        "at": "radar"
+       },
+       {
+        "label": "Seismic",
+        "kind": "seismic",
+        "at": "seismic"
+       },
+       {
+        "label": "Gravity",
+        "kind": "gravity",
+        "at": "gravity"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "surface",
+   "say": "Why does it matter? [dramatic] On the surface, the temperature swings from 127 degrees... to minus 173.",
+   "transition": "zoom",
+   "parts": [
+    {
+     "blueprint": "line-swing",
+     "params": {
+      "ask": [
+       "Why does",
+       "it matter?"
+      ],
+      "label": "Lunar surface, day to night",
+      "labelAt": "surface",
+      "drawAt": "swings",
+      "high": {
+       "text": "+127°C",
+       "at": "127"
+      },
+      "low": {
+       "text": "−173°C",
+       "at": "173"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "cave",
+   "say": "But in the shade of another lunar pit? [impressed] It stays around 17 degrees. Day and night.",
+   "parts": [
+    {
+     "blueprint": "line-flat",
+     "params": {
+      "big": "17°C",
+      "bigAt": "17",
+      "label": [
+       "In the shade of another lunar pit,",
+       "day and night. (NASA LRO, 2022)"
+      ],
+      "labelAt": "shade",
+      "dimAt": "pit",
+      "drawAt": "stays",
+      "level": 0.367
+     }
+    }
+   ]
+  },
+  {
+   "id": "whatif",
+   "say": "[whispers] So here's what could be down there. [excited] A base, inside a lava tube. Shielded from radiation, from tiny meteorites, and from that brutal heat and cold.",
+   "transition": "flash",
+   "parts": [
+    {
+     "blueprint": "xsec-reveal",
+     "params": {
+      "headline": [
+       "A base",
+       "underground"
+      ],
+      "heroAt": "base",
+      "threats": [
+       {
+        "label": "Radiation",
+        "at": "radiation"
+       },
+       {
+        "label": "Micrometeorites",
+        "at": "meteorites"
+       },
+       {
+        "label": "Heat and cold",
+        "at": "heat"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "caveat",
+   "say": "[serious] First, Gimli has to prove the tube is really there. And it doesn't have a launch date yet.",
+   "transition": "zoom",
+   "parts": [
+    {
+     "blueprint": "statement",
+     "params": {
+      "lines": [
+       {
+        "text": "First, the"
+       },
+       {
+        "text": "tube has to",
+        "at": "prove"
+       },
+       {
+        "text": "be there",
+        "at": "really"
+       }
+      ],
+      "foot": {
+       "text": "No launch date yet",
+       "at": "doesn"
+      },
+      "image": "pit-lro.png"
+     }
+    }
+   ]
+  },
+  {
+   "id": "outro",
+   "say": "Follow, and we'll show you what it finds.",
+   "transition": "zoom",
+   "parts": [
+    {
+     "blueprint": "follow",
+     "params": {
+      "sub": "to see what Gimli finds",
+      "followAt": "follow",
+      "image": "moon.jpg"
+     }
+    }
+   ]
+  }
+ ]
+}
