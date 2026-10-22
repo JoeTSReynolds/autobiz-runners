@@ -268,7 +268,8 @@ def site(job, cfg, run, state):
     if not project:
         raise SystemExit("NEWSROOM_SITE_CLOUDFLARE_PROJECT is not set")
     try:
-        with urllib.request.urlopen(f"{SITE}/catalog.json", timeout=30) as r:
+        # Cloudflare answers urllib's default User-Agent with 403
+        with urllib.request.urlopen(urllib.request.Request(f"{SITE}/catalog.json", headers={"User-Agent": "autobiz-shorts"}), timeout=30) as r:
             live = json.load(r)["videos"]
     except Exception as e:
         raise SystemExit(f"could not read the live catalog.json ({e}); not deploying, as that would drop every other video")

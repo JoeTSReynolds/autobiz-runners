@@ -23,6 +23,8 @@ class Live(http.server.BaseHTTPRequestHandler):
     body = None  # None answers 404
 
     def do_GET(self):
+        if self.headers.get("User-Agent", "").startswith("Python-urllib"):  # as Cloudflare Pages answers urllib's default agent
+            self.send_response(403); self.end_headers(); return
         ok = self.path == "/catalog.json" and Live.body is not None
         self.send_response(200 if ok else 404); self.end_headers()
         if ok:
