@@ -4,7 +4,17 @@
     "name": "Newsroom Space",
     "description": "Infographic news Shorts for the space lane, built by the shared Newsroom Short module after review.",
     "status": "draft",
-    "settings": {},
+    "settings": {
+      "runner": {
+        "at": [
+          "11:37",
+          "21:37"
+        ],
+        "tz": "Europe/London",
+        "model": "claude-haiku-5-5",
+        "cover": false
+      }
+    },
     "workflow": {
       "nodes": [
         {
@@ -126,7 +136,7 @@
       "operators": []
     },
     "createdAt": "2026-10-20T11:01:04.509Z",
-    "updatedAt": "2026-10-22T11:35:11.204Z"
+    "updatedAt": "2026-10-22T16:44:49.660Z"
   },
   "modules": [
     {

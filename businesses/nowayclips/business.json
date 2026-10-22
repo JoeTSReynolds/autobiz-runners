@@ -4,7 +4,20 @@
     "name": "NoWayClips",
     "description": "Finds this week's most-viewed English podcasts, interviews and debates, picks the most controversial or funniest moment from what viewers replayed, laughed at or commented on, and tells it as a story Short: a reaction hook, the host's intro, build-up beats and the payoff, with transitions, effects, particles, emoji pop-ups and sound effects over a textured background. Publishes to @NoWayClipsHQ without review.",
     "status": "draft",
-    "settings": {},
+    "settings": {
+      "runner": {
+        "at": [
+          "10:37",
+          "13:37",
+          "16:37",
+          "19:37",
+          "23:37"
+        ],
+        "tz": "Europe/London",
+        "model": "claude-haiku-5-5",
+        "cover": false
+      }
+    },
     "workflow": {
       "nodes": [
         {
@@ -448,7 +461,7 @@
       ]
     },
     "createdAt": "2026-10-13T01:32:43.003Z",
-    "updatedAt": "2026-10-15T15:02:52.348Z"
+    "updatedAt": "2026-10-22T16:44:47.894Z"
   },
   "modules": [
     {
