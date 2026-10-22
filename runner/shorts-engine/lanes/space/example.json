@@ -212,7 +212,7 @@
   {
    "id": "whatif",
    "say": "[whispers] So here's what could be down there. [excited] A base, inside a lava tube. Shielded from radiation, from tiny meteorites, and from that brutal heat and cold.",
-   "transition": "flash",
+   "transition": "zoom",
    "parts": [
     {
      "blueprint": "xsec-reveal",

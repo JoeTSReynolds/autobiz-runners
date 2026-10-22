@@ -61,8 +61,8 @@ and is always framed as "could", "maybe" or "what if", never as fact.
   says", "not confirmed"); never put notes like "could, not a fact" or "(illustration)" on screen.
 - **Short text on screen.** Labels, figures and short claims, not the narration repeated. Respect every
   slot's character limit; split long text into lines yourself.
-- **Transitions:** set `"transition"` on 4 to 6 scenes. "zoom" suits dives and big shifts, "glitch" suits
-  tech surprises, "whip" suits moving on, and "flash" suits the reveal. Leave the rest as cuts by omitting the key.
+- **Transitions:** set `"transition"` on 4 to 6 scenes. "zoom" suits dives, big shifts and the reveal,
+  "glitch" suits tech surprises, and "whip" suits moving on. Leave the rest as cuts by omitting the key.
 
 # Narration rules (`say`)
 

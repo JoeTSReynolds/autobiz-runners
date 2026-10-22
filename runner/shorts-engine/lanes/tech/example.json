@@ -346,7 +346,7 @@
   {
    "id": "wafer",
    "say": "[excited] Okay, that crazy number. Picture every dollar as a silicon wafer. [whispers] 51 cents of it... was pure profit. That's what happens when almost nobody else can make what you make.",
-   "transition": "flash",
+   "transition": "zoom",
    "parts": [
     {
      "blueprint": "wafer-reveal",

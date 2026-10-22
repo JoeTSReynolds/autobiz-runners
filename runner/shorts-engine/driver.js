@@ -25,8 +25,10 @@ window.buildShort = () => {
   const tl = gsap.timeline({ paused: true }), cam = document.getElementById("cam");
   kit.sound({ key: L.key, music: L.music });
   for (const sc of SB.scenes) { const sec = document.createElement("section"); sec.className = "scene"; sec.id = sc.id; cam.appendChild(sec); }
-  const dur = { zoom: 0.8, glitch: 0.5, whip: 0.6, flash: 0.6 };
-  kit.transitions(tl, Object.fromEntries(SB.scenes.filter((s) => s.transition).map((s) => [s.id, [s.transition, dur[s.transition] || 0.7]])));
+  const dur = { zoom: 0.8, glitch: 0.5, whip: 0.6 };
+  // "flash" veils the new scene's text in white, which always fails the contrast audit: older storyboards get a zoom
+  const kind = (t) => (t === "flash" ? "zoom" : t);
+  kit.transitions(tl, Object.fromEntries(SB.scenes.filter((s) => s.transition).map((s) => [s.id, [kind(s.transition), dur[kind(s.transition)] || 0.7]])));
   // captions follow the ground under them; data-ground lets numbers avoid accent-on-accent
   // photo: a photo sits behind the caption band, so captions get a backing plate to stay readable
   const groundAt = (t, g, photo = false) => tl.set("#caps", { color: g === "dark" ? L.colors.light : L.colors.ink, attr: { "data-ground": g, "data-photo": photo ? 1 : 0 } }, t);
