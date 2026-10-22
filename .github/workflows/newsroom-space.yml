@@ -56,11 +56,12 @@ jobs:
       - name: Install tools
         timeout-minutes: 10
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-roboto-unhinted espeak-ng > /dev/null
+          APT='-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180'
+          sudo apt-get $APT update -qq
+          sudo apt-get $APT install -y -qq fonts-roboto-unhinted espeak-ng > /dev/null
           ff="$HOME/.cache/autobiz/ffmpeg"
           if [ ! -x "$ff/bin/ffmpeg" ]; then
-            mkdir -p "$ff" && curl -fsSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz | tar -xJ --strip-components=1 -C "$ff" || { rm -rf "$ff"; sudo apt-get install -y -qq ffmpeg > /dev/null; }
+            mkdir -p "$ff" && curl -fsSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz | tar -xJ --strip-components=1 -C "$ff" || { rm -rf "$ff"; sudo apt-get $APT install -y -qq ffmpeg > /dev/null; }
           fi
           if [ -x "$ff/bin/ffmpeg" ]; then echo "$ff/bin" >> "$GITHUB_PATH"; fi
           if [ ! -d runner/node_modules ]; then npm install --prefix runner --no-audit --no-fund; fi

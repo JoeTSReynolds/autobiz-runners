@@ -52,10 +52,6 @@ jobs:
           deno-version: v2.x
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/autobiz/ffmpeg
-          key: tools-ffmpeg-n8.1-${{ runner.os }}-${{ runner.arch }}
-      - uses: actions/cache@v4
-        with:
           path: ~/.cache/autobiz/pipx
           key: tools-pipx-yt-dlp-2026.08.19-bgutil-2.0.2-whisper-0.5.8-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
@@ -67,13 +63,9 @@ jobs:
         run: |
           (docker pull -q brainicism/bgutil-ytdlp-pot-provider:2.0.2-node > /dev/null 2>&1 &)
           bash runner/warp.sh repo
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-roboto-unhinted privoxy cloudflare-warp > /dev/null
-          ff="$HOME/.cache/autobiz/ffmpeg"
-          if [ ! -x "$ff/bin/ffmpeg" ]; then
-            mkdir -p "$ff" && curl -fsSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz | tar -xJ --strip-components=1 -C "$ff" || { rm -rf "$ff"; sudo apt-get install -y -qq ffmpeg > /dev/null; }
-          fi
-          if [ -x "$ff/bin/ffmpeg" ]; then echo "$ff/bin" >> "$GITHUB_PATH"; fi
+          APT='-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180'
+          sudo apt-get $APT update -qq
+          sudo apt-get $APT install -y -qq fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp > /dev/null
           export PIPX_HOME="$HOME/.cache/autobiz/pipx" PIPX_BIN_DIR="$HOME/.cache/autobiz/pipx/bin"
           if [ ! -x "$PIPX_BIN_DIR/yt-dlp" ]; then
             pipx install "yt-dlp[default]==2026.08.19"
