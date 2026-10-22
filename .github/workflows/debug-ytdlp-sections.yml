@@ -34,6 +34,7 @@ jobs:
           printf '%s' "$YTDLP_COOKIES" | base64 -d | gunzip > "$RUNNER_TEMP/yt-cookies.txt"
       - name: Probe section downloads
         run: |
+          set +e
           F='bv*[height<=1080][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=1080][vcodec^=avc1]+ba/b[height<=1080]'
           U='https://www.youtube.com/watch?v=Put_ebpxQXU'
           C="$RUNNER_TEMP/yt-cookies.txt"
