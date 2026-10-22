@@ -208,7 +208,8 @@ def render(job, cfg, run, state):
             raise SystemExit(f"render failed: {out[-800:]}")
     credit = sb.get("credit", "")
     desc = f"{job['brief'].get('story', '')}\n\nSources: " + ", ".join(sorted({f['source'] for f in job['brief']['facts'] if f.get('source')})) + (f"\n{credit}" if credit else "")
-    tags = {"tech": ["tech", "technews", "ai"], "space": ["space", "science", "nasa"]}[lane]
+    # the first two also go into the title (youtube-publish): the topic, then #shorts
+    tags = {"tech": ["technews", "shorts", "tech", "ai"], "space": ["space", "shorts", "science", "nasa"]}[lane]
     # the shape youtube-publish reads: job.short.file (a file in the run folder) and job.meta
     return "next", {"short": {"file": "short.mp4"}, "meta": {"title": sb.get("title", "")[:95], "description": desc[:4800], "hashtags": tags}}, f"rendered ({engine} voice)"
 

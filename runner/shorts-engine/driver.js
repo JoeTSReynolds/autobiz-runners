@@ -81,6 +81,11 @@ window.buildShort = () => {
   kit.captions(tl, document.getElementById("caps"));
   tl.to("#grain", { backgroundPosition: "256px 512px", duration: T.duration, ease: `steps(${Math.round(T.duration * 12)})` }, 0);
   tl.to({}, { duration: 0.01 }, T.duration - 0.01);
+  // the opening picture is the swipe decision: it must hold long enough to be seen before the next part replaces it
+  const opener = built.find((b) => b.sc === SB.scenes[0] && b.i === 0);
+  if (opener && opener.end - opener.start < 2.5) {
+    throw new Error(`pacing: scene "${opener.sc.id}": its opening ${opener.p.blueprint} is on screen only ${(opener.end - opener.start).toFixed(1)} s; it needs at least 2.5 s, so start the next part on a later word`);
+  }
   kit.pace(tl, 3);
   return tl;
 };

@@ -137,13 +137,14 @@ def impact(dur=1.2):
 def scratch(dur):
     """Pencil on paper: a sketch or line drawing itself on."""
     n = int(dur * SR)
-    noise = bandnoise(n, lambda k: 3800 + 1400 * math.sin(k / SR * 23), q=0.35)
+    # centred well below the ear's most sensitive band (3-4 kHz), where it read as a harsh hiss
+    noise = bandnoise(n, lambda k: 2600 + 900 * math.sin(k / SR * 23), q=0.35)
     out = []
     for k in range(n):
         tt = k / SR
         stroke = max(0.0, math.sin(tt * 2 * math.pi * 7.5)) ** 3
         env = math.sin(math.pi * k / n)
-        out.append(noise[k] * stroke * env * 1.4)
+        out.append(noise[k] * stroke * env * 0.35)
     return out
 
 

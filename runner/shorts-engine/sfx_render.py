@@ -6,6 +6,7 @@ Timing: every cue's `t` is when the sound STARTS, except a riser, which is place
 at t + dur (its build-up runs from t, the payoff lands at t + dur).
 """
 import json
+import math
 import os
 import sys
 
@@ -30,9 +31,23 @@ SOUNDS = {
     "click": (0.1, lambda c, k: synth.click(c.get("f0", 1800), c.get("dur", 0.05))),
     "chime": (0.12, lambda c, k: synth.chime([note(k, c.get("step", 0) + i) * 2 for i in (0, 2, 4)], c.get("dur", 1.8))),
     "scratch": (0.1, lambda c, k: synth.scratch(c.get("dur", 0.8))),
-    "impact": (0.3, lambda c, k: synth.impact(c.get("dur", 1.2))),
-    "riser": (0.28, lambda c, k: synth.riser(c.get("dur", 2.5), c.get("f0", 260), c.get("f1", 5200))),
+    "impact": (0.24, lambda c, k: synth.impact(c.get("dur", 1.2))),
+    "riser": (0.2, lambda c, k: synth.riser(c.get("dur", 2.5), c.get("f0", 260), c.get("f1", 5200))),
 }
+
+
+# Unpitched sounds vary in speed; pitched ones (pop, blip, chime) stay in the music's key, and a riser keeps
+# its length because it must end exactly on its beat.
+VARIED = {"whoosh", "whoosh-big", "click", "scratch", "impact"}
+
+
+def limit(samples, ratio=0.45):
+    """Soft-limit a cue to 45% of its own peak (tanh knee), so a sharp transient can't jump far above its body."""
+    peak = max((abs(v) for v in samples), default=0.0)
+    if peak == 0:
+        return samples
+    ceil = ratio * peak
+    return [ceil * math.tanh(v / ceil) for v in samples]
 
 
 def render(project):
@@ -67,10 +82,18 @@ def render(project):
         left, right = synth.pad(dur, [(0, key)], volume=lambda t: fade(t) * duck(t))
         mix.put_stereo(0, left, right, gain=0.03)
 
-    for c in sheet["cues"]:
+    last = {}  # type -> (time, how many in a row)
+    for i, c in enumerate(sheet["cues"]):
         gain, build = SOUNDS[c["type"]]
         t = c["t"]  # riser: t is its START, it ends at t + dur
-        mix.put(t, build(c, key), gain=c.get("gain", gain), pan=c.get("pan", 0.0))
+        samples = build(c, key)
+        if c["type"] in VARIED:  # a seeded tape-speed change (±12%), so a repeated sound is never the identical sample
+            r = 1 + 0.12 * ((((i + 1) * 2654435761 + int(t * 1000)) % 1001) / 500 - 1)
+            samples = [samples[int(k * r)] for k in range(int(len(samples) / r))]
+        prev, run = last.get(c["type"], (-9.0, 0))
+        run = run + 1 if t - prev < 0.7 else 0  # the same sound again within 0.7 s plays softer each time
+        last[c["type"]] = (t, run)
+        mix.put(t, limit(samples), gain=c.get("gain", gain) * 0.7 ** min(run, 4), pan=c.get("pan", 0.0))
 
     stats = mix.master(target_lufs=-20.0)  # -20, not -14: this sits under a voiceover
     mix.write(os.path.join(project, "sfx.wav"))

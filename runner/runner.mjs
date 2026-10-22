@@ -51243,6 +51243,10 @@ function cleanHashtags(items, max) {
   }
   return [...kept.values()];
 }
+function withTitleHashtags(title, hashtags) {
+  if (/#[\p{L}\p{N}_]/u.test(title)) return title;
+  return hashtags.slice(0, 2).reduce((t, tag) => `${t} #${tag}`.length <= 100 ? `${t} #${tag}` : t, title);
+}
 function withHashtags(description, hashtags) {
   if (hashtags.length === 0) return description.slice(0, 5e3);
   const line2 = hashtags.map((tag) => `#${tag}`).join(" ");
@@ -51288,7 +51292,7 @@ function readJob2(input, needCover, maxHashtags) {
     job: input,
     file: short.file,
     cover: isObject8(thumbnail) ? String(thumbnail.file) : "",
-    title: clipTitle(meta.title.trim()),
+    title: withTitleHashtags(clipTitle(meta.title.trim()), cleanHashtags(meta.hashtags ?? [], maxHashtags)),
     description: withHashtags(meta.description ?? "", cleanHashtags(meta.hashtags ?? [], maxHashtags)),
     tags: cleanTags(meta.tags ?? [])
   };

@@ -47,7 +47,7 @@ and is always framed as "could", "maybe" or "what if", never as fact.
 - **Open on a picture.** The first frame decides the swipe: the hook's first part is a photo or diagram
   blueprint (photo-hook, photo-target, photo-measure, big-number or split with an image, doc, phone, a chart),
   or `tease-three` with an `image` (set its `focus` from the image's points). Never open with `statement`,
-  `question` or `timeline-years`; use them later in the video.
+  `question` or `timeline-years`; use them later in the video. Keep that opening part on screen for at least 2.5 s: start the hook's next part on a word that late.
 - **Show the story happening.** Use at least 3 different *motion* blueprints (marked in the catalogue). They
   animate what the narration describes: a rock slamming into Mars is `collide`, data pouring off phones is
   `flow`, a moon captured by a planet is `orbit`. Cast the story's own actors into them: a photo from the brief
