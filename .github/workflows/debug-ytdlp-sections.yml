@@ -6,7 +6,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
@@ -14,9 +14,12 @@ jobs:
           deno-version: v2.x
       - name: Install tools
         run: |
-          bash runner/warp.sh repo
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg privoxy cloudflare-warp > /dev/null
+          set -x
+          ps -eo pid,etime,cmd | grep -E "apt|dpkg|unattended" | grep -v grep || true
+          timeout 60 bash runner/warp.sh repo
+          A="-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180"
+          time timeout 300 sudo apt-get $A update
+          time timeout 300 sudo apt-get $A install -y -q ffmpeg privoxy cloudflare-warp | tail -3
           mkdir -p "$HOME/btbn" && curl -fsSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz | tar -xJ --strip-components=1 -C "$HOME/btbn"
           pipx install "yt-dlp[default]==2026.08.19"
           pipx inject yt-dlp "bgutil-ytdlp-pot-provider==2.0.2"
