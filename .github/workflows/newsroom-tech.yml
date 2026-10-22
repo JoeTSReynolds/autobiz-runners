@@ -36,19 +36,34 @@ jobs:
         run: |
           curl -fsSL https://claude.ai/install.sh | bash -s 2.1.112
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          if ! reply=$(timeout 120 "$HOME/.local/bin/claude" -p 'Reply with OK' --model claude-haiku-5-5 2>&1); then
-            echo "::error::Claude is not available: $(printf '%s' "$reply" | tail -c 300)"
-            exit 1
-          fi
+          (timeout 120 "$HOME/.local/bin/claude" -p 'Reply with OK' --model claude-haiku-5-5 > "$RUNNER_TEMP/claude-check.log" 2>&1; echo $? > "$RUNNER_TEMP/claude-check.status") < /dev/null > /dev/null 2>&1 &
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/autobiz/ffmpeg
+          key: tools-ffmpeg-n8.1-${{ runner.os }}-${{ runner.arch }}
+      - uses: actions/cache@v4
+        with:
+          path: runner/node_modules
+          key: tools-runner-node24-${{ hashFiles('runner/package.json') }}-${{ runner.os }}-${{ runner.arch }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: tools-playwright-${{ hashFiles('runner/package.json') }}-${{ runner.os }}
       - name: Install tools
+        timeout-minutes: 10
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-roboto-unhinted > /dev/null
-          npm install --prefix runner --no-audit --no-fund
+          sudo apt-get install -y -qq fonts-roboto-unhinted espeak-ng > /dev/null
+          ff="$HOME/.cache/autobiz/ffmpeg"
+          if [ ! -x "$ff/bin/ffmpeg" ]; then
+            mkdir -p "$ff" && curl -fsSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz | tar -xJ --strip-components=1 -C "$ff" || { rm -rf "$ff"; sudo apt-get install -y -qq ffmpeg > /dev/null; }
+          fi
+          if [ -x "$ff/bin/ffmpeg" ]; then echo "$ff/bin" >> "$GITHUB_PATH"; fi
+          if [ ! -d runner/node_modules ]; then npm install --prefix runner --no-audit --no-fund; fi
           npx --prefix runner playwright install --with-deps chromium
       - uses: actions/cache@v4
         with:
@@ -66,13 +81,19 @@ jobs:
           key: shorts-venv-py3.12-torch-2.11.0-kokoro-0.9.4-misaki-0.9.4-numpy-2.5.3-sm-3.8.0-${{ runner.os }}-${{ runner.arch }}
       - name: Install shorts tools
         run: |
-          sudo apt-get install -y -qq espeak-ng > /dev/null
           if [ ! -x .venv-shorts/bin/python ]; then
             python3.12 -m venv .venv-shorts
             .venv-shorts/bin/pip install --quiet torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
             .venv-shorts/bin/pip install --quiet kokoro==0.9.4 misaki==0.9.4 numpy==2.5.3 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
           fi
           npx --yes hyperframes@0.8.174 browser ensure
+      - name: Confirm Claude is available
+        run: |
+          for _ in $(seq 1 130); do [ -s "$RUNNER_TEMP/claude-check.status" ] && break; sleep 1; done
+          if [ "$(cat "$RUNNER_TEMP/claude-check.status" 2>/dev/null)" != 0 ]; then
+            echo "::error::Claude is not available: $(tail -c 300 "$RUNNER_TEMP/claude-check.log" 2>/dev/null)"
+            exit 1
+          fi
       - uses: actions/cache/restore@v4
         with:
           path: data/state

@@ -7028,8 +7028,8 @@ var require_time = __commonJS({
       const day2 = date.getUTCDate().toString().padStart(2, "0");
       const hours = date.getUTCHours().toString().padStart(2, "0");
       const minutes = date.getUTCMinutes().toString().padStart(2, "0");
-      const seconds2 = date.getUTCSeconds().toString().padStart(2, "0");
-      return `,"time":"${year}-${month}-${day2}T${hours}:${minutes}:${seconds2}.${nanosWithinSecond.toString().padStart(9, "0")}Z"`;
+      const seconds3 = date.getUTCSeconds().toString().padStart(2, "0");
+      return `,"time":"${year}-${month}-${day2}T${hours}:${minutes}:${seconds3}.${nanosWithinSecond.toString().padStart(9, "0")}Z"`;
     };
     module.exports = { nullTime, epochTime, unixTime, isoTime, isoTimeNano };
   }
@@ -44297,7 +44297,7 @@ var require_static = __commonJS({
 
 // apps/server/src/headless.ts
 import { spawnSync } from "node:child_process";
-import { mkdir as mkdir4, readFile as readFile7, rename as rename3, writeFile as writeFile2 } from "node:fs/promises";
+import { appendFile, mkdir as mkdir4, readFile as readFile7, rename as rename3, writeFile as writeFile2 } from "node:fs/promises";
 import { join as join9, resolve as resolve6 } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -46840,6 +46840,10 @@ var schema_default = {
         attempt: {
           type: "integer",
           minimum: 1
+        },
+        durationMs: {
+          type: "number",
+          minimum: 0
         }
       }
     },
@@ -49304,7 +49308,7 @@ function replayPoints(info) {
 function commentPoints(info, duration) {
   return (Array.isArray(info.comments) ? info.comments : []).flatMap((comment) => {
     if (!isObject3(comment) || typeof comment.text !== "string") return [];
-    const at2 = [...comment.text.matchAll(/\b(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\b/g)].map(([, h, m, s]) => Number(h ?? 0) * 3600 + Number(m) * 60 + Number(s)).find((seconds2) => seconds2 > 0 && seconds2 < duration);
+    const at2 = [...comment.text.matchAll(/\b(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\b/g)].map(([, h, m, s]) => Number(h ?? 0) * 3600 + Number(m) * 60 + Number(s)).find((seconds3) => seconds3 > 0 && seconds3 < duration);
     const likes = typeof comment.like_count === "number" ? comment.like_count : 0;
     return at2 === void 0 ? [] : [{ at: at2, label: `comment (${likes} likes) "${comment.text.replace(/\s+/g, " ").trim().slice(0, 150)}"`, score: likes }];
   });
@@ -49591,8 +49595,8 @@ var index = async (job, config, tools, outputKey) => {
   } finally {
     await tools.writeText("state", `${dir}/catalog.json`, JSON.stringify(catalog));
   }
-  const total = Object.values(catalog).filter((entry) => isObject3(entry) && entry.status === "ok").length;
-  return { output: { ...job, [outputKey]: { added, none, total, stoppedBy } }, port: "next" };
+  const total2 = Object.values(catalog).filter((entry) => isObject3(entry) && entry.status === "ok").length;
+  return { output: { ...job, [outputKey]: { added, none, total: total2, stoppedBy } }, port: "next" };
 };
 var words = (value) => value.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 var strings = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
@@ -49659,9 +49663,9 @@ var locate = async (job, config, tools, outputKey) => {
         const inWindow = tokens.slice(from, to + 1).flat();
         const counts = keywords.map(({ tokens: sequence }) => occurrences(inWindow, sequence));
         const distinct = counts.filter(Boolean).length;
-        const total = counts.reduce((sum2, n) => sum2 + n, 0);
-        const better = !best || distinct > best.distinct || distinct === best.distinct && (total > best.total || total === best.total && video.uploaded > best.video.uploaded);
-        if (distinct >= need && better) best = { video, distinct, total, from, to, matched: keywords.filter((_, i) => counts[i]).map(({ keyword }) => keyword) };
+        const total2 = counts.reduce((sum2, n) => sum2 + n, 0);
+        const better = !best || distinct > best.distinct || distinct === best.distinct && (total2 > best.total || total2 === best.total && video.uploaded > best.video.uploaded);
+        if (distinct >= need && better) best = { video, distinct, total: total2, from, to, matched: keywords.filter((_, i) => counts[i]).map(({ keyword }) => keyword) };
       }
     }
     if (best) {
@@ -49757,8 +49761,8 @@ function dice(seed) {
 var bgr = (rgb) => rgb.slice(4, 6) + rgb.slice(2, 4) + rgb.slice(0, 2);
 var hex2 = (value) => Math.round(value).toString(16).toUpperCase().padStart(2, "0");
 var alphaHex = (opacity) => hex2((1 - opacity) * 255);
-var stamp = (seconds2) => {
-  const cs = Math.max(0, Math.round(seconds2 * 100));
+var stamp = (seconds3) => {
+  const cs = Math.max(0, Math.round(seconds3 * 100));
   const two = (value) => String(value).padStart(2, "0");
   return `${Math.floor(cs / 36e4)}:${two(Math.floor(cs / 6e3) % 60)}:${two(Math.floor(cs / 100) % 60)}.${two(cs % 100)}`;
 };
@@ -49981,8 +49985,8 @@ function fixHook(clips, sentences, issues) {
   if (!hook) return;
   let i = sentences.findIndex((s) => Math.abs(s.start - hook.start) < 0.02);
   while (r3(length(hook)) < 4 && i > 0 && r3(hook.end - sentences[i - 1].start) <= 7) hook.start = sentences[--i].start;
-  const seconds2 = r3(length(hook));
-  if (seconds2 < 4 || seconds2 > 7) issues.push(`hook is ${seconds2} s; wanted 4-7 s.`);
+  const seconds3 = r3(length(hook));
+  if (seconds3 < 4 || seconds3 > 7) issues.push(`hook is ${seconds3} s; wanted 4-7 s.`);
 }
 function extendPayoff(clips, sentences, laughs, maxExtension, maxTotal) {
   const payoff = clips.at(-1);
@@ -50064,7 +50068,7 @@ function placeEffects(effects, spans, starts) {
   return kept.map((e) => ({ ...e, storyTime: r3(e.storyTime) }));
 }
 function placeEmojis(emojis, words2, sentences, spans, starts, issues) {
-  const total = sum(spans);
+  const total2 = sum(spans);
   const placed = [];
   for (const m of emojis) {
     const sentence = sentences.find((s) => Math.abs(s.start - m.sentenceStart) <= 0.05);
@@ -50090,14 +50094,14 @@ function placeEmojis(emojis, words2, sentences, spans, starts, issues) {
     let storyTime = m.storyTime;
     if (previous && storyTime - previous.storyTime < 1 - EPS) {
       const delayed = previous.storyTime + 1;
-      if (delayed - storyTime > 0.5 + EPS || delayed >= total) continue;
+      if (delayed - storyTime > 0.5 + EPS || delayed >= total2) continue;
       storyTime = delayed;
     }
     shown.push({ ...m, storyTime });
   }
   return shown.map((m, i) => ({
     storyTime: r3(m.storyTime),
-    until: r3(Math.min(m.storyTime + 2.2, shown[i + 1]?.storyTime ?? Infinity, total)),
+    until: r3(Math.min(m.storyTime + 2.2, shown[i + 1]?.storyTime ?? Infinity, total2)),
     glyph: m.glyph,
     name: m.name,
     funny: m.funny,
@@ -50112,7 +50116,7 @@ function normalizeStory(plan, words2, sentences, laughs, options = {}) {
   fixHook(spans, sentences, issues);
   extendPayoff(spans, sentences, laughs, maxExtension, maxTotal);
   capTotal(spans, sentences, maxTotal, issues);
-  const total = sum(spans);
+  const total2 = sum(spans);
   const starts = spans.map((_, i) => sum(spans.slice(0, i)));
   const clips = spans.map((c, i) => {
     const sentence = sentences.find((s) => Math.abs(s.end - c.end) < 0.02);
@@ -50130,7 +50134,7 @@ function normalizeStory(plan, words2, sentences, laughs, options = {}) {
   });
   const effects = placeEffects(plan.effects, spans, starts);
   const emojis = placeEmojis(plan.emojis, words2, sentences, spans, starts, issues);
-  return { clips, effects, emojis, total: r3(total), issues };
+  return { clips, effects, emojis, total: r3(total2), issues };
 }
 function endWindow(lastWord, nextWordStart) {
   const letters = [...lastWord.text].filter((ch) => /[\p{L}\p{N}]/u.test(ch)).length;
@@ -50152,8 +50156,8 @@ function quietestStart(rmsDb, frameSeconds, windowStart) {
 }
 function emojiSounds(emojis, busy, sounds) {
   return emojis.map(({ storyTime, funny }) => {
-    const { name, seconds: seconds2 } = funny ? sounds.funny : sounds.plain;
-    const clash = busy.some(([from, to]) => storyTime < to - EPS && from < storyTime + seconds2 - EPS);
+    const { name, seconds: seconds3 } = funny ? sounds.funny : sounds.plain;
+    const clash = busy.some(([from, to]) => storyTime < to - EPS && from < storyTime + seconds3 - EPS);
     return clash ? null : { sound: name, storyTime };
   });
 }
@@ -50166,8 +50170,8 @@ var FOREVER = 35999.99;
 var clean = (text3) => text3.replace(/^\s*>>\s*/, "").replace(/\s+/g, " ").trim();
 var escape2 = (text3) => text3.replace(/[\\{}]/g, "\\$&");
 var escapeRows = (text3) => text3.split(BREAK).map(escape2).join(BREAK);
-function stamp2(seconds2) {
-  const cs = Math.max(0, Math.round(seconds2 * 100));
+function stamp2(seconds3) {
+  const cs = Math.max(0, Math.round(seconds3 * 100));
   const two = (value) => String(value).padStart(2, "0");
   return `${Math.floor(cs / 36e4)}:${two(Math.floor(cs / 6e3) % 60)}:${two(Math.floor(cs / 100) % 60)}.${two(cs % 100)}`;
 }
@@ -50383,11 +50387,11 @@ function endSearch(clip, fileEnd) {
   const hi = Math.min(hi0, r32(fileEnd - 0.03));
   return hi - lo < 0.04 ? { cut: r32((lo + hi) / 2) } : { from: lo, to: hi };
 }
-var settleEmojis = (emojis, total) => emojis.map((m, i) => ({ ...m, until: r32(Math.min(m.storyTime + 2.2, emojis[i + 1]?.storyTime ?? Infinity, total)) }));
+var settleEmojis = (emojis, total2) => emojis.map((m, i) => ({ ...m, until: r32(Math.min(m.storyTime + 2.2, emojis[i + 1]?.storyTime ?? Infinity, total2)) }));
 function retime(story, ends) {
   const frames = story.clips.map((clip, i) => Math.max(1, Math.round((ends[i] - clip.start) * FPS)));
   const starts = frames.map((_, i) => frames.slice(0, i).reduce((a, b) => a + b, 0) / FPS);
-  const total = r32(frames.reduce((a, b) => a + b, 0) / FPS);
+  const total2 = r32(frames.reduce((a, b) => a + b, 0) / FPS);
   const issues = [...story.issues];
   const clips = story.clips.map((clip, i) => ({ ...clip, end: r32(clip.start + frames[i] / FPS), storyStart: r32(starts[i]) }));
   const effects = story.effects.flatMap((effect) => {
@@ -50403,7 +50407,7 @@ function retime(story, ends) {
     const k = Math.max(0, story.clips.filter((clip) => clip.storyStart <= emoji.storyTime + 1e-6).length - 1);
     return { ...emoji, storyTime: r32(starts[k] + emoji.storyTime - story.clips[k].storyStart) };
   });
-  return { clips, effects, emojis: settleEmojis(emojis, total), total, issues };
+  return { clips, effects, emojis: settleEmojis(emojis, total2), total: total2, issues };
 }
 function matchSources(clips, sources) {
   let from = 0;
@@ -50414,20 +50418,20 @@ function matchSources(clips, sources) {
     return sources[k];
   });
 }
-function soundPlan(story, seconds2) {
+function soundPlan(story, seconds3) {
   const busy = [];
   const transitions = story.clips.slice(1).map(({ storyStart: cut }, i) => {
     if (i === 0) {
-      const at3 = r32(cut - seconds2("reverse-whoosh"));
+      const at3 = r32(cut - seconds3("reverse-whoosh"));
       busy.push([Math.max(0, at3), cut]);
       return { sound: "reverse-whoosh", at: Math.max(0, at3), skip: Math.max(0, -at3), volume: VOLUME };
     }
     const at2 = r32(cut - 0.1);
-    busy.push([at2, at2 + seconds2("whoosh")]);
+    busy.push([at2, at2 + seconds3("whoosh")]);
     return { sound: "whoosh", at: at2, skip: 0, volume: VOLUME };
   });
-  for (const e of story.effects) busy.push([e.storyTime, Math.min(e.storyTime + seconds2(e.sound), story.clips[e.clip + 1]?.storyStart ?? story.total)]);
-  const info = (name) => ({ name, seconds: seconds2(name) });
+  for (const e of story.effects) busy.push([e.storyTime, Math.min(e.storyTime + seconds3(e.sound), story.clips[e.clip + 1]?.storyStart ?? story.total)]);
+  const info = (name) => ({ name, seconds: seconds3(name) });
   const pop = info("bubble-pop");
   let popped = false;
   const pops = emojiSounds(story.emojis, busy, { funny: pop, plain: pop }).map((free) => {
@@ -50448,7 +50452,7 @@ function stickerChain(input, { at: at2, until }, y) {
     overlay: `overlay=x='${STICKER.x}-w/2':y='${y}-h/2+6*sin(2*PI*1.2*${u}+1)':eval=frame:enable='between(t,${n3(at2)},${n3(until)})'`
   };
 }
-function finalArgs(total, stickers, audio, layout = "box") {
+function finalArgs(total2, stickers, audio, layout = "box") {
   const frame = layout !== "box";
   const base = frame ? 1 : 2;
   const video = [
@@ -50474,7 +50478,7 @@ function finalArgs(total, stickers, audio, layout = "box") {
     ...THREADS,
     "-i",
     FILES.boxes,
-    ...frame ? [] : ["-loop", "1", "-framerate", String(FPS), "-t", total.toFixed(3), "-i", FILES.background],
+    ...frame ? [] : ["-loop", "1", "-framerate", String(FPS), "-t", total2.toFixed(3), "-i", FILES.background],
     ...stickers.flatMap(({ file, at: at2, until }) => ["-loop", "1", "-framerate", String(FPS), "-t", (until - at2 + 0.3).toFixed(3), "-i", file]),
     ...audio.flatMap(({ file }) => ["-i", file]),
     "-filter_complex",
@@ -50484,7 +50488,7 @@ function finalArgs(total, stickers, audio, layout = "box") {
     "-map",
     "[aout]",
     "-t",
-    total.toFixed(3),
+    total2.toFixed(3),
     ...THREADS,
     "-c:v",
     "libx264",
@@ -50887,8 +50891,8 @@ function snapSegments(segments) {
   const snap2 = (time) => Math.round(time * FPS2) / FPS2;
   return segments.map(({ start, end }) => ({ start: snap2(start), end: snap2(end) })).filter(({ start, end }) => end > start);
 }
-function stamp3(seconds2) {
-  const cs = Math.round(seconds2 * 100);
+function stamp3(seconds3) {
+  const cs = Math.round(seconds3 * 100);
   const two = (value) => String(value).padStart(2, "0");
   return `${Math.floor(cs / 36e4)}:${two(Math.floor(cs / 6e3) % 60)}:${two(Math.floor(cs / 100) % 60)}.${two(cs % 100)}`;
 }
@@ -51224,13 +51228,13 @@ function clipTitle(title) {
 }
 function cleanTags(tags) {
   const kept = [];
-  let total = 0;
+  let total2 = 0;
   for (const tag of tags) {
     const clean4 = typeof tag === "string" ? tag.trim().replace(/^#+/, "").trim() : "";
     if (clean4 === "" || kept.includes(clean4)) continue;
-    if (total + clean4.length > 500) break;
+    if (total2 + clean4.length > 500) break;
     kept.push(clean4);
-    total += clean4.length;
+    total2 += clean4.length;
   }
   return kept;
 }
@@ -51640,7 +51644,7 @@ function summarizeOutput(input, output2) {
 function render(template, values) {
   return template.replace(/\{(node|module|input|output|error|attempt)\}/g, (_match, key) => key === "output" ? summarizeOutput(values.input, values.output) : key === "input" ? shorten(printable(values.input), 300) : printable(values[key]));
 }
-function writeNodeLog(context, node, module, outcome, attempt, input, output2, error) {
+function writeNodeLog(context, node, module, outcome, attempt, input, output2, error, durationMs) {
   const logging2 = resolveLoggingConfig(node.logging ?? module.logging);
   if (!logging2.enabled) return;
   const successful = outcome === "success";
@@ -51653,7 +51657,8 @@ function writeNodeLog(context, node, module, outcome, attempt, input, output2, e
     moduleName: module.name,
     level: outcome === "success" ? "info" : outcome === "rejection" ? "warn" : "error",
     message: message2,
-    attempt
+    attempt,
+    ...durationMs === void 0 ? {} : { durationMs }
   };
   context.logs.push(log);
   try {
@@ -51798,6 +51803,7 @@ async function executeGraph(workflow, input, context, depth) {
       const config = effectiveConfig(module.defaults, node.config);
       if (depth === 0) reportCheckpoint(context, node.id, current.input);
       let outcome;
+      const startedAt = Date.now();
       try {
         outcome = await executeNode(module, node, current.input, config, context, depth);
         if (outcome.cost !== void 0 && (!Number.isFinite(outcome.cost) || outcome.cost < 0)) {
@@ -51808,13 +51814,13 @@ async function executeGraph(workflow, input, context, depth) {
           throw new ExecutionFailure(`Module ${module.name} returned undeclared output port ${outcome.port}.`);
         }
         const logOutcome = outcome.port === "rejected" ? "rejection" : "success";
-        writeNodeLog(context, node, module, logOutcome, attempt, current.input, outcome.output);
+        writeNodeLog(context, node, module, logOutcome, attempt, current.input, outcome.output, void 0, Date.now() - startedAt);
       } catch (error) {
         if (error instanceof ExecutionCancelled || context.options.signal?.aborted) throw new ExecutionCancelled();
         const message2 = error instanceof Error ? error.message : String(error);
         const recoverable = module.kind === "composite" && error instanceof ExecutionFailure && !(error instanceof ExecutionLimitFailure) && module.outputs.some((port) => port.id === "failed") && workflow.edges.some((edge) => edge.source === node.id && edge.sourcePort === "failed");
         const errorOutput = recoverable ? { error: message2, input: cloneJson(current.input) } : void 0;
-        writeNodeLog(context, node, module, "failure", attempt, current.input, errorOutput, message2);
+        writeNodeLog(context, node, module, "failure", attempt, current.input, errorOutput, message2, Date.now() - startedAt);
         if (!recoverable) throw error instanceof Error ? error : new ExecutionFailure(message2);
         outcome = { output: errorOutput, port: "failed" };
       }
@@ -51956,7 +51962,7 @@ async function removeRunArtifacts(dataDir, runId) {
   const entries = await readdir(dir, { recursive: true, withFileTypes: true });
   const sizes = await Promise.all(entries.filter((entry) => entry.isFile()).map(async (entry) => (await lstat(join(entry.parentPath, entry.name))).size));
   await rm(dir, { recursive: true, force: true });
-  return sizes.reduce((total, size) => total + size, 0);
+  return sizes.reduce((total2, size) => total2 + size, 0);
 }
 var artifactRoutes = async (app, { dataDir, repository }) => {
   await app.register(import_static.default, {
@@ -55218,8 +55224,8 @@ function createAccessTokenSource(options) {
     }, REQUEST_TIMEOUT_MS, "Google token refresh");
     const body = await readJson2(response, "Google token refresh");
     if (typeof body?.access_token !== "string" || body.access_token === "") throw new ExecutionFailure("Google token refresh returned an invalid response.");
-    const seconds2 = typeof body.expires_in === "number" ? Math.max(body.expires_in - 60, 0) : 0;
-    cached = { token: body.access_token, expiresAt: now() + seconds2 * 1e3 };
+    const seconds3 = typeof body.expires_in === "number" ? Math.max(body.expires_in - 60, 0) : 0;
+    cached = { token: body.access_token, expiresAt: now() + seconds3 * 1e3 };
     return cached.token;
   };
 }
@@ -55623,9 +55629,9 @@ async function imagesMatch(expectedFile, observed) {
   if (Math.abs(want.width / want.height - width / got.height) > 0.01) return false;
   const [a, b] = await Promise.all([pixels(expectedFile, ""), pixels(observed, prefilter)]);
   if (!a || !b) return false;
-  let total = 0;
-  for (let i = 0; i < a.length; i++) total += Math.abs((a[i] ?? 0) - (b[i] ?? 0));
-  return total / a.length < MAX_MEAN_DIFFERENCE;
+  let total2 = 0;
+  for (let i = 0; i < a.length; i++) total2 += Math.abs((a[i] ?? 0) - (b[i] ?? 0));
+  return total2 / a.length < MAX_MEAN_DIFFERENCE;
 }
 function readFirefoxCookies(database) {
   let rows;
@@ -55974,6 +55980,19 @@ async function call(app, method, url, status, payload) {
   if (response.statusCode !== status) throw new Error(`${method} ${url} failed (${response.statusCode}): ${body.error}${body.details ? ` ${JSON.stringify(body.details)}` : ""}`);
   return body;
 }
+var seconds2 = (ms) => `${(ms / 1e3).toFixed(1)}s`;
+var slowest = (run2) => run2.logs.filter((log) => log.durationMs !== void 0).sort((a, b) => b.durationMs - a.durationMs);
+var total = (run2) => run2.finishedAt ? seconds2(Date.parse(run2.finishedAt) - Date.parse(run2.startedAt)) : void 0;
+function profileLines(run2) {
+  const logs = slowest(run2);
+  const width = Math.max(0, ...logs.map((log) => seconds2(log.durationMs).length));
+  const totalTime = total(run2);
+  return ["Profile (slowest first):", ...logs.map((log) => `  ${seconds2(log.durationMs).padStart(width)}  ${log.nodeId} (${log.moduleName})`), ...totalTime ? [`  Total run time: ${totalTime}`] : []];
+}
+function profileMarkdown(run2) {
+  const totalTime = total(run2);
+  return ["### Block timings", "", "| Block | Module | Seconds |", "| --- | --- | --- |", ...slowest(run2).map((log) => `| ${log.nodeId} | ${log.moduleName} | ${(log.durationMs / 1e3).toFixed(1)} |`), "", ...totalTime ? [`Total run time: ${totalTime}`] : []].join("\n") + "\n";
+}
 function failedInMediaFetch(run2) {
   const node = run2.workflow.nodes.find(({ id }) => id === run2.checkpoint?.nodeId);
   return run2.modules.find(({ id }) => id === node?.moduleId)?.kind === "media-fetch";
@@ -55992,7 +56011,7 @@ async function runHeadless(options) {
       let saved = "";
       for (; ; ) {
         const run2 = await call(app, "GET", `/api/runs/${id}`, 200);
-        for (const log of run2.logs.slice(printed)) out(`[${log.moduleName}] ${log.message}`);
+        for (const log of run2.logs.slice(printed)) out(`[${log.moduleName}] ${log.message}${log.durationMs === void 0 ? "" : ` (${seconds2(log.durationMs)})`}`);
         printed = run2.logs.length;
         const json2 = JSON.stringify(run2, null, 2);
         if (json2 !== saved) {
@@ -56009,6 +56028,7 @@ async function runHeadless(options) {
     for (let attempt = 1; ; attempt++) {
       const run2 = await follow(started.id);
       runs.push(run2);
+      for (const line2 of profileLines(run2)) out(line2);
       out(`Run ${run2.id.slice(0, 8)} ${run2.status}${run2.error ? `: ${run2.error}` : ""}`);
       if (run2.status !== "failed" || attempt >= attempts || !failedInMediaFetch(run2)) return { ok: run2.status === "completed", runs };
       out(`Retrying from step ${run2.checkpoint.nodeId} (attempt ${attempt + 1} of ${attempts}).`);
@@ -56021,7 +56041,7 @@ async function runHeadless(options) {
 }
 var usageText = "Usage: npm run runner -- <business.json> [--data <dir>] [--attempts <1-5>] [--between <shell command>]";
 var message = (error) => error instanceof Error ? error.message : String(error);
-async function runHeadlessCli({ argv, out, err }) {
+async function runHeadlessCli({ argv, out, err, summaryFile }) {
   const usage = (problem) => {
     err(`${problem}
 ${usageText}`);
@@ -56059,7 +56079,10 @@ ${usageText}`);
     if (result.status !== 0) err(`--between command failed (${result.error?.message ?? `exit ${result.status ?? result.signal}`}); retrying anyway.`);
   };
   try {
-    return (await runHeadless({ snapshot, dataDir, attempts, betweenAttempts, out })).ok ? 0 : 1;
+    const { ok, runs } = await runHeadless({ snapshot, dataDir, attempts, betweenAttempts, out });
+    if (summaryFile && runs.length) await appendFile(summaryFile, `
+${profileMarkdown(runs.at(-1))}`).catch((error) => err(`Cannot write block timings summary: ${message(error)}`));
+    return ok ? 0 : 1;
   } catch (error) {
     err(message(error));
     return 1;
@@ -56067,7 +56090,7 @@ ${usageText}`);
 }
 
 // scripts/run-business.ts
-process.exitCode = await runHeadlessCli({ argv: process.argv.slice(2), out: console.log, err: console.error });
+process.exitCode = await runHeadlessCli({ argv: process.argv.slice(2), out: console.log, err: console.error, summaryFile: process.env.GITHUB_STEP_SUMMARY });
 /*! Bundled license information:
 
 toad-cache/dist/toad-cache.cjs:

@@ -42,10 +42,7 @@ jobs:
         run: |
           curl -fsSL https://claude.ai/install.sh | bash -s 2.1.112
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          if ! reply=$(timeout 120 "$HOME/.local/bin/claude" -p 'Reply with OK' --model claude-haiku-5-5 2>&1); then
-            echo "::error::Claude is not available: $(printf '%s' "$reply" | tail -c 300)"
-            exit 1
-          fi
+          (timeout 120 "$HOME/.local/bin/claude" -p 'Reply with OK' --model claude-haiku-5-5 > "$RUNNER_TEMP/claude-check.log" 2>&1; echo $? > "$RUNNER_TEMP/claude-check.status") < /dev/null > /dev/null 2>&1 &
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -53,19 +50,49 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/autobiz/ffmpeg
+          key: tools-ffmpeg-n8.1-${{ runner.os }}-${{ runner.arch }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/autobiz/pipx
+          key: tools-pipx-yt-dlp-2026.08.19-bgutil-2.0.2-whisper-0.5.8-${{ runner.os }}-${{ runner.arch }}
+      - uses: actions/cache@v4
+        with:
+          path: runner/node_modules
+          key: tools-runner-node24-${{ hashFiles('runner/package.json') }}-${{ runner.os }}-${{ runner.arch }}
       - name: Install tools
+        timeout-minutes: 10
         run: |
-          pipx install "yt-dlp[default]==2026.08.19"
-          pipx inject yt-dlp "bgutil-ytdlp-pot-provider==2.0.2"
-          pipx install "whisper-ctranslate2==0.5.8"
+          (docker pull -q brainicism/bgutil-ytdlp-pot-provider:2.0.2-node > /dev/null 2>&1 &)
+          bash runner/warp.sh repo
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-roboto-unhinted privoxy > /dev/null
-          npm install --prefix runner --no-audit --no-fund
-          npx --prefix runner playwright install --with-deps chromium
+          sudo apt-get install -y -qq fonts-roboto-unhinted privoxy cloudflare-warp > /dev/null
+          ff="$HOME/.cache/autobiz/ffmpeg"
+          if [ ! -x "$ff/bin/ffmpeg" ]; then
+            mkdir -p "$ff" && curl -fsSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz | tar -xJ --strip-components=1 -C "$ff" || { rm -rf "$ff"; sudo apt-get install -y -qq ffmpeg > /dev/null; }
+          fi
+          if [ -x "$ff/bin/ffmpeg" ]; then echo "$ff/bin" >> "$GITHUB_PATH"; fi
+          export PIPX_HOME="$HOME/.cache/autobiz/pipx" PIPX_BIN_DIR="$HOME/.cache/autobiz/pipx/bin"
+          if [ ! -x "$PIPX_BIN_DIR/yt-dlp" ]; then
+            pipx install "yt-dlp[default]==2026.08.19"
+            pipx inject yt-dlp "bgutil-ytdlp-pot-provider==2.0.2"
+            pipx install "whisper-ctranslate2==0.5.8"
+          fi
+          echo "$PIPX_BIN_DIR" >> "$GITHUB_PATH"
+          if [ ! -d runner/node_modules ]; then npm install --prefix runner --no-audit --no-fund; fi
       - name: Start Cloudflare WARP for yt-dlp
         run: bash runner/warp.sh start
       - name: Start the PO token provider for yt-dlp
         run: docker run -d --init --network host --name bgutil brainicism/bgutil-ytdlp-pot-provider:2.0.2-node
+      - name: Confirm Claude is available
+        run: |
+          for _ in $(seq 1 130); do [ -s "$RUNNER_TEMP/claude-check.status" ] && break; sleep 1; done
+          if [ "$(cat "$RUNNER_TEMP/claude-check.status" 2>/dev/null)" != 0 ]; then
+            echo "::error::Claude is not available: $(tail -c 300 "$RUNNER_TEMP/claude-check.log" 2>/dev/null)"
+            exit 1
+          fi
       - uses: actions/cache/restore@v4
         with:
           path: data/state
