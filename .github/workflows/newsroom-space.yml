@@ -99,6 +99,9 @@ jobs:
           AUTOBIZ_PYTHON: ${{ github.workspace }}/.venv-shorts/bin/python
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEWSROOM_SITE_CLOUDFLARE_PROJECT: ${{ secrets.NEWSROOM_SITE_CLOUDFLARE_PROJECT }}
         run: node runner/runner.mjs businesses/newsroom-space/business.json --data data
       - name: Forget credentials and browser caches before saving state
         if: always()

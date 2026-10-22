@@ -47298,8 +47298,8 @@ function starterModules() {
       field("maxHashtags", "Most hashtags (0-30)", "number", 5),
       field("outputKey", "Output key", "string", "instagram")
     ], ["next"]),
-    seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, and records what was published.", [
-      field("mode", "Mode", "select", "feeds", ["feeds", "sources", "facts", "images", "brief", "render", "record"]),
+    seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, records what was published, and publishes its sources page.", [
+      field("mode", "Mode", "select", "feeds", ["feeds", "sources", "facts", "images", "brief", "render", "record", "site"]),
       field("lane", "Lane (empty keeps job.lane)", "string", ""),
       field("hours", "Feed window (hours)", "number", 72),
       field("minFacts", "Fewest checked facts", "number", 5),
@@ -51489,7 +51489,7 @@ var DEFAULTS7 = {
   render: true,
   timeoutMs: 18e5
 };
-var MODES = ["feeds", "sources", "facts", "images", "brief", "render", "record"];
+var MODES = ["feeds", "sources", "facts", "images", "brief", "render", "record", "site"];
 var VOICES = ["kokoro", "elevenlabs"];
 var PORTS = ["next", "invalid", "missing"];
 var LOG_TAIL = 1e3;
@@ -52016,7 +52016,9 @@ import { basename as basename2, dirname as dirname2, isAbsolute, join as join2, 
 var toolNames = ["yt-dlp", "ffmpeg", "ffprobe", "whisper-ctranslate2", "python3", "node", "npx"];
 var HYPERFRAMES_VERSION = "0.8.174";
 var hyperframesCommands = ["check", "lint", "render", "snapshot"];
-var toolEnvKeys = { python3: ["PEXELS_API_KEY", "PIXABAY_API_KEY", "ELEVEN_LABS_API_KEY"] };
+var toolEnvKeys = {
+  python3: ["PEXELS_API_KEY", "PIXABAY_API_KEY", "ELEVEN_LABS_API_KEY", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "NEWSROOM_SITE_CLOUDFLARE_PROJECT"]
+};
 var defaultTimeoutMs2 = 6e5;
 var resetTimeoutMs = 12e4;
 var maxTimerMs = 2147483647;

@@ -53,7 +53,7 @@
           "id": "done",
           "moduleId": "output",
           "position": {
-            "x": 1220,
+            "x": 1515,
             "y": 182
           },
           "config": {}
@@ -71,6 +71,18 @@
             "setCover": false,
             "containsSyntheticMedia": true
           }
+        },
+        {
+          "id": "site",
+          "moduleId": "shorts",
+          "position": {
+            "x": 1220,
+            "y": 181
+          },
+          "config": {
+            "mode": "site",
+            "lane": "tech"
+          }
         }
       ],
       "edges": [
@@ -87,12 +99,6 @@
           "target": "failed"
         },
         {
-          "id": "record-next-done",
-          "source": "record",
-          "sourcePort": "next",
-          "target": "done"
-        },
-        {
           "id": "publish-next-record",
           "source": "publish",
           "sourcePort": "next",
@@ -103,12 +109,24 @@
           "source": "newsroom",
           "sourcePort": "done",
           "target": "publish"
+        },
+        {
+          "id": "record-next-site",
+          "source": "record",
+          "sourcePort": "next",
+          "target": "site"
+        },
+        {
+          "id": "site-next-done",
+          "source": "site",
+          "sourcePort": "next",
+          "target": "done"
         }
       ],
       "operators": []
     },
     "createdAt": "2026-10-20T11:01:03.409Z",
-    "updatedAt": "2026-10-21T19:32:44.024Z"
+    "updatedAt": "2026-10-22T11:35:08.870Z"
   },
   "modules": [
     {
@@ -1720,7 +1738,7 @@
     {
       "id": "shorts",
       "name": "Shorts",
-      "description": "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, and records what was published.",
+      "description": "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, records what was published, and publishes its sources page.",
       "kind": "shorts",
       "version": 1,
       "fields": [
@@ -1736,7 +1754,8 @@
             "images",
             "brief",
             "render",
-            "record"
+            "record",
+            "site"
           ]
         },
         {
@@ -1829,7 +1848,8 @@
               "images",
               "brief",
               "render",
-              "record"
+              "record",
+              "site"
             ]
           },
           "lane": {

@@ -3,17 +3,24 @@
 # Reads the job (JSON), writes {"port": "next"|"invalid"|"missing", "output": {keys to add to the job}, "log": "..."}.
 # Modes: feeds, sources, facts, images, brief, render, record. Every judgement happens in agent blocks
 # between these steps; this file only fetches, checks, assembles and renders.
-import argparse, json, re, shutil, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, time, urllib.request
 
 sys.dont_write_bytecode = True  # the engine folder stays clean (no __pycache__ in the repo or the runner checkout)
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 here = Path(__file__).parent.resolve()
 sys.path.insert(0, str(here))
 import factcheck  # noqa: E402
+import newsroom_site  # noqa: E402
 
 HOOKS = ["masked-number", "countdown-three", "stakes-first", "contradiction", "hidden-thing"]
 VOICES = {"tech": {"elevenlabs": "TX3LPaxmHKxFdv7VOQHJ", "kokoro": "am_michael"}, "space": {"elevenlabs": "JBFqnCBsd6RMkjVDRZzb", "kokoro": "bm_george"}}
+# the sources website each video's description links to; lanes keep the newsroom site's channel pages
+SITE = os.environ.get("NEWSROOM_SITE_URL", "https://jtsr-newsroom.pages.dev").rstrip("/")
+CHANNELS = {"tech": {"lane": "technology", "url": "https://www.youtube.com/@JTSRTech", "name": "JTSR Tech"},
+            "space": {"lane": "science-space", "url": "https://www.youtube.com/@JTSRScience", "name": "JTSR Science"}}
 
 
 def sh(*cmd, cwd=None, timeout=1500):
@@ -118,7 +125,7 @@ def brief(job, cfg, run, state):
         shutil.copy(run / "candidates" / "assets" / f"c{c['n']}.jpg", proj / "assets" / name)
         _, wh = sh("ffprobe", "-v", "quiet", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", proj / "assets" / name)
         imgs.append({"file": name, "what": ("Artist's illustration: " if p.get("illustration") else "") + p.get("what", ""), "size": [int(x) for x in wh.split(",")[:2]],
-                     "points": p.get("points") or {"subject": {"x": 0.5, "y": 0.5}}, "credit": f"{c.get('artist') or c['provider']} ({c['license']})"})
+                     "points": p.get("points") or {"subject": {"x": 0.5, "y": 0.5}}, "credit": f"{c.get('artist') or c['provider']} ({c['license']})", "page": c.get("page")})
     src = {s["id"]: s["url"] for s in job.get("sources", [])}
     b = {"lane": lane, "voice": VOICES[lane]["elevenlabs"], "story": sheet.get("story", ""), "date": sheet.get("date", ""),
          "facts": [{"id": f["id"], "text": f["text"], "source": src.get(f.get("source"), "")} for f in sheet.get("facts", [])],
@@ -206,12 +213,18 @@ def render(job, cfg, run, state):
         code, out = sh(*hf, "render", proj, "--quality", "high", "--output", run / "short.mp4", timeout=3000)
         if code:
             raise SystemExit(f"render failed: {out[-800:]}")
-    credit = sb.get("credit", "")
-    desc = f"{job['brief'].get('story', '')}\n\nSources: " + ", ".join(sorted({f['source'] for f in job['brief']['facts'] if f.get('source')})) + (f"\n{credit}" if credit else "")
+    return "next", publish_meta(job, sb, lane), f"rendered ({engine} voice)"
+
+
+def publish_meta(job, sb, lane):
+    # sources and credits live on the video's website page (mode `site`); the description only links to it
+    title = sb.get("title", "")[:95]
+    slug = time.strftime("%Y-%m-%d") + "-" + re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60].strip("-")
+    desc = f"{job['brief'].get('story', '')}\n\nSources and media credits: {SITE}/videos/{slug}/"
     # the first two also go into the title (youtube-publish): the topic, then #shorts
     tags = {"tech": ["technews", "shorts", "tech", "ai"], "space": ["space", "shorts", "science", "nasa"]}[lane]
     # the shape youtube-publish reads: job.short.file (a file in the run folder) and job.meta
-    return "next", {"short": {"file": "short.mp4"}, "meta": {"title": sb.get("title", "")[:95], "description": desc[:4800], "hashtags": tags}}, f"rendered ({engine} voice)"
+    return {"short": {"file": "short.mp4"}, "meta": {"title": title, "description": desc[:4800], "hashtags": tags}, "siteSlug": slug}
 
 
 def record(job, cfg, run, state):
@@ -232,7 +245,42 @@ def record(job, cfg, run, state):
     return "next", {}, f"recorded; {len(covered)} stories covered"
 
 
-MODES = {f.__name__: f for f in (feeds, sources, facts, images, brief, render, record)}
+def https(url):
+    return isinstance(url, str) and urlsplit(url).scheme == "https" and bool(urlsplit(url).netloc)
+
+
+def site(job, cfg, run, state):
+    # a Pages deploy replaces the whole site, so it is rebuilt from the live catalogue plus this lane's own entries
+    lane, slug, video = lane_of(job), job.get("siteSlug"), (job.get("youtube") or {}).get("videoId")
+    if not slug or not video:
+        raise SystemExit("site needs siteSlug (from render) and youtube.videoId (from youtube-publish)")
+    ch, b, caution = CHANNELS[lane], job.get("brief") or {}, (job.get("facts") or {}).get("caution")
+    entry = {"slug": slug, "lane": ch["lane"], "channelUrl": ch["url"], "channelName": ch["name"], "title": (job.get("meta") or {}).get("title", ""),
+             "summary": b.get("story", ""), "publishedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"), "videoId": video,
+             "sources": [{"label": s.get("title") or s["url"], "url": s["url"], "detail": ""} for s in job.get("sources", []) if https(s.get("url"))],
+             "credits": [{"label": i.get("credit", ""), "url": i["page"], "detail": ""} for i in b.get("images", []) if https(i.get("page"))],
+             "limitations": [{"text": caution, "sources": []}] if caution else []}
+    state.mkdir(parents=True, exist_ok=True)
+    own = [e for e in jread(state / "site-entries.json", []) if e["slug"] != slug] + [entry]
+    # saved before deploying: an entry a failed or overlapping deploy missed goes up again with the lane's next run
+    (state / "site-entries.json").write_text(json.dumps(own[-300:], indent=1, ensure_ascii=False))
+    project = os.environ.get("NEWSROOM_SITE_CLOUDFLARE_PROJECT", "")
+    if not project:
+        raise SystemExit("NEWSROOM_SITE_CLOUDFLARE_PROJECT is not set")
+    try:
+        with urllib.request.urlopen(f"{SITE}/catalog.json", timeout=30) as r:
+            live = json.load(r)["videos"]
+    except Exception as e:
+        raise SystemExit(f"could not read the live catalog.json ({e}); not deploying, as that would drop every other video")
+    videos = newsroom_site.merge(live, own)
+    newsroom_site.build(videos, run / "site")
+    code, out = sh("npx", "--yes", "wrangler@4.138.0", "pages", "deploy", run / "site", "--project-name", project, "--branch", "main", "--commit-dirty=true", timeout=600)
+    if code:
+        raise SystemExit(f"wrangler pages deploy failed: {out[-800:]}")
+    return "next", {"siteUrl": f"{SITE}/videos/{slug}/"}, f"site deployed with {len(videos)} videos"
+
+
+MODES = {f.__name__: f for f in (feeds, sources, facts, images, brief, render, record, site)}
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
