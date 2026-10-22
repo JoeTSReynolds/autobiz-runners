@@ -26,7 +26,7 @@
       return `${p.head ? `<div class="pad d lk-head" style="top:120px;font-size:112px;z-index:2">${p.head.map((l) => `<div class="line">${l}</div>`).join("")}</div>` : ""}
         ${ACT.html(p.container, C[2], "lk-cont", C[0], C[1])}
         <div class="pad d lk-count" style="top:1150px;font-size:150px;text-align:center;white-space:nowrap;opacity:0"><span class="lk-n" style="color:var(--accent-text)">${p.count.toLocaleString("en-US")}</span><span style="font-size:72px;margin-left:24px">${p.unit || ""}</span></div>
-        ${Array.from({ length: 52 }, (_, k) => ACT.html({ ...p.item, name: undefined }, SZ, `lk-i lk-i${k}`, SZ / 2, SZ / 2)).join("")}
+        ${Array.from({ length: 52 }, (_, k) => ACT.html({ ...p.item, name: undefined }, SZ, `act-copy lk-i lk-i${k}`, SZ / 2, SZ / 2)).join("")}
         ${MOUTH.map(([x, y], i) => `<div class="lk-ring lk-ring${i}" style="position:absolute;left:${x - 60}px;top:${y - 60}px;width:120px;height:120px;border-radius:50%;border:14px solid var(--accent);opacity:0"></div>`).join("")}
         ${p.result ? `<div class="pad d lk-result" style="top:1318px;z-index:2;font-size:96px;color:var(--accent-text)"><div class="line" data-layout-allow-occlusion>${p.result}</div></div>` : ""}`;
     },

@@ -34,7 +34,7 @@
       const h = p.target ? TH : HX, N = p.target ? 32 : 36;
       return `${p.head ? `<div class="pad d sw-head" style="top:120px;font-size:112px;z-index:2">${p.head.map((l) => `<div class="line">${l}</div>`).join("")}</div>` : ""}
         ${p.target ? ACT.html(p.target, TX[2], "sw-target", TX[0], TX[1]) : ""}
-        ${Array.from({ length: N }, (_, i) => ACT.html({ ...p.unit, name: undefined }, CZ, `sw-c sw-c${i}`, CZ / 2, CZ / 2)).join("")}
+        ${Array.from({ length: N }, (_, i) => ACT.html({ ...p.unit, name: undefined }, CZ, `act-copy sw-c sw-c${i}`, CZ / 2, CZ / 2)).join("")}
         ${ACT.html(p.unit, h[2], "sw-hero", h[0], h[1])}
         <div class="sw-ring" style="position:absolute;left:${h[0] - 60}px;top:${h[1] - 60}px;width:120px;height:120px;border-radius:50%;border:14px solid var(--accent);opacity:0"></div>
         <div class="pad d sw-count" style="top:1140px;z-index:2;font-size:130px;text-align:center;white-space:nowrap;opacity:0"><span class="sw-n" style="color:var(--accent-text)">${p.count.toLocaleString("en-US")}</span><span style="font-size:64px;margin-left:20px">${p.label || ""}</span></div>

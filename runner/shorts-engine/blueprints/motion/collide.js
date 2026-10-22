@@ -24,7 +24,7 @@ BP.define("collide", {
     return `${p.head ? `<div class="pad d co-head" style="top:120px;font-size:112px">${p.head.map((l) => `<div class="line">${l}</div>`).join("")}</div>` : ""}
       ${ACT.html(p.target, COL.ts, "co-target", COL.tx, COL.ty)}
       ${p.after ? ACT.html(p.after, COL.as, "co-after", COL.tx, COL.ty) : ""}
-      ${[3, 2, 1].map((k) => ACT.html({ ...p.mover, name: undefined }, COL.ms, `co-ghost co-ghost${k}`, sx, sy)).join("")}
+      ${[3, 2, 1].map((k) => ACT.html({ ...p.mover, name: undefined }, COL.ms, `act-copy co-ghost co-ghost${k}`, sx, sy)).join("")}
       ${ACT.html(p.mover, COL.ms, "co-mover", sx, sy)}
       <div class="co-ring" style="position:absolute;left:${COL.tx - 60}px;top:${COL.ty - 60}px;width:120px;height:120px;border-radius:50%;border:14px solid var(--accent);opacity:0"></div>
       <div class="co-flash" style="position:absolute;left:${COL.tx - 150}px;top:${COL.ty - 150}px;width:300px;height:300px;border-radius:50%;background-color:#fff;opacity:0"></div>

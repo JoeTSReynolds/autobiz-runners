@@ -29,7 +29,7 @@
     html(p) {
       return `${p.head ? `<div class="pad d sh-head" style="top:120px;font-size:112px;z-index:2">${p.head.map((l) => `<div class="line">${l}</div>`).join("")}</div>` : ""}
         ${ACT.html(p.defender, DS, "sh-def", DX, DY)}
-        ${Array.from({ length: 15 }, () => ACT.html({ ...p.attacker, name: undefined }, PZ, "sh-p", PZ / 2, PZ / 2)).join("")}
+        ${Array.from({ length: 15 }, () => ACT.html({ ...p.attacker, name: undefined }, PZ, "act-copy sh-p", PZ / 2, PZ / 2)).join("")}
         <i class="sh-ring" style="position:absolute;left:${DX - 60}px;top:${DY - 60}px;width:120px;height:120px;border-radius:50%;border:14px solid var(--accent);opacity:0"></i>
         <div class="sh-flash" style="position:absolute;left:${DX - 240}px;top:${DY - 240}px;width:480px;height:480px;border-radius:50%;background-color:#fff;opacity:0"></div>
         ${p.result ? `<div class="pad d sh-result" style="top:1318px;z-index:2;font-size:96px;color:var(--accent-text)"><div class="line" data-layout-allow-occlusion>${p.result}</div></div>` : ""}`;

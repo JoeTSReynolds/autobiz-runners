@@ -21,7 +21,7 @@ BP.define("flow", {
     const it = { ...p.item, name: undefined };
     return `${p.head ? `<div class="pad d fl-head" style="top:120px;font-size:112px">${p.head.map((l) => `<div class="line">${l}</div>`).join("")}</div>` : ""}
       <svg style="position:absolute;left:0;top:0;overflow:visible" width="1080" height="1920"><path class="fl-path" d="${FL.D}" fill="none" stroke="var(--mid)" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/><path class="fl-hot" d="${FL.D}" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
-      ${Array.from({ length: FL.N + FL.X }, (_, k) => ACT.html(it, 110, `fl-i fl-i${k}`, 0, 0)).join("")}
+      ${Array.from({ length: FL.N + FL.X }, (_, k) => ACT.html(it, 110, `act-copy fl-i fl-i${k}`, 0, 0)).join("")}
       ${ACT.html(p.source, 320, "fl-source", FL.sx, FL.sy)}${ACT.html(p.sink, 320, "fl-sink", FL.kx, FL.ky)}
       <div class="fl-ring" style="position:absolute;left:${FL.kx - 60}px;top:${FL.ky - 60}px;width:120px;height:120px;border-radius:50%;border:14px solid var(--accent);opacity:0"></div>
       ${p.rate ? `<div class="pad d fl-rate" style="top:370px;font-size:130px;text-align:right;color:var(--accent-text)"><div class="line"><span>${p.rate}</span></div></div>` : ""}

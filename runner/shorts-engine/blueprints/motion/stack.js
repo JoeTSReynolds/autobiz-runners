@@ -19,7 +19,7 @@ BP.define("stack", {
     return `${p.head ? `<div class="pad d st-head" style="top:120px;font-size:112px">${p.head.map((l) => `<div class="line">${l}</div>`).join("")}</div>` : ""}
       <div class="pad d st-count" style="top:${g.ct}px;font-size:150px;white-space:nowrap"><span class="st-n" style="color:var(--accent-text)">0</span><span class="st-u" style="font-size:72px;margin-left:24px">${p.unit || ""}</span></div>
       <div class="st-floor" style="position:absolute;left:72px;right:72px;top:${g.floor}px;height:6px;background-color:var(--mid);opacity:0"></div>
-      <div class="st-g" style="position:absolute;left:0;top:0">${Array.from({ length: g.M }, (_, k) => ACT.html({ ...p.item, name: undefined }, g.size, `st-i st-i${k}`, g.x(k), g.y(k))).join("")}</div>
+      <div class="st-g" style="position:absolute;left:0;top:0">${Array.from({ length: g.M }, (_, k) => ACT.html({ ...p.item, name: undefined }, g.size, `act-copy st-i st-i${k}`, g.x(k), g.y(k))).join("")}</div>
       ${p.result ? `<div class="pad d st-result" style="top:1318px;font-size:96px;color:var(--accent-text)"><div class="line">${p.result}</div></div>` : ""}`;
   },
   animate(c) {
