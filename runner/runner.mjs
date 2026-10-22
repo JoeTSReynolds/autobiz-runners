@@ -49485,11 +49485,19 @@ var sections = async (job, config, tools, outputKey) => {
   const downloads = /* @__PURE__ */ new Map();
   for (const { from, to } of wanted) downloads.set(from, Math.max(downloads.get(from) ?? 0, to));
   const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "clip-%(section_start).3f.%(ext)s", "--no-warnings", "--", url];
+  const slow = (error) => error instanceof ExecutionLimitFailure && /^yt-dlp exceeded its \d+ ms time limit/.test(error.message);
+  const throttled = () => ({ output: { ...job, rejectedSources: [...rejectedSources(job), sourceOf(job).id] }, port: "missing" });
   try {
     await yt2(args, timeoutMs);
   } catch (error) {
+    if (slow(error)) return throttled();
     if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure || isBlock(error)) throw error;
-    await yt2(args, timeoutMs);
+    try {
+      await yt2(args, timeoutMs);
+    } catch (retry) {
+      if (slow(retry)) return throttled();
+      throw retry;
+    }
   }
   const lengths = /* @__PURE__ */ new Map();
   const found = [];
@@ -52061,8 +52069,9 @@ function createRunTools(options) {
     if (signal?.aborted) throw new ExecutionCancelled();
     const env = { LANG: "C.UTF-8", LC_ALL: "C.UTF-8" };
     for (const key of ["PATH", "HOME", "TMPDIR", ...toolEnvKeys[tool] ?? []]) if (process.env[key] !== void 0) env[key] = process.env[key];
+    const toolArgs = tool === "yt-dlp" && process.env.YTDLP_COOKIES_FILE ? ["--cookies", process.env.YTDLP_COOKIES_FILE, ...args] : [...args];
     return new Promise((resolvePromise, reject) => {
-      const child = spawn2(options.executables?.[tool] ?? tool, [...args], { cwd: runDir, env, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+      const child = spawn2(options.executables?.[tool] ?? tool, toolArgs, { cwd: runDir, env, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"] });
       const stdout = [];
       let stdoutBytes = 0;
       let stderr = Buffer.alloc(0);

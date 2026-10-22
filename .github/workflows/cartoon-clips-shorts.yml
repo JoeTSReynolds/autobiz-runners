@@ -99,6 +99,15 @@ jobs:
           umask 077
           mkdir -p data/state/youtube-tokens
           printf '%s' "$YOUTUBE_TOKEN" > data/state/youtube-tokens/EpicVideoClips101.json
+      - name: Write yt-dlp cookies
+        env:
+          YTDLP_COOKIES: ${{ secrets.YTDLP_COOKIES }}
+        run: |
+          if [ -n "$YTDLP_COOKIES" ]; then
+            umask 077
+            printf '%s' "$YTDLP_COOKIES" | base64 -d | gunzip > "$RUNNER_TEMP/yt-cookies.txt"
+            echo "YTDLP_COOKIES_FILE=$RUNNER_TEMP/yt-cookies.txt" >> "$GITHUB_ENV"
+          fi
       - name: "Run Cartoon Clips Shorts"
         env:
           AUTOBIZ_RUN_TIMEOUT_MS: '3600000'
