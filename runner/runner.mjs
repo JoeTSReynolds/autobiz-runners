@@ -49940,12 +49940,16 @@ var EMOJI_NAME = /^[a-z0-9][a-z0-9 '-]{0,59}$/;
 var HEARD = /^[\p{L}\p{N}'’-]{1,30}$/u;
 var MEANT = /^[^{}\\]{1,40}$/;
 var MAX_CORRECTIONS = 20;
+var SERIOUS_SOUNDS = ["cinematic-impact", "suspense-sting"];
+var SERIOUS_VISUALS = ["zoom", "none"];
+var SERIOUS_MAX_EFFECTS = 2;
 function fail(rest) {
   throw new ExecutionFailure(`video-edit job.story${rest}`);
 }
 function validatePlan(plan, knownSounds) {
   if (!isObject4(plan)) fail(" must be an object.");
-  const { headline, clips: rawClips, effects: rawEffects, emojis: rawEmojis, corrections: rawCorrections } = plan;
+  const { tone, headline, clips: rawClips, effects: rawEffects, emojis: rawEmojis, corrections: rawCorrections } = plan;
+  if (tone !== "light" && tone !== "serious") fail(".tone must be light or serious.");
   if (!text2(headline)) fail(".headline must be a non-empty string.");
   if (!Array.isArray(rawClips)) fail(".clips must be a list.");
   const clips = rawClips.map((raw, i) => {
@@ -49963,6 +49967,16 @@ function validatePlan(plan, knownSounds) {
     fail(`.clips roles must be hook, intro, 2-4 beats, payoff in that order; got ${roles.join()}.`);
   }
   if (rawEffects !== void 0 && rawEffects !== null && !Array.isArray(rawEffects)) fail(".effects must be a list.");
+  if (tone === "serious") {
+    if (Array.isArray(rawEmojis) && rawEmojis.length > 0) fail(".emojis must be an empty list for a serious story.");
+    if (Array.isArray(rawEffects) && rawEffects.length > SERIOUS_MAX_EFFECTS) fail(`.effects allows at most ${SERIOUS_MAX_EFFECTS} effects for a serious story.`);
+    (rawEffects ?? []).forEach((raw, i) => {
+      const { sound, visual } = isObject4(raw) ? raw : {};
+      if (typeof sound !== "string" || !SERIOUS_SOUNDS.includes(sound) || typeof visual !== "string" || !SERIOUS_VISUALS.includes(visual)) {
+        fail(`.effects[${i}] must use sound cinematic-impact or suspense-sting and visual zoom or none for a serious story.`);
+      }
+    });
+  }
   const effects = (rawEffects ?? []).flatMap((raw, i) => {
     if (!isObject4(raw)) fail(`.effects[${i}] must be an object.`);
     const { at: at2, sound, visual } = raw;
