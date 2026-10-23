@@ -689,7 +689,7 @@
       "name": "Agent",
       "description": "Calls an explicitly configured agent.",
       "kind": "agent",
-      "version": 3,
+      "version": 1,
       "fields": [
         {
           "key": "prompt",
@@ -775,52 +775,6 @@
         "enabled": true,
         "onSuccess": "",
         "onFail": ""
-      },
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "prompt": {
-            "title": "Prompt",
-            "type": "string"
-          },
-          "format": {
-            "title": "Reply format",
-            "type": "string",
-            "enum": [
-              "text",
-              "json"
-            ]
-          },
-          "requiredKeys": {
-            "title": "Required reply keys",
-            "type": "array"
-          },
-          "inputKeys": {
-            "title": "Input keys to send",
-            "type": "array"
-          },
-          "imageKeys": {
-            "title": "Image keys",
-            "type": "array"
-          },
-          "fileKeys": {
-            "title": "File keys",
-            "type": "array"
-          },
-          "outputKey": {
-            "title": "Output key",
-            "type": "string"
-          },
-          "webSearch": {
-            "type": "boolean",
-            "title": "Web search"
-          },
-          "includeDate": {
-            "title": "Include today's date",
-            "type": "boolean"
-          }
-        }
       }
     },
     {
@@ -855,12 +809,7 @@
       "version": 1,
       "fields": [],
       "defaults": {},
-      "outputs": [
-        {
-          "id": "done",
-          "label": "Done"
-        }
-      ],
+      "outputs": [],
       "logging": {
         "enabled": true,
         "onSuccess": "",
@@ -948,28 +897,14 @@
         "enabled": true,
         "onSuccess": "{module} completed: {output}",
         "onFail": "{module} failed: {error}"
-      },
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "options": {
-            "title": "Options",
-            "type": "array"
-          },
-          "outputKey": {
-            "title": "Output key",
-            "type": "string"
-          }
-        }
       }
     },
     {
       "id": "media-fetch",
       "name": "Media fetch",
-      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, or downloads any video link (HLS included) with yt-dlp.",
+      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, or locates a scene by its dialogue.",
       "kind": "media-fetch",
-      "version": 3,
+      "version": 1,
       "fields": [
         {
           "key": "mode",
@@ -1059,6 +994,22 @@
           "default": 25
         },
         {
+          "key": "maxAgeDays",
+          "label": "Maximum upload age (days, 0 = any)",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "sort",
+          "label": "List order",
+          "type": "select",
+          "default": "views",
+          "options": [
+            "views",
+            "velocity"
+          ]
+        },
+        {
           "key": "languages",
           "label": "Caption languages",
           "type": "json",
@@ -1108,6 +1059,12 @@
             "line",
             "sentence"
           ]
+        },
+        {
+          "key": "transcribeUpTo",
+          "label": "Transcribe uncaptioned videos up to (s)",
+          "type": "number",
+          "default": 0
         },
         {
           "key": "padding",
@@ -1174,22 +1131,6 @@
           "label": "First wait after a block (s)",
           "type": "number",
           "default": 30
-        },
-        {
-          "key": "maxAgeDays",
-          "label": "Maximum upload age (days, 0 = any)",
-          "type": "number",
-          "default": 0
-        },
-        {
-          "key": "sort",
-          "label": "List order",
-          "type": "select",
-          "default": "views",
-          "options": [
-            "views",
-            "velocity"
-          ]
         },
         {
           "key": "onlyWhen",
@@ -1259,15 +1200,9 @@
         },
         {
           "key": "outputKey",
-          "label": "Output key",
+          "label": "Output key (empty: the mode's own key)",
           "type": "string",
-          "default": null
-        },
-        {
-          "key": "transcribeUpTo",
-          "label": "Transcribe uncaptioned videos up to (s)",
-          "type": "number",
-          "default": 0
+          "default": ""
         }
       ],
       "defaults": {
@@ -1295,6 +1230,8 @@
         "searchTimeoutMs": 120000,
         "pick": "random",
         "listSize": 25,
+        "maxAgeDays": 0,
+        "sort": "views",
         "languages": [
           "en",
           "en-orig",
@@ -1307,6 +1244,7 @@
         "hotspotWindow": 75,
         "hotspotsPerKind": 4,
         "transcriptUnit": "line",
+        "transcribeUpTo": 0,
         "padding": 2,
         "maxHeight": 1080,
         "minMoment": 5,
@@ -1318,8 +1256,6 @@
         "payoffTail": 15,
         "blockedRetries": 3,
         "blockedWaitSeconds": 30,
-        "maxAgeDays": 0,
-        "sort": "views",
         "onlyWhen": "",
         "withCaptions": 0,
         "indexChannels": [],
@@ -1331,7 +1267,7 @@
         "minQuoteScore": 0.6,
         "minKeywordHits": 2,
         "keywordWindow": 60,
-        "transcribeUpTo": 0
+        "outputKey": ""
       },
       "outputs": [
         {
@@ -1347,205 +1283,6 @@
         "enabled": true,
         "onSuccess": "{module} completed: {output}",
         "onFail": "{module} failed: {error}"
-      },
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "mode": {
-            "title": "Mode",
-            "type": "string",
-            "enum": [
-              "search",
-              "captions",
-              "section",
-              "sections",
-              "download",
-              "index",
-              "locate"
-            ]
-          },
-          "queries": {
-            "title": "Search queries",
-            "type": "array"
-          },
-          "minDuration": {
-            "title": "Minimum duration (s)",
-            "type": "number"
-          },
-          "maxDuration": {
-            "title": "Maximum duration (s)",
-            "type": "number"
-          },
-          "excludeWords": {
-            "title": "Excluded title words",
-            "type": "array"
-          },
-          "titleIncludes": {
-            "title": "Title must include",
-            "type": "string"
-          },
-          "maxResults": {
-            "title": "Results per query",
-            "type": "number"
-          },
-          "searchTimeoutMs": {
-            "title": "Search time limit (ms)",
-            "type": "number"
-          },
-          "pick": {
-            "title": "Search pick",
-            "type": "string",
-            "enum": [
-              "random",
-              "list"
-            ]
-          },
-          "listSize": {
-            "title": "Candidates in a list",
-            "type": "number"
-          },
-          "languages": {
-            "title": "Caption languages",
-            "type": "array"
-          },
-          "captionsTimeoutMs": {
-            "title": "Captions time limit (ms)",
-            "type": "number"
-          },
-          "hotspots": {
-            "title": "Find hotspots",
-            "type": "boolean"
-          },
-          "commentsToScan": {
-            "title": "Top comments to scan",
-            "type": "number"
-          },
-          "hotspotWindow": {
-            "title": "Hotspot window (s)",
-            "type": "number"
-          },
-          "hotspotsPerKind": {
-            "title": "Hotspots per signal",
-            "type": "number"
-          },
-          "transcriptUnit": {
-            "title": "Transcript unit",
-            "type": "string",
-            "enum": [
-              "line",
-              "sentence"
-            ]
-          },
-          "padding": {
-            "title": "Section padding (s)",
-            "type": "number"
-          },
-          "maxHeight": {
-            "title": "Maximum video height",
-            "type": "number"
-          },
-          "minMoment": {
-            "title": "Shortest moment (s)",
-            "type": "number"
-          },
-          "maxMoment": {
-            "title": "Longest moment (s)",
-            "type": "number"
-          },
-          "downloadTimeoutMs": {
-            "title": "Download time limit (ms)",
-            "type": "number"
-          },
-          "hookLead": {
-            "title": "Hook lead (s)",
-            "type": "number"
-          },
-          "clipLead": {
-            "title": "Clip lead (s)",
-            "type": "number"
-          },
-          "clipTail": {
-            "title": "Clip tail (s)",
-            "type": "number"
-          },
-          "payoffTail": {
-            "title": "Payoff tail (s)",
-            "type": "number"
-          },
-          "blockedRetries": {
-            "title": "Retries after a YouTube block",
-            "type": "number"
-          },
-          "blockedWaitSeconds": {
-            "title": "First wait after a block (s)",
-            "type": "number"
-          },
-          "maxAgeDays": {
-            "title": "Maximum upload age (days, 0 = any)",
-            "type": "number"
-          },
-          "sort": {
-            "title": "List order",
-            "type": "string",
-            "enum": [
-              "views",
-              "velocity"
-            ]
-          },
-          "onlyWhen": {
-            "title": "Run only when (key=value)",
-            "type": "string"
-          },
-          "withCaptions": {
-            "title": "Items with captions text",
-            "type": "number"
-          },
-          "indexChannels": {
-            "title": "Index channels",
-            "type": "array"
-          },
-          "indexPerRun": {
-            "title": "Videos indexed per run",
-            "type": "number"
-          },
-          "indexListSize": {
-            "title": "Channel uploads listed",
-            "type": "number"
-          },
-          "indexDir": {
-            "title": "Index folder",
-            "type": "string"
-          },
-          "indexTimeoutMs": {
-            "title": "Index time limit (ms)",
-            "type": "number"
-          },
-          "fromKey": {
-            "title": "Fallback list (job key)",
-            "type": "string"
-          },
-          "minQuoteScore": {
-            "title": "Least quote match (0-1)",
-            "type": "number"
-          },
-          "minKeywordHits": {
-            "title": "Least keywords in a scene",
-            "type": "number"
-          },
-          "keywordWindow": {
-            "title": "Keyword window (s)",
-            "type": "number"
-          },
-          "outputKey": {
-            "title": "Output key",
-            "type": "string"
-          },
-          "transcribeUpTo": {
-            "title": "Transcribe uncaptioned videos up to (s)",
-            "type": "number"
-          }
-        }
       }
     },
     {
@@ -1553,7 +1290,7 @@
       "name": "Video edit",
       "description": "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).",
       "kind": "video-edit",
-      "version": 3,
+      "version": 1,
       "fields": [
         {
           "key": "mode",
@@ -1704,6 +1441,17 @@
           "default": "brick"
         },
         {
+          "key": "layout",
+          "label": "Story layout",
+          "type": "select",
+          "default": "box",
+          "options": [
+            "box",
+            "frame",
+            "card"
+          ]
+        },
+        {
           "key": "emojiDir",
           "label": "Emoji cache folder",
           "type": "string",
@@ -1720,17 +1468,6 @@
           "label": "Output key",
           "type": "string",
           "default": "short"
-        },
-        {
-          "key": "layout",
-          "label": "Story layout",
-          "type": "select",
-          "default": "box",
-          "options": [
-            "box",
-            "frame",
-            "card"
-          ]
         }
       ],
       "defaults": {
@@ -1758,10 +1495,10 @@
         "crf": 20,
         "renderTimeoutMs": 600000,
         "background": "brick",
+        "layout": "box",
         "emojiDir": "emoji",
         "storySeed": "",
-        "outputKey": "short",
-        "layout": "box"
+        "outputKey": "short"
       },
       "outputs": [
         {
@@ -1773,133 +1510,6 @@
         "enabled": true,
         "onSuccess": "{module} completed: {output}",
         "onFail": "{module} failed: {error}"
-      },
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "mode": {
-            "title": "Mode",
-            "type": "string",
-            "enum": [
-              "short",
-              "story"
-            ]
-          },
-          "width": {
-            "title": "Width",
-            "type": "number"
-          },
-          "height": {
-            "title": "Height",
-            "type": "number"
-          },
-          "contentAspect": {
-            "title": "Content aspect",
-            "type": "string"
-          },
-          "saturation": {
-            "title": "Saturation",
-            "type": "number"
-          },
-          "removePauses": {
-            "title": "Remove pauses",
-            "type": "boolean"
-          },
-          "maxPause": {
-            "title": "Longest pause (s)",
-            "type": "number"
-          },
-          "maxWordDuration": {
-            "title": "Longest word (s)",
-            "type": "number"
-          },
-          "captions": {
-            "title": "Captions",
-            "type": "boolean"
-          },
-          "captionPosition": {
-            "title": "Caption position",
-            "type": "number"
-          },
-          "captionFont": {
-            "title": "Caption font",
-            "type": "string"
-          },
-          "captionSize": {
-            "title": "Caption size",
-            "type": "number"
-          },
-          "captionOutline": {
-            "title": "Caption outline",
-            "type": "number"
-          },
-          "headline": {
-            "title": "Headline (job path)",
-            "type": "string"
-          },
-          "headlinePosition": {
-            "title": "Headline position",
-            "type": "number"
-          },
-          "headlineSize": {
-            "title": "Headline size",
-            "type": "number"
-          },
-          "sounds": {
-            "title": "Sound effects (job path)",
-            "type": "string"
-          },
-          "soundsDir": {
-            "title": "Sound library folder",
-            "type": "string"
-          },
-          "soundVolume": {
-            "title": "Sound volume",
-            "type": "number"
-          },
-          "maxSounds": {
-            "title": "Most sound effects",
-            "type": "number"
-          },
-          "maxDuration": {
-            "title": "Maximum duration (s)",
-            "type": "number"
-          },
-          "crf": {
-            "title": "Quality (CRF)",
-            "type": "number"
-          },
-          "renderTimeoutMs": {
-            "title": "Render time limit (ms)",
-            "type": "number"
-          },
-          "background": {
-            "title": "Story background",
-            "type": "string"
-          },
-          "emojiDir": {
-            "title": "Emoji cache folder",
-            "type": "string"
-          },
-          "storySeed": {
-            "title": "Particle seed",
-            "type": "string"
-          },
-          "outputKey": {
-            "title": "Output key",
-            "type": "string"
-          },
-          "layout": {
-            "type": "string",
-            "enum": [
-              "box",
-              "frame",
-              "card"
-            ],
-            "title": "Story layout"
-          }
-        }
       }
     },
     {
@@ -2003,60 +1613,6 @@
         "enabled": true,
         "onSuccess": "{module} completed: {output}",
         "onFail": "{module} failed: {error}"
-      },
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "mode": {
-            "title": "Mode",
-            "type": "string",
-            "enum": [
-              "candidates",
-              "compose"
-            ]
-          },
-          "count": {
-            "title": "Candidate frames",
-            "type": "number"
-          },
-          "width": {
-            "title": "Width",
-            "type": "number"
-          },
-          "height": {
-            "title": "Height",
-            "type": "number"
-          },
-          "previewWidth": {
-            "title": "Preview width",
-            "type": "number"
-          },
-          "font": {
-            "title": "Font file",
-            "type": "string"
-          },
-          "arrow": {
-            "title": "Arrow",
-            "type": "boolean"
-          },
-          "circle": {
-            "title": "Circle",
-            "type": "boolean"
-          },
-          "circleRadius": {
-            "title": "Circle radius (0-1000)",
-            "type": "number"
-          },
-          "quality": {
-            "title": "JPEG quality (2-31)",
-            "type": "number"
-          },
-          "timeoutMs": {
-            "title": "Time limit (ms)",
-            "type": "number"
-          }
-        }
       }
     },
     {
@@ -2064,7 +1620,7 @@
       "name": "YouTube publish",
       "description": "Uploads privately, sets the Short cover in Studio, then applies the privacy.",
       "kind": "youtube-publish",
-      "version": 2,
+      "version": 1,
       "fields": [
         {
           "key": "channelHandle",
@@ -2140,49 +1696,56 @@
         "enabled": true,
         "onSuccess": "{module} completed: {output}",
         "onFail": "{module} failed: {error}"
-      },
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "channelHandle": {
-            "title": "Channel handle",
-            "type": "string"
-          },
-          "privacy": {
-            "title": "Privacy",
-            "type": "string",
-            "enum": [
-              "private",
-              "unlisted",
-              "public"
-            ]
-          },
-          "categoryId": {
-            "title": "Category id",
-            "type": "string"
-          },
-          "madeForKids": {
-            "title": "Made for kids",
-            "type": "boolean"
-          },
-          "containsSyntheticMedia": {
-            "title": "Contains synthetic media",
-            "type": "boolean"
-          },
-          "setCover": {
-            "title": "Set cover",
-            "type": "boolean"
-          },
-          "maxHashtags": {
-            "title": "Most hashtags",
-            "type": "number"
-          },
-          "outputKey": {
-            "title": "Output key",
-            "type": "string"
-          }
+      }
+    },
+    {
+      "id": "instagram-publish",
+      "name": "Instagram publish",
+      "description": "Uploads the Short as a Reel and publishes it to the configured Instagram account.",
+      "kind": "instagram-publish",
+      "version": 1,
+      "fields": [
+        {
+          "key": "username",
+          "label": "Instagram username",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "shareToFeed",
+          "label": "Share to feed",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "maxHashtags",
+          "label": "Most hashtags (0-30)",
+          "type": "number",
+          "default": 5
+        },
+        {
+          "key": "outputKey",
+          "label": "Output key",
+          "type": "string",
+          "default": "instagram"
         }
+      ],
+      "defaults": {
+        "username": "",
+        "shareToFeed": true,
+        "maxHashtags": 5,
+        "outputKey": "instagram"
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
       }
     },
     {
@@ -2283,58 +1846,6 @@
         "enabled": true,
         "onSuccess": "{module} completed: {output}",
         "onFail": "{module} failed: {error}"
-      },
-      "configSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "mode": {
-            "title": "Mode",
-            "type": "string",
-            "enum": [
-              "feeds",
-              "sources",
-              "facts",
-              "images",
-              "brief",
-              "render",
-              "record",
-              "site"
-            ]
-          },
-          "lane": {
-            "title": "Lane (empty keeps job.lane)",
-            "type": "string"
-          },
-          "hours": {
-            "title": "Feed window (hours)",
-            "type": "number"
-          },
-          "minFacts": {
-            "title": "Fewest checked facts",
-            "type": "number"
-          },
-          "voice": {
-            "title": "Voice",
-            "type": "string",
-            "enum": [
-              "kokoro",
-              "elevenlabs"
-            ]
-          },
-          "elevenModel": {
-            "title": "ElevenLabs model",
-            "type": "string"
-          },
-          "render": {
-            "title": "Render the video",
-            "type": "boolean"
-          },
-          "timeoutMs": {
-            "title": "Time limit (ms)",
-            "type": "number"
-          }
-        }
       }
     },
     {

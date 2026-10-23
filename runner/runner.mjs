@@ -47241,7 +47241,8 @@ function starterModules() {
       field("fromKey", "Fallback list (job key)", "string", "rising"),
       field("minQuoteScore", "Least quote match (0-1)", "number", 0.6),
       field("minKeywordHits", "Least keywords in a scene", "number", 2),
-      field("keywordWindow", "Keyword window (s)", "number", 60)
+      field("keywordWindow", "Keyword window (s)", "number", 60),
+      field("outputKey", "Output key (empty: the mode's own key)", "string", "")
     ], ["next", "missing"]),
     seeded("video-edit", "Video edit", "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).", [
       field("mode", "Mode", "select", "short", ["short", "story"]),
@@ -47703,6 +47704,18 @@ async function readLimitedBody(response) {
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { isDeepStrictEqual } from "node:util";
+
+// apps/server/src/builtin-modules.ts
+function builtinModules() {
+  return createInitialWorkspace().modules;
+}
+function withBuiltinModules(workspace) {
+  const saved = new Map(workspace.modules.map((module) => [module.id, module]));
+  const builtins = builtinModules().map((module) => ({ ...module, logging: structuredClone(saved.get(module.id)?.logging ?? module.logging) }));
+  const ids = new Set(builtins.map(({ id }) => id));
+  return { ...workspace, modules: [...builtins, ...workspace.modules.filter(({ id }) => !ids.has(id))] };
+}
 
 // apps/server/src/workspace-storage.ts
 function decode(value) {
@@ -48654,6 +48667,11 @@ var WorkspaceRepository = class {
         const initialize = this.database.transaction(() => replaceWorkspace(this.database, createInitialWorkspace()));
         initialize();
       }
+      this.database.transaction(() => {
+        const current = readWorkspace(this.database);
+        const next = withBuiltinModules(current);
+        if (!isDeepStrictEqual(next.modules, current.modules)) replaceWorkspace(this.database, next);
+      }).immediate();
     } catch (error) {
       this.database.close();
       throw error;
@@ -48666,7 +48684,7 @@ var WorkspaceRepository = class {
     const save = this.database.transaction((candidate) => {
       const current = this.database.prepare("SELECT revision FROM workspace_state WHERE id = 1").get();
       if (candidate.revision !== current.revision) return void 0;
-      const saved = structuredClone(candidate);
+      const saved = withBuiltinModules(structuredClone(candidate));
       saved.revision = current.revision + 1;
       replaceWorkspace(this.database, saved);
       return saved;
@@ -48681,7 +48699,7 @@ var WorkspaceRepository = class {
       if (current.revision !== expectedRevision) return { kind: "revisionConflict", revision: current.revision };
       const { workspace, response } = build(current);
       workspace.revision = current.revision + 1;
-      replaceWorkspace(this.database, workspace);
+      replaceWorkspace(this.database, withBuiltinModules(workspace));
       this.database.prepare("INSERT INTO authoring_requests (request_key, request_hash, response_json) VALUES (?, ?, ?)").run(requestKey, requestHash, JSON.stringify(response));
       return { kind: "saved", response };
     });
@@ -49057,7 +49075,9 @@ var DEFAULTS2 = {
   fromKey: "rising",
   minQuoteScore: 0.6,
   minKeywordHits: 2,
-  keywordWindow: 60
+  keywordWindow: 60,
+  // empty: the mode's own key (source, transcript, clip, clips, video, index; candidates for a search list)
+  outputKey: ""
 };
 var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", sections: "clips", download: "video", index: "index", locate: "source" };
 var WHISPER_MODEL = "base.en";
@@ -49704,7 +49724,7 @@ async function execute10({ input, config }, { tools }) {
   const condition = typeof onlyWhen === "string" ? /^(\w+)=(.*)$/s.exec(onlyWhen) : null;
   if (onlyWhen !== "" && !condition) throw new ExecutionFailure('media-fetch setting onlyWhen must be empty or "key=value" with a key of letters, digits and _.');
   if (condition && String(input[condition[1]]) !== condition[2]) return { output: input, port: "next" };
-  const outputKey = config.outputKey ?? (mode === "search" && config.pick === "list" ? "candidates" : OUTPUT_KEYS[mode]);
+  const outputKey = config.outputKey === void 0 || config.outputKey === "" ? mode === "search" && config.pick === "list" ? "candidates" : OUTPUT_KEYS[mode] : config.outputKey;
   if (typeof outputKey !== "string" || outputKey === "") throw new ExecutionFailure("media-fetch setting outputKey must be a non-empty string.");
   return modes[mode](input, config, tools, outputKey);
 }
@@ -52571,6 +52591,7 @@ function validateUniqueEntityIds(entities, kind) {
 
 // apps/server/src/authoring.ts
 import { createHash as createHash2, randomUUID as randomUUID4 } from "node:crypto";
+import { isDeepStrictEqual as isDeepStrictEqual2 } from "node:util";
 
 // node_modules/@dagrejs/dagre/dist/dagre.esm.js
 var Te = Object.defineProperty;
@@ -54767,6 +54788,7 @@ function withPositions(workflow) {
 function logicalBusiness(business) {
   return { ...structuredClone(business), workflow: toLogicalWorkflow(business.workflow) };
 }
+var withoutLogging = ({ logging: _logging, version: _version, ...rest }) => JSON.parse(JSON.stringify(rest));
 function logicalModule(module) {
   const { fields: _fields, outputs: _outputs, ...definition } = structuredClone(module);
   return {
@@ -54938,8 +54960,11 @@ function mutate(tool, args, workspace, agentConfigured) {
         if (workspace.modules.some((item) => item.id === module.id)) throw new AuthoringError("DUPLICATE_ID", `Module ${module.id} already exists.`);
         workspace.modules.push(module);
       } else {
-        requireEntity(workspace.modules, args.moduleId, "Module");
+        const current = requireEntity(workspace.modules, args.moduleId, "Module");
         if (args.moduleId !== module.id) throw new AuthoringError("VALIDATION_ERROR", "Module IDs are immutable.");
+        if (builtinModules().some(({ id }) => id === module.id) && !isDeepStrictEqual2(withoutLogging(logicalModule(module)), withoutLogging(logicalModule(current)))) {
+          throw new AuthoringError("VALIDATION_ERROR", `Module ${module.id} is a built-in block: its definition comes from the manager's code, so only its logging can change here.`);
+        }
         workspace.modules[workspace.modules.findIndex((item) => item.id === module.id)] = module;
       }
       return { module: logicalModule(module), fields: module.fields, outputs: module.outputs, applied, changes: [{ op: tool === "autobiz_create_module" ? "createModule" : "updateModule", moduleId: module.id }] };
