@@ -42,6 +42,12 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - id: apt-week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/autobiz/apt
+          key: tools-apt-b0c69999f5a6-${{ steps.apt-week.outputs.week }}-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/pipx
@@ -55,9 +61,16 @@ jobs:
         run: |
           (docker pull -q brainicism/bgutil-ytdlp-pot-provider:2.0.2-node > /dev/null 2>&1 &)
           bash runner/warp.sh repo
-          APT='-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180'
-          sudo apt-get $APT update -qq
-          sudo apt-get $APT install -y -qq fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp > /dev/null
+          a="$HOME/.cache/autobiz/apt"
+          mkdir -p "$a/archives/partial" "$a/lists/partial"
+          APT="-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180 -o Dir::Cache::Archives=$a/archives -o Dir::State::Lists=$a/lists"
+          PKGS='fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp'
+          # A cache hit installs from the cached lists and packages without the mirror; a miss or a stale cache updates first.
+          if ! sudo apt-get $APT install -y -qq --no-download $PKGS > /dev/null 2>&1; then
+            sudo apt-get $APT update -qq
+            sudo apt-get $APT install -y -qq $PKGS > /dev/null
+          fi
+          sudo chown -R "$(id -u):$(id -g)" "$a"
           export PIPX_HOME="$HOME/.cache/autobiz/pipx" PIPX_BIN_DIR="$HOME/.cache/autobiz/pipx/bin"
           if [ ! -x "$PIPX_BIN_DIR/yt-dlp" ]; then
             pipx install "yt-dlp[default]==2026.08.19"

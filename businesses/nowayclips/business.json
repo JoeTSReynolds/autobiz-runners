@@ -233,8 +233,7 @@
             "y": 865
           },
           "config": {
-            "mode": "sections",
-            "downloadTimeoutMs": 180000
+            "mode": "sections"
           }
         },
         {
@@ -491,7 +490,7 @@
       ]
     },
     "createdAt": "2026-10-13T01:32:43.003Z",
-    "updatedAt": "2026-10-23T00:47:20.035Z"
+    "updatedAt": "2026-10-23T15:39:25.367Z"
   },
   "modules": [
     {

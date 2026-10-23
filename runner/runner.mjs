@@ -49120,13 +49120,20 @@ function sourceOf(job) {
 }
 var BLOCKED = /confirm you.re not a bot|HTTP Error 429/i;
 var isBlock = (error) => error instanceof Error && !(error instanceof ExecutionCancelled) && !(error instanceof ExecutionLimitFailure) && BLOCKED.test(error.message);
+var timedOut = (error) => error instanceof ExecutionLimitFailure && /^yt-dlp exceeded its \d+ ms time limit/.test(error.message);
 function ytDlp(config, tools) {
   const [retries, waitSeconds] = [count(config, "blockedRetries", false, true), count(config, "blockedWaitSeconds")];
   return async (args, timeoutMs) => {
+    let slowRetried = false;
     for (let attempt = 0; ; attempt++) {
       try {
         return await tools.run("yt-dlp", args, { timeoutMs });
       } catch (error) {
+        if (timedOut(error) && !slowRetried && tools.backOff) {
+          slowRetried = true;
+          await tools.backOff(0);
+          continue;
+        }
         if (!isBlock(error) || attempt >= retries || !tools.backOff) throw error;
         await tools.backOff(waitSeconds * 1e3 * 2 ** attempt);
       }
@@ -49505,17 +49512,16 @@ var sections = async (job, config, tools, outputKey) => {
   const downloads = /* @__PURE__ */ new Map();
   for (const { from, to } of wanted) downloads.set(from, Math.max(downloads.get(from) ?? 0, to));
   const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "clip-%(section_start).3f.%(ext)s", "--no-warnings", "--", url];
-  const slow = (error) => error instanceof ExecutionLimitFailure && /^yt-dlp exceeded its \d+ ms time limit/.test(error.message);
   const throttled = () => ({ output: { ...job, rejectedSources: [...rejectedSources(job), sourceOf(job).id] }, port: "missing" });
   try {
     await yt2(args, timeoutMs);
   } catch (error) {
-    if (slow(error)) return throttled();
+    if (timedOut(error)) return throttled();
     if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure || isBlock(error)) throw error;
     try {
       await yt2(args, timeoutMs);
     } catch (retry) {
-      if (slow(retry)) return throttled();
+      if (timedOut(retry)) return throttled();
       throw retry;
     }
   }
@@ -55711,7 +55717,7 @@ var launchChromium = async ({ userDataDir, executablePath, headless }) => {
   return context;
 };
 var isTimeout = (error) => error instanceof Error && error.name === "TimeoutError";
-var asFailure = (error, timedOut, failed2) => error instanceof ExecutionFailure ? error : new ExecutionFailure(isTimeout(error) ? timedOut : failed2);
+var asFailure = (error, timedOut2, failed2) => error instanceof ExecutionFailure ? error : new ExecutionFailure(isTimeout(error) ? timedOut2 : failed2);
 async function skipIntro(page) {
   const skip = page.getByText("SKIP TO YOUTUBE STUDIO");
   if (await skip.count()) await skip.click({ timeout: NAVIGATION_MS });
