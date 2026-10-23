@@ -47244,8 +47244,8 @@ function starterModules() {
       field("keywordWindow", "Keyword window (s)", "number", 60),
       field("outputKey", "Output key (empty: the mode's own key)", "string", "")
     ], ["next", "missing"]),
-    seeded("video-edit", "Video edit", "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).", [
-      field("mode", "Mode", "select", "short", ["short", "story"]),
+    seeded("video-edit", "Video edit", "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background); mode check sends a story plan that breaks the rules to invalid before anything is downloaded.", [
+      field("mode", "Mode", "select", "short", ["short", "story", "check"]),
       field("width", "Width", "number", 1080),
       field("height", "Height", "number", 1920),
       field("contentAspect", "Content aspect", "string", "4:5"),
@@ -47273,7 +47273,7 @@ function starterModules() {
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
       field("outputKey", "Output key", "string", "short")
-    ], ["next"]),
+    ], ["next", "invalid"]),
     seeded("thumbnail", "Thumbnail", "Extracts cover frames or composes a cover with arrow, circle and title.", [
       field("mode", "Mode", "select", "candidates", ["candidates", "compose"]),
       field("count", "Candidate frames", "number", 6),
@@ -50616,6 +50616,19 @@ async function present(tools, file, timeoutMs) {
     throw error;
   }
 }
+async function checkStory(input, settings, tools) {
+  if (!isObject5(input)) throw new ExecutionFailure("video-edit needs a job object.");
+  const manifest = `${settings.soundsDir}/sounds.json`;
+  const library = readLibrary(await tools.readText("state", manifest), manifest);
+  const { agentErrors, ...job } = input;
+  try {
+    validatePlan(input.story, [...library.keys()]);
+  } catch (error) {
+    if (!(error instanceof ExecutionFailure)) throw error;
+    return { output: { ...job, agentErrors: [...Array.isArray(agentErrors) ? agentErrors : [], error.message] }, port: "invalid" };
+  }
+  return { output: job, port: "next" };
+}
 async function renderStory(input, settings, tools) {
   if (!isObject5(input)) throw new ExecutionFailure("video-edit input must be a job object.");
   const timeoutMs = settings.renderTimeoutMs;
@@ -50756,7 +50769,7 @@ var str = (value) => typeof value === "string";
 var safeName2 = (value) => typeof value === "string" && value !== "" && !/^[-/]/.test(value) && !value.split("/").includes("..");
 var folderName = (value) => typeof value === "string" && /^[a-z0-9][a-z0-9_-]*$/i.test(value);
 var RULES = {
-  mode: [(value) => value === "short" || value === "story", "'short' or 'story'"],
+  mode: [(value) => value === "short" || value === "story" || value === "check", "'short', 'story' or 'check'"],
   width: [even, "an even integer"],
   height: [even, "an even integer"],
   contentAspect: [(value) => typeof value === "string" && /^[1-9]\d*:[1-9]\d*$/.test(value), "a ratio such as 4:5"],
@@ -50997,6 +51010,7 @@ function ffmpegArgs(clipFile, segments, settings, sounds = []) {
 async function execute11({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("video-edit requires the tools capability.");
   const settings = readSettings(config);
+  if (settings.mode === "check") return checkStory(input, settings, tools);
   if (settings.mode === "story") {
     if (settings.width !== 1080 || settings.height !== 1920) throw new ExecutionFailure("video-edit story mode renders 1080x1920; leave width and height at their defaults.");
     return { output: await renderStory(input, settings, tools), port: "next" };

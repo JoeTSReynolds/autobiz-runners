@@ -790,7 +790,7 @@
     {
       "id": "video-edit",
       "name": "Video edit",
-      "description": "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background).",
+      "description": "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background); mode check sends a story plan that breaks the rules to invalid before anything is downloaded.",
       "kind": "video-edit",
       "version": 1,
       "fields": [
@@ -801,7 +801,8 @@
           "default": "short",
           "options": [
             "short",
-            "story"
+            "story",
+            "check"
           ]
         },
         {
@@ -1006,6 +1007,10 @@
         {
           "id": "next",
           "label": "Next"
+        },
+        {
+          "id": "invalid",
+          "label": "invalid"
         }
       ],
       "logging": {
