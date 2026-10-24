@@ -1235,6 +1235,12 @@
           "default": 10
         },
         {
+          "key": "titleHashtags",
+          "label": "Hashtags in title",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "outputKey",
           "label": "Output key",
           "type": "string",
@@ -1249,6 +1255,7 @@
         "containsSyntheticMedia": false,
         "setCover": true,
         "maxHashtags": 10,
+        "titleHashtags": true,
         "outputKey": "youtube"
       },
       "outputs": [

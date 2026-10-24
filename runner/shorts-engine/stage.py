@@ -190,6 +190,7 @@ def render(job, cfg, run, state):
         code, out = sh(sys.executable, here / "tts.py", proj, VOICES[lane]["kokoro"])
     if code:
         raise SystemExit(f"voice failed: {out[-500:]}")
+    level_voice(proj / "voice.mp3")
     sh(sys.executable, here / "compile.py", proj)
     code, out = sh("node", here / "check.mjs", proj)
     if code:  # the model never hears the voice: give it the real word times so it can re-anchor
@@ -214,6 +215,20 @@ def render(job, cfg, run, state):
         if code:
             raise SystemExit(f"render failed: {out[-800:]}")
     return "next", publish_meta(job, sb, lane), f"rendered ({engine} voice)"
+
+
+VOICE_LUFS = -16.0  # sfx_render.py masters the bed at a fixed level under this
+
+
+def level_voice(path):
+    """Set the voiceover to VOICE_LUFS with one linear gain (timing untouched), peaks held under -1.5 dBFS."""
+    log = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-af", "ebur128", "-f", "null", "-"], capture_output=True, text=True).stderr
+    gain = VOICE_LUFS - float(re.findall(r"I:\s+(-?[\d.]+) LUFS", log)[-1])
+    tmp = path.with_suffix(".levelled.mp3")
+    code, out = sh("ffmpeg", "-v", "error", "-y", "-i", path, "-af", f"volume={gain:.2f}dB,alimiter=limit=0.84:level=false", "-c:a", "libmp3lame", "-b:a", "192k", tmp)
+    if code:
+        raise SystemExit(f"voice levelling failed: {out[-500:]}")
+    tmp.replace(path)
 
 
 def publish_meta(job, sb, lane):

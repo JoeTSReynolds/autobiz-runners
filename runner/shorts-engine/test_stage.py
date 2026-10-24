@@ -16,4 +16,18 @@ with tempfile.TemporaryDirectory() as d:
     assert res["port"] == "missing", res
     assert [c["id"] for c in res["output"]["candidates"]] == ["c1"], res["output"]
     assert "Dead links" in res["output"]["agentErrors"][0], res["output"]
+
+# The voiceover is levelled to VOICE_LUFS, so the sound bed (mastered at a fixed level under it) never drowns it.
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(here))
+import re, stage  # noqa: E402
+lufs = lambda f: float(re.findall(r"I:\s+(-?[\d.]+) LUFS", subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(f), "-af", "ebur128", "-f", "null", "-"], capture_output=True, text=True).stderr)[-1])
+with tempfile.TemporaryDirectory() as d:
+    v = Path(d) / "voice.mp3"
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=f=220:d=4", "-af", "volume=-24dB", str(v)], check=True)
+    before = (lufs(v), float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(v)], capture_output=True, text=True).stdout))
+    stage.level_voice(v)
+    after = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(v)], capture_output=True, text=True).stdout)
+    assert before[0] < -30 and abs(lufs(v) - stage.VOICE_LUFS) < 1.0, (before, lufs(v))
+    assert abs(after - before[1]) < 0.05, "levelling must not move the word timings"
 print("stage tests ok")

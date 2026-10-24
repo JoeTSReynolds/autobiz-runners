@@ -1,8 +1,7 @@
 window.LANE = {
   id: "space",
-  key: [146.83, 185.0, 220.0, 246.94, 293.66], // D major pentatonic: matches the music
-  music: { bpm: 84, beatsPerChord: 8, arp: "quarters", ticks: false, // D major: I-vi-IV-V, open and full of wonder
-    chords: [[146.83, 185.0, 220.0, 293.66], [123.47, 146.83, 185.0, 246.94], [98.0, 146.83, 196.0, 246.94], [110.0, 138.59, 164.81, 220.0]] },
+  key: [146.83, 185.0, 220.0, 246.94, 293.66], // D major pentatonic: the pitch of the synth pops, blips and chimes
+  music: "space", // a recorded track from sounds/music/space/, chosen per video
   colors: { dark: "#0b0b0b", light: "#f3f2ec", accent: "#e03c31", rock: "#c9c7bf", mid: "#77756f", ink: "#111111" },
   particles: { ambient: "stars", dust: "230,228,220", accent: "224,60,49" },
   font: '700 100px "Nimbus Sans"', // what the driver waits for before measuring text

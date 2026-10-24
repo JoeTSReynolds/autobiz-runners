@@ -1,0 +1,240 @@
+{
+ "blip/beep-down.m4a": {
+  "license": "CC0",
+  "creator": "paep3nguin",
+  "source": "https://freesound.org/people/paep3nguin/sounds/388047"
+ },
+ "blip/beep-up.m4a": {
+  "license": "CC0",
+  "creator": "paep3nguin",
+  "source": "https://freesound.org/people/paep3nguin/sounds/388046"
+ },
+ "blip/wave.m4a": {
+  "license": "CC0",
+  "creator": "Breviceps",
+  "source": "https://freesound.org/people/Breviceps/sounds/452998"
+ },
+ "chime/bell.m4a": {
+  "license": "CC0",
+  "creator": "GabFitzgerald",
+  "source": "https://freesound.org/people/GabFitzgerald/sounds/625174"
+ },
+ "chime/confirm.m4a": {
+  "license": "CC0",
+  "creator": "drzhnn",
+  "source": "https://freesound.org/people/drzhnn/sounds/199940"
+ },
+ "chime/ding.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "ding.m4a"
+ },
+ "click/camera-shutter.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "camera-shutter.m4a"
+ },
+ "click/hover.m4a": {
+  "license": "CC0",
+  "creator": "plasterbrain",
+  "source": "https://freesound.org/people/plasterbrain/sounds/237422"
+ },
+ "click/ui2.m4a": {
+  "license": "CC0",
+  "creator": "finix473",
+  "source": "https://freesound.org/people/finix473/sounds/546974"
+ },
+ "impact/cinematic-impact.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "cinematic-impact.m4a"
+ },
+ "impact/cinematic.m4a": {
+  "license": "CC0",
+  "creator": "Rizzard",
+  "source": "https://freesound.org/people/Rizzard/sounds/559387"
+ },
+ "impact/dramatic-hit.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "dramatic-hit.m4a"
+ },
+ "impact/soft-cinematic.m4a": {
+  "license": "CC0",
+  "creator": "Rizzard",
+  "source": "https://freesound.org/people/Rizzard/sounds/560156"
+ },
+ "music/space/dunes.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/447511"
+ },
+ "music/space/edge-of-space.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/482919"
+ },
+ "music/space/episode-one.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/486447"
+ },
+ "music/space/parallel-universe.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/404458"
+ },
+ "music/space/space-music-ambient.m4a": {
+  "license": "CC0",
+  "creator": "evanjones4",
+  "source": "https://freesound.org/people/evanjones4/sounds/243998"
+ },
+ "music/space/space-texture.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/474864"
+ },
+ "music/space/space-voyage.m4a": {
+  "license": "CC0",
+  "creator": "Romariogrande",
+  "source": "https://freesound.org/people/Romariogrande/sounds/639495"
+ },
+ "music/tech/circuit-synthwave.m4a": {
+  "license": "CC0",
+  "creator": "Doctor_Dreamchip",
+  "source": "https://freesound.org/people/Doctor_Dreamchip/sounds/460357"
+ },
+ "music/tech/drops.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/404460"
+ },
+ "music/tech/good-morning-heaven.m4a": {
+  "license": "CC0",
+  "creator": "Drakensson",
+  "source": "https://freesound.org/people/Drakensson/sounds/529624"
+ },
+ "music/tech/lofi-fusion.m4a": {
+  "license": "CC0",
+  "creator": "Seth_Makes_Sounds",
+  "source": "https://freesound.org/people/Seth_Makes_Sounds/sounds/655516"
+ },
+ "music/tech/not-to-notice.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/504540"
+ },
+ "music/tech/road-in-the-forest.m4a": {
+  "license": "CC0",
+  "creator": "Andrewkn",
+  "source": "https://freesound.org/people/Andrewkn/sounds/439553"
+ },
+ "music/tech/unpretentious-reveal.m4a": {
+  "license": "CC0",
+  "creator": "Drakensson",
+  "source": "https://freesound.org/people/Drakensson/sounds/529381"
+ },
+ "pop/beep-space.m4a": {
+  "license": "CC0",
+  "creator": "GameAudio",
+  "source": "https://freesound.org/people/GameAudio/sounds/220206"
+ },
+ "pop/bubble-pop.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "bubble-pop.m4a"
+ },
+ "pop/notification-pop.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "notification-pop.m4a"
+ },
+ "pop/quick-deep.m4a": {
+  "license": "CC0",
+  "creator": "GameAudio",
+  "source": "https://freesound.org/people/GameAudio/sounds/220177"
+ },
+ "riser/energy.m4a": {
+  "license": "CC0",
+  "creator": "magnuswaker",
+  "source": "https://freesound.org/people/magnuswaker/sounds/522095"
+ },
+ "riser/riser.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "riser.m4a"
+ },
+ "riser/rizzard.m4a": {
+  "license": "CC0",
+  "creator": "Rizzard",
+  "source": "https://freesound.org/people/Rizzard/sounds/561207"
+ },
+ "riser/suspense-build-up.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "suspense-build-up.m4a"
+ },
+ "whoosh-big/deep.m4a": {
+  "license": "CC0",
+  "creator": "newagesoup",
+  "source": "https://freesound.org/people/newagesoup/sounds/462089"
+ },
+ "whoosh-big/kinoton-deep.m4a": {
+  "license": "CC0",
+  "creator": "Kinoton",
+  "source": "https://freesound.org/people/Kinoton/sounds/351256"
+ },
+ "whoosh-big/low-02.m4a": {
+  "license": "CC0",
+  "creator": "moogy73",
+  "source": "https://freesound.org/people/moogy73/sounds/425700"
+ },
+ "whoosh-big/low-04.m4a": {
+  "license": "CC0",
+  "creator": "moogy73",
+  "source": "https://freesound.org/people/moogy73/sounds/425698"
+ },
+ "whoosh-big/reverse-whoosh.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "reverse-whoosh.m4a"
+ },
+ "whoosh-big/transition.m4a": {
+  "license": "CC0",
+  "creator": "adh.dreaming",
+  "source": "https://freesound.org/people/adh.dreaming/sounds/632763"
+ },
+ "whoosh/double.m4a": {
+  "license": "CC0",
+  "creator": "qubodup",
+  "source": "https://freesound.org/people/qubodup/sounds/60025"
+ },
+ "whoosh/electronic.m4a": {
+  "license": "CC0",
+  "creator": "martian",
+  "source": "https://freesound.org/people/martian/sounds/19307"
+ },
+ "whoosh/kinoton.m4a": {
+  "license": "CC0",
+  "creator": "Kinoton",
+  "source": "https://freesound.org/people/Kinoton/sounds/427823"
+ },
+ "whoosh/lloyd.m4a": {
+  "license": "CC0",
+  "creator": "LloydEvans09",
+  "source": "https://freesound.org/people/LloydEvans09/sounds/332003"
+ },
+ "whoosh/space-bright.m4a": {
+  "license": "CC0",
+  "creator": "GameAudio",
+  "source": "https://freesound.org/people/GameAudio/sounds/220191"
+ },
+ "whoosh/swipe.m4a": {
+  "license": "CC0",
+  "creator": "qubodup",
+  "source": "https://freesound.org/people/qubodup/sounds/60007"
+ },
+ "whoosh/swoosh.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "swoosh.m4a"
+ },
+ "whoosh/transition-sweep.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "transition-sweep.m4a"
+ },
+ "whoosh/whoosh.m4a": {
+  "source": "NoWayClips sound bank",
+  "file": "whoosh.m4a"
+ }
+}

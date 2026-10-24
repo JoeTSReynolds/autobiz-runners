@@ -1,8 +1,7 @@
 window.LANE = {
   id: "tech",
-  key: [130.81, 146.83, 164.81, 196.0, 220.0], // C major pentatonic: matches the music
-  music: { bpm: 112, beatsPerChord: 4, arp: "eighths", ticks: true, // C major: I-V-vi-IV, bright and moving
-    chords: [[130.81, 164.81, 196.0, 261.63], [98.0, 146.83, 196.0, 246.94], [110.0, 130.81, 164.81, 220.0], [87.31, 130.81, 174.61, 220.0]] },
+  key: [130.81, 146.83, 164.81, 196.0, 220.0], // C major pentatonic: the pitch of the synth pops, blips and chimes
+  music: "tech", // a recorded track from sounds/music/tech/, chosen per video
   colors: { dark: "#111111", light: "#e9e7e2", accent: "#ff4f00", tint: "#ff9f70", mid: "#77746e", ink: "#111111" },
   particles: { ambient: "sparks", dust: "233,231,226", accent: "255,79,0" },
   font: '800 100px "Archivo"', // what the driver waits for before measuring text
