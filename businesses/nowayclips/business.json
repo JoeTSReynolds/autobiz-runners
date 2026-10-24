@@ -176,7 +176,8 @@
             "channelHandle": "@NoWayClipsHQ",
             "privacy": "public",
             "categoryId": "24",
-            "setCover": false
+            "setCover": false,
+            "titleHashtags": false
           }
         },
         {
@@ -490,7 +491,7 @@
       ]
     },
     "createdAt": "2026-10-13T01:32:43.003Z",
-    "updatedAt": "2026-10-23T17:58:06.581Z"
+    "updatedAt": "2026-10-24T20:48:19.750Z"
   },
   "modules": [
     {
@@ -1589,6 +1590,12 @@
           "default": 10
         },
         {
+          "key": "titleHashtags",
+          "label": "Hashtags in title",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "outputKey",
           "label": "Output key",
           "type": "string",
@@ -1603,6 +1610,7 @@
         "containsSyntheticMedia": false,
         "setCover": true,
         "maxHashtags": 10,
+        "titleHashtags": true,
         "outputKey": "youtube"
       },
       "outputs": [

@@ -47295,6 +47295,7 @@ function starterModules() {
       field("containsSyntheticMedia", "Contains synthetic media", "boolean", false),
       field("setCover", "Set cover", "boolean", true),
       field("maxHashtags", "Most hashtags", "number", 10),
+      field("titleHashtags", "Hashtags in title", "boolean", true),
       field("outputKey", "Output key", "string", "youtube")
     ], ["next"]),
     seeded("instagram-publish", "Instagram publish", "Uploads the Short as a Reel and publishes it to the configured Instagram account.", [
@@ -51277,6 +51278,7 @@ var DEFAULTS5 = {
   containsSyntheticMedia: false,
   setCover: true,
   maxHashtags: 10,
+  titleHashtags: true,
   outputKey: "youtube"
 };
 var PRIVACIES = ["private", "unlisted", "public"];
@@ -51330,6 +51332,7 @@ function readSettings3(config) {
   const containsSyntheticMedia = get("containsSyntheticMedia");
   const setCover = get("setCover");
   const maxHashtags = get("maxHashtags");
+  const titleHashtags = get("titleHashtags");
   const outputKey = get("outputKey");
   if (typeof channelHandle !== "string" || !/^@[A-Za-z0-9._-]{3,100}$/.test(channelHandle)) {
     throw new ExecutionFailure("YouTube publish setting channelHandle must look like @handle (3 to 100 letters, digits, dots, dashes or underscores).");
@@ -51342,10 +51345,11 @@ function readSettings3(config) {
   if (typeof maxHashtags !== "number" || !Number.isInteger(maxHashtags) || maxHashtags < 0 || maxHashtags > 60) {
     throw new ExecutionFailure("YouTube publish setting maxHashtags must be a whole number from 0 to 60.");
   }
+  if (typeof titleHashtags !== "boolean") throw new ExecutionFailure("YouTube publish setting titleHashtags must be true or false.");
   if (!isText(outputKey)) throw new ExecutionFailure("YouTube publish setting outputKey must be a non-empty string.");
-  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, outputKey };
+  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, outputKey };
 }
-function readJob2(input, needCover, maxHashtags) {
+function readJob2(input, needCover, maxHashtags, titleHashtags) {
   if (!isObject8(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
   const { short, meta, thumbnail } = input;
   if (!isObject8(short) || !isText(short.file)) throw new ExecutionFailure("YouTube publish input job.short.file must be a non-empty string.");
@@ -51358,7 +51362,7 @@ function readJob2(input, needCover, maxHashtags) {
     job: input,
     file: short.file,
     cover: isObject8(thumbnail) ? String(thumbnail.file) : "",
-    title: withTitleHashtags(clipTitle(meta.title.trim()), cleanHashtags(meta.hashtags ?? [], maxHashtags)),
+    title: withTitleHashtags(clipTitle(meta.title.trim()), titleHashtags ? cleanHashtags(meta.hashtags ?? [], maxHashtags) : []),
     description: withHashtags(meta.description ?? "", cleanHashtags(meta.hashtags ?? [], maxHashtags)),
     tags: cleanTags(meta.tags ?? [])
   };
@@ -51399,8 +51403,8 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
 }
 async function execute13({ input, config, node }, { youtube, tools }) {
   if (!youtube) throw new ExecutionFailure("YouTube publish requires the youtube capability.");
-  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, outputKey } = readSettings3(config);
-  const { job, file, cover, title, description, tags } = readJob2(input, setCover, maxHashtags);
+  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, outputKey } = readSettings3(config);
+  const { job, file, cover, title, description, tags } = readJob2(input, setCover, maxHashtags, titleHashtags);
   await guard(() => youtube.verifyChannel(handle, { studio: setCover }));
   const videoId = await uploadOnce(youtube, tools, node, handle, file, { title, description, tags, categoryId, madeForKids, containsSyntheticMedia });
   const state = await guard(
