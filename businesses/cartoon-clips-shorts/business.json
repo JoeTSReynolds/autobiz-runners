@@ -235,7 +235,8 @@
             "indexPerRun": 10,
             "indexListSize": 300,
             "minDuration": 90,
-            "maxDuration": 10800
+            "maxDuration": 10800,
+            "onlyWhen": "route!=archive"
           }
         },
         {
@@ -284,7 +285,8 @@
               "spooky scary halloween moments",
               "peter vs the staircase"
             ],
-            "outputKey": "rising"
+            "outputKey": "rising",
+            "onlyWhen": "route!=archive"
           }
         },
         {
@@ -639,7 +641,7 @@
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-30T20:59:09.737Z"
+    "updatedAt": "2026-10-30T21:06:47.756Z"
   },
   "modules": [
     {
