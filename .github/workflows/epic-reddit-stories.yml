@@ -36,7 +36,7 @@ jobs:
         run: |
           curl -fsSL https://claude.ai/install.sh | bash -s 2.1.112
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          (timeout 120 "$HOME/.local/bin/claude" -p 'Reply with OK' --model claude-sonnet-5-5 > "$RUNNER_TEMP/claude-check.log" 2>&1; echo $? > "$RUNNER_TEMP/claude-check.status") < /dev/null > /dev/null 2>&1 &
+          (timeout 120 "$HOME/.local/bin/claude" -p 'Reply with OK' --model claude-haiku-5-5 > "$RUNNER_TEMP/claude-check.log" 2>&1; echo $? > "$RUNNER_TEMP/claude-check.status") < /dev/null > /dev/null 2>&1 &
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -145,7 +145,7 @@ jobs:
           AUTOBIZ_RUN_TIMEOUT_MS: '3600000'
           AUTOBIZ_NETWORK_RESET_COMMAND: bash runner/warp.sh rotate
           AGENT_CLI: claude
-          AGENT_MODEL: claude-sonnet-5-5
+          AGENT_MODEL: claude-haiku-5-5
           AGENT_TIMEOUT_MS: '180000'
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           YOUTUBE_DATA_API_CLIENT_ID: ${{ secrets.YOUTUBE_DATA_API_CLIENT_ID }}

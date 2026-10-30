@@ -7,7 +7,6 @@
     "settings": {
       "runner": {
         "at": [
-          "09:07",
           "19:07"
         ],
         "tz": "Europe/London",
@@ -136,7 +135,7 @@
       "operators": []
     },
     "createdAt": "2026-10-20T11:01:03.409Z",
-    "updatedAt": "2026-10-22T16:44:48.768Z"
+    "updatedAt": "2026-10-30T20:17:02.457Z"
   },
   "modules": [
     {
@@ -462,7 +461,7 @@
     {
       "id": "media-fetch",
       "name": "Media fetch",
-      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, or locates a scene by its dialogue.",
+      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).",
       "kind": "media-fetch",
       "version": 1,
       "fields": [
@@ -478,7 +477,8 @@
             "sections",
             "download",
             "index",
-            "locate"
+            "locate",
+            "frinkiac"
           ]
         },
         {
@@ -694,7 +694,7 @@
         },
         {
           "key": "onlyWhen",
-          "label": "Run only when (key=value)",
+          "label": "Run only when (key=value or key!=value)",
           "type": "string",
           "default": ""
         },
@@ -757,6 +757,24 @@
           "label": "Keyword window (s)",
           "type": "number",
           "default": 60
+        },
+        {
+          "key": "quoteSite",
+          "label": "Quote search site (https)",
+          "type": "string",
+          "default": "https://frinkiac.com"
+        },
+        {
+          "key": "archiveItem",
+          "label": "archive.org item",
+          "type": "string",
+          "default": "SimpsonsCommentary"
+        },
+        {
+          "key": "archiveWindow",
+          "label": "Archive subtitle window (s)",
+          "type": "number",
+          "default": 90
         },
         {
           "key": "outputKey",
@@ -827,6 +845,9 @@
         "minQuoteScore": 0.6,
         "minKeywordHits": 2,
         "keywordWindow": 60,
+        "quoteSite": "https://frinkiac.com",
+        "archiveItem": "SimpsonsCommentary",
+        "archiveWindow": 90,
         "outputKey": ""
       },
       "outputs": [
@@ -1334,6 +1355,8 @@
           "default": "feeds",
           "options": [
             "feeds",
+            "posts",
+            "story",
             "sources",
             "facts",
             "images",

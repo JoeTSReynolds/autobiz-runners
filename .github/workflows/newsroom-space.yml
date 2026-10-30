@@ -2,8 +2,6 @@
 name: "Newsroom Space"
 on:
   schedule:
-    - cron: '37 11 * * *'
-      timezone: 'Europe/London'
     - cron: '37 21 * * *'
       timezone: 'Europe/London'
   workflow_dispatch:

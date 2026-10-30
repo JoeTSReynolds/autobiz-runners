@@ -11,7 +11,7 @@
           "22:52"
         ],
         "tz": "Europe/London",
-        "model": "claude-sonnet-5-5",
+        "model": "claude-haiku-5-5",
         "cover": false
       }
     },
@@ -212,7 +212,7 @@
       ]
     },
     "createdAt": "2026-10-30T20:12:15.130Z",
-    "updatedAt": "2026-10-30T20:12:22.206Z"
+    "updatedAt": "2026-10-30T20:17:01.895Z"
   },
   "modules": [
     {
