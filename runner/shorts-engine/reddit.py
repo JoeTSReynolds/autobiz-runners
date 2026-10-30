@@ -205,7 +205,7 @@ def reddit_comment(sub, pid, question):
     if sub.lower() in ("amitheasshole", "aitah"):
         try:
             time.sleep(2)
-            counts, k = classify_verdicts(parse_comments(get(f"https://www.reddit.com/r/{sub}/comments/{pid}/.rss")))
+            counts, k = classify_verdicts(parse_comments(get(f"https://www.reddit.com/r/{sub}/comments/{pid}/.rss?sort=top&depth=1&limit=40")  # top-level, best first; the default order is threaded replies))
             return verdict_comment(counts, k, question)
         except Exception:
             pass
