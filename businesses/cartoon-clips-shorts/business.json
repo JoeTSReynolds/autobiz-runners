@@ -77,7 +77,18 @@
           "config": {
             "mode": "story",
             "layout": "card",
-            "headlineSize": 76
+            "headlineSize": 76,
+            "cardBackgrounds": [
+              "blur",
+              "paper",
+              "brick"
+            ],
+            "headlineFont": "Lilita One",
+            "storyHook": false,
+            "storySounds": false,
+            "captionFont": "Lilita One",
+            "captionItalic": false,
+            "captionOutline": 6
           }
         },
         {
@@ -85,7 +96,7 @@
           "moduleId": "agent",
           "position": {
             "x": 1810,
-            "y": 743
+            "y": 784
           },
           "config": {
             "prompt": "Write YouTube Shorts metadata for a clip from the show named in `brief.show`. `brief` says why it was chosen; when `brief.occasion` is set and the scene is really about it, the title may nod to that occasion (never invent a link); when `brief.route` is remake, write our own title and never copy `brief.remakeOf.title`. `moment.hook` and `moment.why` describe the moment; `source.title` is the title of the source video. Our titles copy the style of the biggest cartoon-clip Shorts channels: a short, plain, punchy statement of 3 to 6 words, in normal sentence case, like a caption a friend would write. Good examples: 'Mr Nimbus on stage', \"Rick's spaghetti method\", \"Morty's new arm is insane\", 'When doing dishes gets serious', 'Beth arrived too late', 'Peter buys a tank'. Do NOT start with the show name, do NOT use a colon, question bait like 'did WHAT' or 'and then this happens', ALL CAPS words or emojis. Return only JSON: {\"title\": \"the 3 to 6 word title, then a space and #<show name in lowercase without spaces or punctuation> #shorts, for example 'Peter buys a tank #familyguy #shorts'\", \"description\": \"exactly the same text as title\", \"hashtags\": [], \"tags\": [\"the show name in lowercase\"], \"thumbnailText\": \"at most 3 words, uppercase, the reaction a viewer would have\"}. If `agentErrors` is present, fix those problems.",
@@ -110,7 +121,7 @@
           "moduleId": "youtube-publish",
           "position": {
             "x": 2105,
-            "y": 743
+            "y": 784
           },
           "config": {
             "channelHandle": "@EpicVideoClips101",
@@ -124,7 +135,7 @@
           "moduleId": "output",
           "position": {
             "x": 2400,
-            "y": 743
+            "y": 784
           },
           "config": {}
         },
@@ -147,7 +158,7 @@
             "y": 99
           },
           "config": {
-            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from a cartoon clip of the show in `brief.show`, for a channel that posts the most shocking and insane cartoon moments. `moment` is the payoff already chosen as the climax (seconds in the video in `source`). `transcript` is the whole video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Build a story that opens on the shock and then jumps back to show how it happened: (1) hook: the 3 to 5 seconds at the peak of the payoff, the most shocking instant (the scream, the explosion, the moment it all goes wrong), shown first so the viewer thinks 'how did that happen?'; (2) intro: 3 to 7 seconds where the scene starts, before the build-up, so the story jumps back to the beginning; (3) beats: 2 to 4 short clips of 4 to 9 seconds, in order, between the intro and the payoff, that build up to it so each cut follows on from the previous one and the last beat leads straight into the payoff; (4) payoff: the given moment, ending only after the reaction has fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; aim for 40 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 6 words, the on-screen title: a curiosity hook about what happens, naming the main character, and tied to `brief.occasion` only when the scene is really about it (never invent a link)\", \"clips\": [{\"role\": \"hook\" | \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
+            "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from a cartoon clip of the show in `brief.show`, for a channel that posts the funniest and most unhinged cartoon moments. `moment` is the payoff already chosen as the climax (seconds in the video in `source`). `transcript` is the video as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. Tell the scene in order, like a tight edit of the real scene, and never show the payoff or anything after it early (that spoils the joke): (1) intro: 3 to 7 seconds that open the scene on a line that is funny or intriguing on its own, never slow setup, because the first second decides whether the viewer stays; (2) beats: 2 to 4 short clips of 4 to 9 seconds, in order, between the intro and the payoff, that build up to it so each cut follows on from the previous one and the last beat leads straight into the payoff; (3) payoff: the given moment, ending only after the reaction has fully played out (it may start slightly earlier, at a sentence start). Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; aim for 40 to 55 seconds in total. Then place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (episode seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal) or none. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): air-horn: 2.9, anime-wow: 2, applause: 5.01, bass-drop: 3.91, bruh: 0.46, bubble-pop: 0.2, camera-flash: 1.17, camera-shutter: 0.32, cartoon-boing: 1.08, cinematic-braam: 5.01, cinematic-impact: 4.01, clock-ticking: 5.01, crickets: 5.01, crowd-gasp: 1.29, ding: 1.87, dramatic-hit: 3, drum-roll: 4.51, explosion: 4.01, glass-breaking: 3, glitch: 1.14, heartbeat: 6.01, metal-pipe: 2.59, notification-pop: 0.5, punch: 0.61, record-scratch: 0.72, reverse-whoosh: 2, rewind: 2.85, riser: 4.51, roblox-oof: 0.33, sad-trombone: 3.41, slide-whistle: 1.69, suspense-build-up: 4.31, suspense-sting: 1.19, swoosh: 1.73, taco-bell-bong: 1.83, transition-sweep: 1.18, typing: 4.01, vine-boom: 2, whoosh: 0.22, wilhelm-scream: 1.1, windows-error: 0.83. Then add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"tone\": \"light\" for comedy or \"serious\" for a dark scene (serious allows no emojis and at most 2 effects using cinematic-impact or suspense-sting with zoom or none), \"headline\": \"at most 6 words, the on-screen title and the ONLY hook, shown from the first frame: a setup that makes the viewer stay for the payoff without giving it away, for example 'Homer gets his big NASA moment' or 'Bart finally beats Nelson', naming the main character, and tied to `brief.occasion` only when the scene is really about it (never invent a link)\", \"clips\": [{\"role\": \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
             "format": "json",
             "inputKeys": [
               "brief",
@@ -158,6 +169,7 @@
               "transcript"
             ],
             "requiredKeys": [
+              "tone",
               "headline",
               "clips",
               "effects",
@@ -186,15 +198,17 @@
           },
           "config": {
             "options": [
-              "main",
-              "main",
+              "archive",
+              "archive",
+              "archive",
+              "archive",
+              "archive",
+              "archive",
               "main",
               "main",
               "main",
               "main",
               "calendar",
-              "calendar",
-              "remake",
               "remake"
             ],
             "outputKey": "route"
@@ -321,7 +335,7 @@
             "y": 698
           },
           "config": {
-            "prompt": "You plan the next YouTube Short for a channel that posts the most shocking and insane moments from adult animated shows. We can only clip these shows, from their official channels: Family Guy, Rick and Morty, Futurama, American Dad, Bob's Burgers, King of the Hill, South Park. `today` is today's date. `route` says which kind of Short this run makes:\n- main: what is hot right now. `rising` lists official uploads from the last three weeks, fastest-rising first (`velocity` = views per day, `ageDays`, `uploaded`, `views`). Use web search (at most 4 searches) to find which of these shows is in the news this week: a new season or episode, a premiere, finale or special, or an episode people are talking about. Choose from `rising`: prefer an upload of a show that is in the news, otherwise the highest velocity. Set `sourceId` to its id; leave `quotes` and `keywords` empty.\n- calendar: a seasonal Short. Find the next occasion within 21 days of `today` that people in the UK or US celebrate (for example Halloween, Bonfire Night, Thanksgiving, Black Friday, Christmas, New Year, Valentine's Day, Easter, the Super Bowl). Choose the show with a famous episode or scene for it (web search '<show> <occasion> episode' if unsure). Set `occasion` to its name and date, and `keywords` to 3 to 6 words or short phrases that characters would actually SAY in such a scene (for example 'trick or treat', 'costume', 'halloween', 'pumpkin', 'haunted'). If no occasion is within 21 days, plan a main Short instead and say so in `why`.\n- remake: `trendingShorts` lists other channels' cartoon Shorts from the last week, fastest-rising first, each with `captions` (what is said in it). Choose the best-performing one whose dialogue is distinctive and comes from one of our shows. Identify the show and, using web search if useful (the quotes, the title, wiki transcripts), the episode. Many trending Shorts come from episodes that are not on the official channels, so give the finder several chances: set `quotes` to the 2 most distinctive lines (at least 6 words each, copied exactly from `captions`) from each of up to 3 of the best captioned Shorts of our shows, best first; whichever is found in an official upload is used; `keywords` to 3 to 5 distinctive words spoken in the scene; and `remakeOf` to its id and title. If none is usable, plan a main Short instead and say so in `why`.\nIf `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"route\": \"main\" | \"calendar\" | \"remake\", \"show\": \"one of the shows\", \"angle\": \"release\" | \"buzz\" | \"rising\" | \"seasonal\" | \"remake\", \"sourceId\": \"an id from rising, or empty\", \"quotes\": [\"...\"], \"keywords\": [\"...\"], \"occasion\": \"name and date, or empty\", \"remakeOf\": {\"id\": \"...\", \"title\": \"...\"} or null, \"why\": \"two or three sentences: what the data and searches showed, and why this choice\"}.",
+            "prompt": "You plan the next YouTube Short for a channel that posts the most shocking and insane moments from adult animated shows. We can only clip these shows, from their official channels: Family Guy, Rick and Morty, Futurama, American Dad, Bob's Burgers, King of the Hill, South Park. On the archive route only, we clip The Simpsons (seasons 1 to 19) from full episodes we hold instead. `today` is today's date. `route` says which kind of Short this run makes:\n- main: what is hot right now. `rising` lists official uploads from the last three weeks, fastest-rising first (`velocity` = views per day, `ageDays`, `uploaded`, `views`). Use web search (at most 4 searches) to find which of these shows is in the news this week: a new season or episode, a premiere, finale or special, or an episode people are talking about. Choose from `rising`: prefer an upload of a show that is in the news, otherwise the highest velocity. Set `sourceId` to its id; leave `quotes` and `keywords` empty.\n- calendar: a seasonal Short. Find the next occasion within 21 days of `today` that people in the UK or US celebrate (for example Halloween, Bonfire Night, Thanksgiving, Black Friday, Christmas, New Year, Valentine's Day, Easter, the Super Bowl). Choose the show with a famous episode or scene for it (web search '<show> <occasion> episode' if unsure). Set `occasion` to its name and date, and `keywords` to 3 to 6 words or short phrases that characters would actually SAY in such a scene (for example 'trick or treat', 'costume', 'halloween', 'pumpkin', 'haunted'). If no occasion is within 21 days, plan a main Short instead and say so in `why`.\n- remake: `trendingShorts` lists other channels' cartoon Shorts from the last week, fastest-rising first, each with `captions` (what is said in it). Choose the best-performing one whose dialogue is distinctive and comes from one of our shows. Identify the show and, using web search if useful (the quotes, the title, wiki transcripts), the episode. Many trending Shorts come from episodes that are not on the official channels, so give the finder several chances: set `quotes` to the 2 most distinctive lines (at least 6 words each, copied exactly from `captions`) from each of up to 3 of the best captioned Shorts of our shows, best first; whichever is found in an official upload is used; `keywords` to 3 to 5 distinctive words spoken in the scene; and `remakeOf` to its id and title. If none is usable, plan a main Short instead and say so in `why`.\n- archive: a classic The Simpsons Short; ignore `rising`. Use web search (at most 3 searches) for the funniest, most quoted or most unhinged scenes of The Simpsons seasons 1 to 19 (lists of best quotes or moments, Reddit threads), and choose scenes that make a great story Short: a build-up and a big payoff. Set `show` to 'The Simpsons', `angle` to 'classic', and `quotes` to one memorable line from each of 6 different scenes (5 to 15 words, worded as the character says it in the episode), best first; the first quote found in an episode we have not used yet is the one clipped. Leave `sourceId` and `keywords` empty.\nIf `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"route\": \"main\" | \"calendar\" | \"remake\" | \"archive\", \"show\": \"one of the shows\", \"angle\": \"release\" | \"buzz\" | \"rising\" | \"seasonal\" | \"remake\" | \"classic\", \"sourceId\": \"an id from rising, or empty\", \"quotes\": [\"...\"], \"keywords\": [\"...\"], \"occasion\": \"name and date, or empty\", \"remakeOf\": {\"id\": \"...\", \"title\": \"...\"} or null, \"why\": \"two or three sentences: what the data and searches showed, and why this choice\"}.",
             "format": "json",
             "inputKeys": [
               "route",
@@ -343,11 +357,12 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 1810,
-            "y": 601
+            "y": 642
           },
           "config": {
             "mode": "locate",
-            "fromKey": "rising"
+            "fromKey": "rising",
+            "onlyWhen": "route!=archive"
           }
         },
         {
@@ -358,7 +373,20 @@
             "y": 162
           },
           "config": {
-            "mode": "check"
+            "mode": "check",
+            "storyHook": false
+          }
+        },
+        {
+          "id": "find-archive",
+          "moduleId": "media-fetch",
+          "position": {
+            "x": 2105,
+            "y": 505
+          },
+          "config": {
+            "mode": "frinkiac",
+            "onlyWhen": "route=archive"
           }
         }
       ],
@@ -520,12 +548,6 @@
           "target": "failed"
         },
         {
-          "id": "locate--next--get-transcript",
-          "source": "locate",
-          "sourcePort": "next",
-          "target": "get-transcript"
-        },
-        {
           "id": "retry-episode--retry--locate",
           "source": "retry-episode",
           "sourcePort": "retry",
@@ -554,6 +576,18 @@
           "source": "download-clips",
           "sourcePort": "missing",
           "target": "retry-episode"
+        },
+        {
+          "id": "locate--next--find-archive",
+          "source": "locate",
+          "sourcePort": "next",
+          "target": "find-archive"
+        },
+        {
+          "id": "find-archive--next--get-transcript",
+          "source": "find-archive",
+          "sourcePort": "next",
+          "target": "get-transcript"
         }
       ],
       "operators": [
@@ -605,7 +639,7 @@
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-23T00:48:26.867Z"
+    "updatedAt": "2026-10-30T20:59:09.737Z"
   },
   "modules": [
     {
@@ -931,7 +965,7 @@
     {
       "id": "media-fetch",
       "name": "Media fetch",
-      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, or locates a scene by its dialogue.",
+      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).",
       "kind": "media-fetch",
       "version": 1,
       "fields": [
@@ -947,7 +981,8 @@
             "sections",
             "download",
             "index",
-            "locate"
+            "locate",
+            "frinkiac"
           ]
         },
         {
@@ -1163,7 +1198,7 @@
         },
         {
           "key": "onlyWhen",
-          "label": "Run only when (key=value)",
+          "label": "Run only when (key=value or key!=value)",
           "type": "string",
           "default": ""
         },
@@ -1226,6 +1261,24 @@
           "label": "Keyword window (s)",
           "type": "number",
           "default": 60
+        },
+        {
+          "key": "quoteSite",
+          "label": "Quote search site (https)",
+          "type": "string",
+          "default": "https://frinkiac.com"
+        },
+        {
+          "key": "archiveItem",
+          "label": "archive.org item",
+          "type": "string",
+          "default": "SimpsonsCommentary"
+        },
+        {
+          "key": "archiveWindow",
+          "label": "Archive subtitle window (s)",
+          "type": "number",
+          "default": 90
         },
         {
           "key": "outputKey",
@@ -1296,6 +1349,9 @@
         "minQuoteScore": 0.6,
         "minKeywordHits": 2,
         "keywordWindow": 60,
+        "quoteSite": "https://frinkiac.com",
+        "archiveItem": "SimpsonsCommentary",
+        "archiveWindow": 90,
         "outputKey": ""
       },
       "outputs": [
@@ -1482,6 +1538,38 @@
           ]
         },
         {
+          "key": "cardBackgrounds",
+          "label": "Card backgrounds (one picked per run)",
+          "type": "json",
+          "default": [
+            "plain"
+          ]
+        },
+        {
+          "key": "headlineFont",
+          "label": "Headline font (empty: the caption font)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "storyHook",
+          "label": "Story opens with a hook",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "storySounds",
+          "label": "Story sound effects",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "captionItalic",
+          "label": "Italic captions",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "emojiDir",
           "label": "Emoji cache folder",
           "type": "string",
@@ -1526,6 +1614,13 @@
         "renderTimeoutMs": 600000,
         "background": "brick",
         "layout": "box",
+        "cardBackgrounds": [
+          "plain"
+        ],
+        "headlineFont": "",
+        "storyHook": true,
+        "storySounds": true,
+        "captionItalic": true,
         "emojiDir": "emoji",
         "storySeed": "",
         "outputKey": "short"
@@ -1704,6 +1799,18 @@
           "default": 10
         },
         {
+          "key": "titleHashtags",
+          "label": "Hashtags in title",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "publishAfterHours",
+          "label": "Publish after hours (0-720, 0 = now)",
+          "type": "number",
+          "default": 0
+        },
+        {
           "key": "outputKey",
           "label": "Output key",
           "type": "string",
@@ -1718,6 +1825,8 @@
         "containsSyntheticMedia": false,
         "setCover": true,
         "maxHashtags": 10,
+        "titleHashtags": true,
+        "publishAfterHours": 0,
         "outputKey": "youtube"
       },
       "outputs": [
@@ -1796,6 +1905,9 @@
           "default": "feeds",
           "options": [
             "feeds",
+            "posts",
+            "story",
+            "nextpart",
             "sources",
             "facts",
             "images",
