@@ -30,4 +30,9 @@ with tempfile.TemporaryDirectory() as d:
     after = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(v)], capture_output=True, text=True).stdout)
     assert before[0] < -30 and abs(lufs(v) - stage.VOICE_LUFS) < 1.0, (before, lufs(v))
     assert abs(after - before[1]) < 0.05, "levelling must not move the word timings"
+# The Reddit lane is wired into stage.py: its modes exist and record dispatches on job.lane.
+assert "posts" in stage.MODES and "story" in stage.MODES
+with tempfile.TemporaryDirectory() as d:
+    assert stage.record({"lane": "reddit", "story": {"id": "r1"}}, {}, Path(d), Path(d) / "state")[0] == "next"
+    assert json.loads((Path(d) / "state" / "used.json").read_text()) == ["r1"]
 print("stage tests ok")

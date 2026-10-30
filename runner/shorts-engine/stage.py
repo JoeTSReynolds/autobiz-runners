@@ -1,7 +1,7 @@
 # One step of the Shorts pipeline, called by the autobiz `shorts` block (one mode per call).
 #   python3 stage.py <mode> --run <run-dir> --state <state-dir> --job job.json --config config.json --out result.json
 # Reads the job (JSON), writes {"port": "next"|"invalid"|"missing", "output": {keys to add to the job}, "log": "..."}.
-# Modes: feeds, sources, facts, images, brief, render, record. Every judgement happens in agent blocks
+# Modes: feeds, sources, facts, images, brief, render, record; posts and story for the reddit lane (reddit.py). Every judgement happens in agent blocks
 # between these steps; this file only fetches, checks, assembles and renders.
 import argparse, json, os, re, shutil, subprocess, sys, time, urllib.request
 
@@ -14,6 +14,7 @@ here = Path(__file__).parent.resolve()
 sys.path.insert(0, str(here))
 import factcheck  # noqa: E402
 import newsroom_site  # noqa: E402
+import reddit  # noqa: E402
 
 HOOKS = ["masked-number", "countdown-three", "stakes-first", "contradiction", "hidden-thing"]
 VOICES = {"tech": {"elevenlabs": "TX3LPaxmHKxFdv7VOQHJ", "kokoro": "am_michael"}, "space": {"elevenlabs": "JBFqnCBsd6RMkjVDRZzb", "kokoro": "bm_george"}}
@@ -242,7 +243,17 @@ def publish_meta(job, sb, lane):
     return {"short": {"file": "short.mp4"}, "meta": {"title": title, "description": desc[:4800], "hashtags": tags}, "siteSlug": slug}
 
 
+def posts(job, cfg, run, state):
+    return reddit.posts(job, cfg, run, state)
+
+
+def story(job, cfg, run, state):
+    return reddit.story(job, cfg, run, state, level_voice)
+
+
 def record(job, cfg, run, state):
+    if job.get("lane") == "reddit":
+        return reddit.record(job, cfg, run, state)
     state.mkdir(parents=True, exist_ok=True)
     cand = next((c for c in job.get("candidates", []) if c["id"] == (job.get("pick") or {}).get("id")), {})
     covered, hooks = jread(state / "covered.json", []), jread(state / "hooks.json", [])
@@ -296,7 +307,7 @@ def site(job, cfg, run, state):
     return "next", {"siteUrl": f"{SITE}/videos/{slug}/"}, f"site deployed with {len(videos)} videos"
 
 
-MODES = {f.__name__: f for f in (feeds, sources, facts, images, brief, render, record, site)}
+MODES = {f.__name__: f for f in (feeds, posts, story, sources, facts, images, brief, render, record, site)}
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()

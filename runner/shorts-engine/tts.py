@@ -1,13 +1,14 @@
 # Free local stand-in for tts_el.py (Kokoro): same outputs, voice.mp3 + timing.js, so storyboards can be
 # tested without spending ElevenLabs credits. Delivery tags like [excited] are dropped (Kokoro can't act).
-# Usage: <newsroom venv>/python tts.py <project-dir> <kokoro-voice>
+# Usage: <newsroom venv>/python tts.py <project-dir> <kokoro-voice> [speed]
 import json, re, subprocess, sys, wave
 from pathlib import Path
 import numpy as np
 from kokoro import KPipeline
 
 root, voice = Path(sys.argv[1]), sys.argv[2]
-SR, GAP, SPEED = 24000, 0.3, 1.12
+SR, GAP = 24000, 0.3
+SPEED = float(sys.argv[3]) if len(sys.argv) > 3 else 1.12
 pipe = KPipeline(lang_code="a")
 audio, scenes, t = [], [], 0.0
 for scene in json.loads((root / "script.json").read_text()):

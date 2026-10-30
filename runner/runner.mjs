@@ -47199,8 +47199,8 @@ function starterModules() {
       field("options", "Options", "json", ["The Simpsons", "Family Guy", "Rick and Morty", "Futurama", "American Dad", "Bob's Burgers", "King of the Hill", "South Park"]),
       field("outputKey", "Output key", "string", "show")
     ], ["next"]),
-    seeded("media-fetch", "Media fetch", "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, or locates a scene by its dialogue.", [
-      field("mode", "Mode", "select", "search", ["search", "captions", "section", "sections", "download", "index", "locate"]),
+    seeded("media-fetch", "Media fetch", "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).", [
+      field("mode", "Mode", "select", "search", ["search", "captions", "section", "sections", "download", "index", "locate", "frinkiac"]),
       field("queries", "Search queries", "json", ["ytsearch20:{show} full episode", "ytsearch20:{show} uncropped uncut full episode"]),
       field("minDuration", "Minimum duration (s)", "number", 1080),
       field("maxDuration", "Maximum duration (s)", "number", 3600),
@@ -47231,7 +47231,7 @@ function starterModules() {
       field("payoffTail", "Payoff tail (s)", "number", 15),
       field("blockedRetries", "Retries after a YouTube block", "number", 3),
       field("blockedWaitSeconds", "First wait after a block (s)", "number", 30),
-      field("onlyWhen", "Run only when (key=value)", "string", ""),
+      field("onlyWhen", "Run only when (key=value or key!=value)", "string", ""),
       field("withCaptions", "Items with captions text", "number", 0),
       field("indexChannels", "Index channels", "json", []),
       field("indexPerRun", "Videos indexed per run", "number", 20),
@@ -47242,6 +47242,9 @@ function starterModules() {
       field("minQuoteScore", "Least quote match (0-1)", "number", 0.6),
       field("minKeywordHits", "Least keywords in a scene", "number", 2),
       field("keywordWindow", "Keyword window (s)", "number", 60),
+      field("quoteSite", "Quote search site (https)", "string", "https://frinkiac.com"),
+      field("archiveItem", "archive.org item", "string", "SimpsonsCommentary"),
+      field("archiveWindow", "Archive subtitle window (s)", "number", 90),
       field("outputKey", "Output key (empty: the mode's own key)", "string", "")
     ], ["next", "missing"]),
     seeded("video-edit", "Video edit", "Renders a vertical short (pause cuts, crop, saturation, captions, headline, sound effects) or a story Short (hook, intro, beats and payoff with transitions, effects, particles and emoji pop-ups over a textured background); mode check sends a story plan that breaks the rules to invalid before anything is downloaded.", [
@@ -47305,7 +47308,7 @@ function starterModules() {
       field("outputKey", "Output key", "string", "instagram")
     ], ["next"]),
     seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, records what was published, and publishes its sources page.", [
-      field("mode", "Mode", "select", "feeds", ["feeds", "sources", "facts", "images", "brief", "render", "record", "site"]),
+      field("mode", "Mode", "select", "feeds", ["feeds", "posts", "story", "sources", "facts", "images", "brief", "render", "record", "site"]),
       field("lane", "Lane (empty keeps job.lane)", "string", ""),
       field("hours", "Feed window (hours)", "number", 72),
       field("minFacts", "Fewest checked facts", "number", 5),
@@ -49062,7 +49065,7 @@ var DEFAULTS2 = {
   // yt-dlp calls: retries after YouTube's bot check or a 429, and the first wait (doubles each retry)
   blockedRetries: 3,
   blockedWaitSeconds: 30,
-  // all modes: run only when job[key] equals the value ("key=value"); empty always runs
+  // all modes: run only when job[key] equals ("key=value") or differs from ("key!=value") the value; empty always runs
   onlyWhen: "",
   // search with pick 'list': captions text attached to the first N items
   withCaptions: 0,
@@ -49077,10 +49080,14 @@ var DEFAULTS2 = {
   minQuoteScore: 0.6,
   minKeywordHits: 2,
   keywordWindow: 60,
+  // frinkiac: the quote search site (https) and the archive.org item whose .mkv episodes are cut with ffmpeg byte-range reads; archiveWindow is the seconds of subtitles read either side of the hint
+  quoteSite: "https://frinkiac.com",
+  archiveItem: "SimpsonsCommentary",
+  archiveWindow: 90,
   // empty: the mode's own key (source, transcript, clip, clips, video, index; candidates for a search list)
   outputKey: ""
 };
-var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", sections: "clips", download: "video", index: "index", locate: "source" };
+var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", sections: "clips", download: "video", index: "index", locate: "source", frinkiac: "source" };
 var WHISPER_MODEL = "base.en";
 var WORDS_FILE = "captions.words.json";
 var TRANSCRIPT_FILE = "transcript.txt";
@@ -49146,10 +49153,22 @@ var seconds = (ms) => Math.round(ms) / 1e3;
 var text = (...values) => values.find((value) => typeof value === "string" && value !== "") ?? "";
 var squash = (value) => value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 var summary = ({ id, title, channel, uploader, duration }) => ({ id, url: `https://www.youtube.com/watch?v=${id}`, title: text(title), channel: text(channel, uploader), duration });
-var usedIds = async (tools) => new Set((await tools.readText("state", "archive.txt"))?.split(/\r?\n/).flatMap((line2) => /^youtube (\S+)\s*$/.exec(line2)?.[1] ?? []));
+var usedIds = async (tools) => new Set((await tools.readText("state", "archive.txt"))?.split(/\r?\n/).flatMap((line2) => /^(?:youtube|archive) (\S+)\s*$/.exec(line2)?.[1] ?? []));
 var rethrowStop = (error) => {
   if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure) throw error;
 };
+var ARCHIVE_URL = "https://archive.org/download/";
+var isArchive = (url) => url.startsWith(ARCHIVE_URL);
+async function ffmpegTwice(tools, args, timeoutMs) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await tools.run("ffmpeg", args, { timeoutMs });
+    } catch (error) {
+      rethrowStop(error);
+      if (attempt) throw error;
+    }
+  }
+}
 function captionFetcher(config, tools) {
   const languages = list(config, "languages", 1);
   const timeoutMs = count(config, "captionsTimeoutMs", true);
@@ -49250,6 +49269,7 @@ var search = async (job, config, tools, outputKey) => {
   }
   return { output: { ...job, [outputKey]: summary(candidates2[Math.floor(Math.random() * candidates2.length)]) }, port: "next" };
 };
+var round = (value) => Math.round(value * 1e3) / 1e3;
 function eventsOf(json2) {
   try {
     const events = json2 === void 0 ? void 0 : JSON.parse(json2)?.events;
@@ -49391,6 +49411,24 @@ function whisperToJson3(json2) {
   });
   return JSON.stringify({ events });
 }
+function srtToJson3(srt) {
+  const events = srt.replace(/\r/g, "").split(/\n\s*\n/).flatMap((block) => {
+    const lines = block.trim().split("\n");
+    const at2 = lines.findIndex((line2) => line2.includes("-->"));
+    const time = at2 < 0 ? null : /(\d+):(\d\d):(\d\d)[,.](\d{3})\s*-->\s*(\d+):(\d\d):(\d\d)[,.](\d{3})/.exec(lines[at2]);
+    if (!time) return [];
+    const ms = (i) => ((Number(time[i]) * 60 + Number(time[i + 1])) * 60 + Number(time[i + 2])) * 1e3 + Number(time[i + 3]);
+    const parts = [];
+    for (const line2 of lines.slice(at2 + 1).map((l) => l.replace(/<[^>]*>/g, "").trim()).filter(Boolean)) {
+      if (/^-\s/.test(line2)) parts.push(line2.replace(/^-\s+/, ">> "));
+      else if (parts.length) parts[parts.length - 1] += ` ${line2}`;
+      else parts.push(line2);
+    }
+    const [tStartMs, dDurationMs] = [ms(1), ms(5) - ms(1)];
+    return parts.length ? [{ tStartMs, dDurationMs, segs: parts.map((utf8, i) => i ? { utf8, tOffsetMs: Math.round(dDurationMs * i / parts.length) } : { utf8 }) }] : [];
+  });
+  return JSON.stringify({ events });
+}
 var captions = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
   const languages = list(config, "languages", 1);
@@ -49404,7 +49442,9 @@ var captions = async (job, config, tools, outputKey) => {
   const transcribeUpTo = count(config, "transcribeUpTo");
   const unit = config.transcriptUnit ?? DEFAULTS2.transcriptUnit;
   if (unit !== "line" && unit !== "sentence") throw new ExecutionFailure("media-fetch setting transcriptUnit must be 'line' or 'sentence'.");
+  const archiveWindow = count(config, "archiveWindow", true);
   const { id, url, duration: sourceDuration } = sourceOf(job);
+  const archive = isArchive(url);
   const rejected = rejectedSources(job);
   const missing = () => ({ output: { ...job, rejectedSources: [...rejected, id] }, port: "missing" });
   const transcribe = async () => {
@@ -49414,7 +49454,18 @@ var captions = async (job, config, tools, outputKey) => {
     if (spoken === void 0) throw new Error("whisper wrote no captions-audio.json");
     await tools.writeText("run", `captions.${languages[0]}.json3`, whisperToJson3(spoken));
   };
-  try {
+  if (archive) {
+    const { start, end } = isObject3(job.hint) ? job.hint : {};
+    const windowed = typeof start === "number" && typeof end === "number";
+    const [from, to] = windowed ? [round(Math.max(0, start - archiveWindow)), round(end + archiveWindow)] : [0, 0];
+    try {
+      await ffmpegTwice(tools, ["-v", "error", "-y", ...windowed ? ["-ss", String(from), "-copyts"] : [], "-i", url, ...windowed ? ["-to", String(to)] : [], "-map", "0:s:0", "-f", "srt", "captions.srt"], downloadTimeoutMs);
+    } catch (error) {
+      rethrowStop(error);
+      return missing();
+    }
+    await tools.writeText("run", `captions.${languages[0]}.json3`, srtToJson3(await tools.readText("run", "captions.srt") ?? ""));
+  } else try {
     const infoArgs = !hotspots ? [] : ["--write-info-json", ...commentsToScan > 0 ? ["--write-comments", "--extractor-args", `youtube:max_comments=${commentsToScan},all,0,0;comment_sort=top`] : []];
     await yt2(["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", languages.join(","), "--sub-format", "json3", ...infoArgs, "-o", "captions", "--no-warnings", "--", url], timeout);
   } catch (error) {
@@ -49433,7 +49484,7 @@ var captions = async (job, config, tools, outputKey) => {
     for (const language of languages) if (parseCaptions(await tools.readText("run", `captions.${language}.json3`)).length) return true;
     return false;
   };
-  if (transcribeUpTo > 0 && (sourceDuration ?? Infinity) <= transcribeUpTo && !await captioned()) {
+  if (!archive && transcribeUpTo > 0 && (sourceDuration ?? Infinity) <= transcribeUpTo && !await captioned()) {
     try {
       await transcribe();
     } catch (fallback) {
@@ -49459,7 +49510,6 @@ var captions = async (job, config, tools, outputKey) => {
   }
   return missing();
 };
-var round = (value) => Math.round(value * 1e3) / 1e3;
 async function probe(tools, file, timeoutMs) {
   let length3;
   let hasVideo;
@@ -49500,7 +49550,7 @@ var sections = async (job, config, tools, outputKey) => {
   const maxHeight = count(config, "maxHeight", true);
   const timeoutMs = count(config, "downloadTimeoutMs", true);
   const [hookLead, clipLead, clipTail, payoffTail] = ["hookLead", "clipLead", "clipTail", "payoffTail"].map((key) => count(config, key));
-  const { url, duration } = sourceOf(job);
+  const { id, url, duration } = sourceOf(job);
   const clips = isObject3(job.story) && Array.isArray(job.story.clips) ? job.story.clips : [];
   if (clips.length === 0) throw new ExecutionFailure("media-fetch job.story.clips must be a non-empty list of { role, start, end }.");
   const wanted = clips.map((clip, i) => {
@@ -49515,7 +49565,12 @@ var sections = async (job, config, tools, outputKey) => {
   for (const { from, to } of wanted) downloads.set(from, Math.max(downloads.get(from) ?? 0, to));
   const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "clip-%(section_start).3f.%(ext)s", "--no-warnings", "--", url];
   const throttled = () => ({ output: { ...job, rejectedSources: [...rejectedSources(job), sourceOf(job).id] }, port: "missing" });
-  try {
+  const archive = isArchive(url);
+  if (archive) {
+    for (const [from, to] of downloads) {
+      await ffmpegTwice(tools, ["-v", "error", "-y", "-ss", String(from), "-i", url, "-t", String(round(to - from)), "-map", "0:v:0", "-map", "0:a:0", "-vf", `scale=-2:'min(${maxHeight},ih)'`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-movflags", "+faststart", `clip-${from.toFixed(3)}.mp4`], timeoutMs);
+    }
+  } else try {
     await yt2(args, timeoutMs);
   } catch (error) {
     if (timedOut(error)) return throttled();
@@ -49537,6 +49592,11 @@ var sections = async (job, config, tools, outputKey) => {
       throw error instanceof ExecutionFailure ? new ExecutionFailure(`media-fetch job.story.clips[${i}] (${role}): ${error.message.replace(/^media-fetch /, "")}`) : error;
     }
     found.push({ role, file, offset: from, duration: lengths.get(from) });
+  }
+  if (archive) {
+    const seen = await tools.readText("state", "archive.txt") ?? "";
+    await tools.writeText("state", "archive.txt", `${seen}${seen && !seen.endsWith("\n") ? "\n" : ""}archive ${id}
+`);
   }
   return { output: { ...job, [outputKey]: found }, port: "next" };
 };
@@ -49722,16 +49782,57 @@ var locate = async (job, config, tools, outputKey) => {
   if (rising) return { output: { ...job, [outputKey]: summary(rising), located: { method: "rising", searched: ids.length } }, port: "next" };
   throw new ExecutionFailure("media-fetch locate: no indexed scene matched and no fallback candidate was usable.");
 };
-var modes = { search, captions, section, sections, download, index, locate };
+var getJson = async (tools, url, timeoutMs) => JSON.parse((await tools.run("ffmpeg", ["-v", "error", "-user_agent", "autobiz", "-f", "data", "-i", url, "-map", "0", "-c", "copy", "-f", "data", "pipe:1"], { timeoutMs })).stdout);
+var frinkiac = async (job, config, tools, outputKey) => {
+  const timeoutMs = count(config, "captionsTimeoutMs", true);
+  const site = config.quoteSite ?? DEFAULTS2.quoteSite;
+  if (typeof site !== "string" || !site.startsWith("https://")) throw new ExecutionFailure("media-fetch setting quoteSite must be an https:// URL.");
+  const item = config.archiveItem ?? DEFAULTS2.archiveItem;
+  if (typeof item !== "string" || !/^[A-Za-z0-9._-]+$/.test(item)) throw new ExecutionFailure('media-fetch setting archiveItem must be letters, digits, ".", "_" and "-".');
+  const brief = isObject3(job.brief) ? job.brief : {};
+  const quotes = strings(brief.quotes).filter(Boolean);
+  if (quotes.length === 0) throw new ExecutionFailure("media-fetch job.brief.quotes must be a non-empty list of quotes.");
+  const excluded = /* @__PURE__ */ new Set([...await usedIds(tools), ...rejectedSources(job)]);
+  const episodes = /* @__PURE__ */ new Map();
+  try {
+    const metadata = await getJson(tools, `https://archive.org/metadata/${item}`, timeoutMs);
+    for (const file of isObject3(metadata) && Array.isArray(metadata.files) ? metadata.files : []) {
+      const code = isObject3(file) && file.format === "Matroska" && typeof file.name === "string" ? /S\d\dE\d\d/.exec(file.name)?.[0] : void 0;
+      if (code && !episodes.has(code)) episodes.set(code, file);
+    }
+  } catch (error) {
+    rethrowStop(error);
+    throw new ExecutionFailure(`media-fetch frinkiac: could not read the metadata of ${item}: ${reason(error)}`);
+  }
+  for (const [i, quote] of quotes.entries()) {
+    let top;
+    try {
+      top = (await getJson(tools, `${site}/api/search?q=${encodeURIComponent(quote)}`, timeoutMs))[0];
+    } catch (error) {
+      rethrowStop(error);
+      continue;
+    }
+    if (!isObject3(top) || typeof top.Episode !== "string" || !/^S\d\dE\d\d$/.test(top.Episode) || typeof top.Timestamp !== "number" || !Number.isFinite(top.Timestamp)) continue;
+    const file = episodes.get(top.Episode);
+    const id = `${item}-${top.Episode}`;
+    if (!file || excluded.has(id)) continue;
+    const name = file.name;
+    const at2 = top.Timestamp / 1e3;
+    const source = { id, url: `${ARCHIVE_URL}${item}/${name.split("/").map(encodeURIComponent).join("/")}`, title: name.split("/").at(-1).replace(/\.mkv$/, ""), channel: text(brief.show, item), duration: Number(file.length) };
+    return { output: { ...job, [outputKey]: source, hint: { start: at2, end: at2, text: text(top.Content), quote }, located: { method: "frinkiac", searched: i + 1 } }, port: "next" };
+  }
+  throw new ExecutionFailure("media-fetch frinkiac: no quote matched an unused archive episode.");
+};
+var modes = { search, captions, section, sections, download, index, locate, frinkiac };
 async function execute10({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("media-fetch requires the tools capability.");
   const mode = config.mode ?? DEFAULTS2.mode;
-  if (typeof mode !== "string" || !Object.hasOwn(modes, mode)) throw new ExecutionFailure("media-fetch setting mode must be 'search', 'captions', 'section', 'sections', 'download', 'index' or 'locate'.");
+  if (typeof mode !== "string" || !Object.hasOwn(modes, mode)) throw new ExecutionFailure("media-fetch setting mode must be 'search', 'captions', 'section', 'sections', 'download', 'index', 'locate' or 'frinkiac'.");
   if (!isObject3(input)) throw new ExecutionFailure("media-fetch input (the job) must be a plain object.");
   const onlyWhen = config.onlyWhen ?? DEFAULTS2.onlyWhen;
-  const condition = typeof onlyWhen === "string" ? /^(\w+)=(.*)$/s.exec(onlyWhen) : null;
-  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('media-fetch setting onlyWhen must be empty or "key=value" with a key of letters, digits and _.');
-  if (condition && String(input[condition[1]]) !== condition[2]) return { output: input, port: "next" };
+  const condition = typeof onlyWhen === "string" ? /^(\w+)(!?)=(.*)$/s.exec(onlyWhen) : null;
+  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('media-fetch setting onlyWhen must be empty, "key=value" or "key!=value" with a key of letters, digits and _.');
+  if (condition && String(input[condition[1]]) === condition[3] === (condition[2] === "!")) return { output: input, port: "next" };
   const outputKey = config.outputKey === void 0 || config.outputKey === "" ? mode === "search" && config.pick === "list" ? "candidates" : OUTPUT_KEYS[mode] : config.outputKey;
   if (typeof outputKey !== "string" || outputKey === "") throw new ExecutionFailure("media-fetch setting outputKey must be a non-empty string.");
   return modes[mode](input, config, tools, outputKey);
@@ -51560,7 +51661,7 @@ var DEFAULTS7 = {
   render: true,
   timeoutMs: 18e5
 };
-var MODES = ["feeds", "sources", "facts", "images", "brief", "render", "record", "site"];
+var MODES = ["feeds", "posts", "story", "sources", "facts", "images", "brief", "render", "record", "site"];
 var VOICES = ["kokoro", "elevenlabs"];
 var PORTS = ["next", "invalid", "missing"];
 var LOG_TAIL = 1e3;
