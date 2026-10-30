@@ -144,10 +144,10 @@ counts, k = reddit.classify_verdicts(["NTA, obviously", "YTA but NTA", "nta lowe
 assert counts == {"NTA": 1, "YTA": 1, "ESH": 1, "NAH": 1} and k == 9, (counts, k)
 c15, k15 = reddit.classify_verdicts(["YTA"] * 15 + ["NTA"] * 10)
 assert c15 == {"YTA": 15} and k15 == 15
-assert reddit.verdict_comment({"NTA": 7}, 12, "Q?") == "🗳️ Reddit's verdict: NOT the jerk (7 of the top 12 comments said NTA). Do you agree? 👇"
-assert "they WERE the jerk" in reddit.verdict_comment({"YTA": 2, "NTA": 1}, 5, None) and "everyone sucks here" in reddit.verdict_comment({"ESH": 3}, 3, None)
-assert "no jerks here" in reddit.verdict_comment({"NAH": 4}, 8, None)
-assert reddit.verdict_comment({"NTA": 2}, 9, "Q?") == "Q?" and reddit.verdict_comment({}, 0, None) is None
+assert reddit.verdict_comment({"NTA": 7}, 12) == "🗳️ Reddit's verdict: NOT the jerk (7 of the top 12 comments said NTA)."
+assert "they WERE the jerk" in reddit.verdict_comment({"YTA": 2, "NTA": 1}, 5) and "everyone sucks here" in reddit.verdict_comment({"ESH": 3}, 3)
+assert "no jerks here" in reddit.verdict_comment({"NAH": 4}, 8)
+assert reddit.verdict_comment({"NTA": 2}, 9) is None and reddit.verdict_comment({}, 0) is None
 
 # multi-part validation: parts list of 2 to 3, each part checked, all but the last end on a follow line
 mk = lambda n, tail="": {"hook": w(10), "script": w(n) + tail, "title": "It gets worse"}
@@ -183,8 +183,15 @@ assert m == {"title": "My story | Reddit Stories ❣️", "description": "My sto
 assert "comment" not in reddit.build_meta("t", None) and reddit.build_meta("t", None, 2)["title"] == "t (Part 2) | Reddit Stories ❣️"
 
 # comments per part: question on all but the last, verdict (else question) on the last
-cm = reddit.part_comments(3, "Q?", "V")
-assert cm == ["Q?", "Q?", "V"] and reddit.part_comments(1, "Q?", "V") == ["V"] and reddit.part_comments(2, None, "V") == [None, "V"] and reddit.part_comments(2, None, None) == [None, None]
+# every comment asks for an opinion and ends asking for a subscribe; AITA asks "jerk or not" and then gives Reddit's verdict
+SUB = "Subscribe for a new story every day ❣️"
+assert reddit.part_comments(1, "Would you? 👇", None, False) == ["Would you? 👇\n\n" + SUB]
+assert reddit.part_comments(1, None, None, False) == ["What would you have done? 👇\n\n" + SUB]
+assert reddit.part_comments(1, "Q?", "🗳️ V.", True) == ["Jerk or NOT the jerk? Tell us below 👇\n\n🗳️ V.\n\n" + SUB]
+assert reddit.part_comments(1, "Q?", None, True) == ["Jerk or NOT the jerk? Tell us below 👇\n\n" + SUB]
+cm = reddit.part_comments(3, "Q?", "🗳️ V.", True)
+assert cm[0] == "Q?\n\nPart 2 is already up on the channel! Subscribe so you never miss a part ❣️", cm[0]
+assert cm[1].startswith("Q?") and "Part 3 is already up" in cm[1] and cm[2].endswith(SUB) and "🗳️ V." in cm[2], cm
 
 # nextpart mode: records the published id, then hands over the next part with a link to part 1
 pm = lambda i: {"title": f"T{i}", "description": f"T{i}", "tags": ["a"], "hashtags": []}

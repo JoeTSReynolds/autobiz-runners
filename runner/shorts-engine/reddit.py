@@ -193,23 +193,27 @@ def classify_verdicts(texts, top=15):
     return dict(counts), len(texts)
 
 
-def verdict_comment(counts, k, question=None):
+def verdict_comment(counts, k):
     if sum(counts.values()) >= 3:
         tok = max(VERDICT_LABEL, key=lambda t: counts.get(t, 0))
-        return f"🗳️ Reddit's verdict: {VERDICT_LABEL[tok]} ({counts[tok]} of the top {k} comments said {tok}). Do you agree? 👇"
-    return question or None
+        return f"🗳️ Reddit's verdict: {VERDICT_LABEL[tok]} ({counts[tok]} of the top {k} comments said {tok})."
+    return None
 
 
-def reddit_comment(sub, pid, question):
-    # a failed fetch never fails the step; the question (or nothing) is the fallback
-    if sub.lower() in ("amitheasshole", "aitah"):
+def is_aita(sub):
+    return sub.lower() in ("amitheasshole", "aitah")
+
+
+def reddit_verdict(sub, pid):
+    # a failed fetch never fails the step; the comment just goes without the verdict
+    if is_aita(sub):
         try:
             time.sleep(2)
             counts, k = classify_verdicts(parse_comments(get(f"https://www.reddit.com/r/{sub}/comments/{pid}/.rss?sort=top&depth=1&limit=40")))  # top-level comments, best first (the default order is threaded replies)
-            return verdict_comment(counts, k, question)
+            return verdict_comment(counts, k)
         except Exception:
             pass
-    return question or None
+    return None
 
 
 # ---------- story: validation ----------
@@ -273,9 +277,13 @@ def build_meta(story_title, comment, part=None):
     return {**meta, "comment": comment} if comment else meta
 
 
-def part_comments(n, question, verdict):
-    # parts publish back to back, so each can carry a comment: the question on all but the last, the verdict (else the question) on the last
-    return [question] * (n - 1) + [verdict]
+def part_comments(n, question, verdict, aita):
+    # parts publish back to back, so every part gets a comment: an opinion question, then a subscribe ask;
+    # an AITA story's last part asks "jerk or not" and then reveals Reddit's own verdict
+    ask = question or "What would you have done? 👇"
+    first = [f"{ask}\n\nPart {i + 2} is already up on the channel! Subscribe so you never miss a part ❣️" for i in range(n - 1)]
+    last = ["Jerk or NOT the jerk? Tell us below 👇", verdict] if aita else [ask]
+    return first + ["\n\n".join(x for x in last + ["Subscribe for a new story every day ❣️"] if x)]
 
 
 # ---------- captions and hook card ----------
@@ -521,7 +529,7 @@ def story(job, cfg, run, state, level_voice):
         out_parts.append((name, p))
     sub = next(c["subreddit"] for c in cands if c["id"] == st["id"])
     q = st.get("question")
-    comments = part_comments(len(ps), q, reddit_comment(sub, st["id"], q))
+    comments = part_comments(len(ps), q, reddit_verdict(sub, st["id"]), is_aita(sub))
     parts = [{"short": {"file": name}, "meta": build_meta(p["title"], comments[i], i + 1 if multi else None)} for i, (name, p) in enumerate(out_parts)]
     out = {"short": parts[0]["short"], "meta": parts[0]["meta"]}
     if multi:

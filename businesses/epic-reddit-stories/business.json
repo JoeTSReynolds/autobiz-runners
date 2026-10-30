@@ -1236,6 +1236,24 @@
           "default": ""
         },
         {
+          "key": "storyHook",
+          "label": "Story opens with a hook",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "storySounds",
+          "label": "Story sound effects",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "captionItalic",
+          "label": "Italic captions",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "emojiDir",
           "label": "Emoji cache folder",
           "type": "string",
@@ -1284,6 +1302,9 @@
           "plain"
         ],
         "headlineFont": "",
+        "storyHook": true,
+        "storySounds": true,
+        "captionItalic": true,
         "emojiDir": "emoji",
         "storySeed": "",
         "outputKey": "short"
@@ -1468,6 +1489,12 @@
           "default": true
         },
         {
+          "key": "publishAfterHours",
+          "label": "Publish after hours (0-720, 0 = now)",
+          "type": "number",
+          "default": 0
+        },
+        {
           "key": "outputKey",
           "label": "Output key",
           "type": "string",
@@ -1483,6 +1510,7 @@
         "setCover": true,
         "maxHashtags": 10,
         "titleHashtags": true,
+        "publishAfterHours": 0,
         "outputKey": "youtube"
       },
       "outputs": [
@@ -1563,6 +1591,7 @@
             "feeds",
             "posts",
             "story",
+            "nextpart",
             "sources",
             "facts",
             "images",
