@@ -1,7 +1,7 @@
 # One step of the Shorts pipeline, called by the autobiz `shorts` block (one mode per call).
 #   python3 stage.py <mode> --run <run-dir> --state <state-dir> --job job.json --config config.json --out result.json
 # Reads the job (JSON), writes {"port": "next"|"invalid"|"missing", "output": {keys to add to the job}, "log": "..."}.
-# Modes: feeds, sources, facts, images, brief, render, record; posts and story for the reddit lane (reddit.py). Every judgement happens in agent blocks
+# Modes: feeds, sources, facts, images, brief, render, record; posts, story and nextpart for the reddit lane (reddit.py). Every judgement happens in agent blocks
 # between these steps; this file only fetches, checks, assembles and renders.
 import argparse, json, os, re, shutil, subprocess, sys, time, urllib.request
 
@@ -251,6 +251,10 @@ def story(job, cfg, run, state):
     return reddit.story(job, cfg, run, state, level_voice)
 
 
+def nextpart(job, cfg, run, state):
+    return reddit.nextpart(job, cfg, run, state)
+
+
 def record(job, cfg, run, state):
     if job.get("lane") == "reddit":
         return reddit.record(job, cfg, run, state)
@@ -307,7 +311,7 @@ def site(job, cfg, run, state):
     return "next", {"siteUrl": f"{SITE}/videos/{slug}/"}, f"site deployed with {len(videos)} videos"
 
 
-MODES = {f.__name__: f for f in (feeds, posts, story, sources, facts, images, brief, render, record, site)}
+MODES = {f.__name__: f for f in (feeds, posts, story, nextpart, sources, facts, images, brief, render, record, site)}
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()

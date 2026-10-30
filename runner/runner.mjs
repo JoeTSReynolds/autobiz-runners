@@ -47273,6 +47273,8 @@ function starterModules() {
       field("renderTimeoutMs", "Render time limit (ms)", "number", 6e5),
       field("background", "Story background", "string", "brick"),
       field("layout", "Story layout", "select", "box", ["box", "frame", "card"]),
+      field("cardBackgrounds", "Card backgrounds (one picked per run)", "json", ["plain"]),
+      field("headlineFont", "Headline font (empty: the caption font)", "string", ""),
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
       field("outputKey", "Output key", "string", "short")
@@ -47299,6 +47301,7 @@ function starterModules() {
       field("setCover", "Set cover", "boolean", true),
       field("maxHashtags", "Most hashtags", "number", 10),
       field("titleHashtags", "Hashtags in title", "boolean", true),
+      field("publishAfterHours", "Publish after hours (0-720, 0 = now)", "number", 0),
       field("outputKey", "Output key", "string", "youtube")
     ], ["next"]),
     seeded("instagram-publish", "Instagram publish", "Uploads the Short as a Reel and publishes it to the configured Instagram account.", [
@@ -47308,7 +47311,7 @@ function starterModules() {
       field("outputKey", "Output key", "string", "instagram")
     ], ["next"]),
     seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, records what was published, and publishes its sources page.", [
-      field("mode", "Mode", "select", "feeds", ["feeds", "posts", "story", "sources", "facts", "images", "brief", "render", "record", "site"]),
+      field("mode", "Mode", "select", "feeds", ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site"]),
       field("lane", "Lane (empty keeps job.lane)", "string", ""),
       field("hours", "Feed window (hours)", "number", 72),
       field("minFacts", "Fewest checked facts", "number", 5),
@@ -50344,8 +50347,8 @@ function wrap(words2, maxChars, maxRows = Infinity) {
   rows.push(row);
   return rows.map((words3) => words3.join(" "));
 }
-function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline, headlineDark }) {
-  const style = (name, size, dark = false) => `Style: ${name},${font},${size},${dark ? "&H00000000,&H00000000" : "&H00FFFFFF,&H00FFFFFF"},&H00000000,&H00000000,-1,${dark ? 0 : -1},0,0,100,100,0,0,1,${dark ? 0 : outline},0,5,60,60,0,1`;
+function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline, headlineDark, headlineFont = "", headlineY = HEADLINE.y }) {
+  const style = (name, size, dark = false, face = font, upright = dark) => `Style: ${name},${face},${size},${dark ? "&H00000000,&H00000000" : "&H00FFFFFF,&H00FFFFFF"},&H00000000,&H00000000,-1,${upright ? 0 : -1},0,0,100,100,0,0,1,${dark ? 0 : outline},0,5,60,60,0,1`;
   const event = (start, end, name, x, y, text3) => `Dialogue: 0,${stamp2(start)},${stamp2(end)},${name},,0,0,0,,{\\an5\\pos(${x},${y})}${text3}`;
   const title = clean(headline);
   return [
@@ -50357,12 +50360,12 @@ function storyTextAss(headline, captions2, { font, headlineSize, captionSize, ou
     "",
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-    style("Head", headlineSize, headlineDark),
+    style("Head", headlineSize, headlineDark, headlineFont || font, headlineDark || headlineFont !== ""),
     style("Cap", captionSize),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
-    ...title === "" ? [] : [event(0, FOREVER, "Head", HEADLINE.x, HEADLINE.y, wrap(title.split(" "), HEADLINE.chars, HEADLINE.rows).map(escape2).join(BREAK))],
+    ...title === "" ? [] : [event(0, FOREVER, "Head", HEADLINE.x, headlineY, wrap(title.split(" "), HEADLINE.chars, HEADLINE.rows).map(escape2).join(BREAK))],
     ...captions2.map(({ start, end, text: text3 }) => event(start, end, "Cap", CAPTION.x, CAPTION.y, escapeRows(clean(text3)))),
     ""
   ].join("\n");
@@ -50397,6 +50400,7 @@ var STICKER = { w: 340, canvas: 540, x: 540, y: BOX.y1 };
 var FRAME_H = 608;
 var FRAME_STICKER_Y = (1920 + FRAME_H) / 2 + 0.3 * STICKER.w;
 var CARD = { size: 1080, y: 420, color: "0xECECEC" };
+var CARD_RECT = { x0: 0, y0: CARD.y, x1: CARD.size, y1: CARD.y + CARD.size };
 var EXIT = 0.2;
 var RUN = ["-y", "-v", "error", "-filter_threads", "2", "-filter_complex_threads", "2"];
 var THREADS = ["-threads", "4"];
@@ -50413,7 +50417,7 @@ var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.
 var r32 = (x) => Math.round(x * 1e3) / 1e3;
 var n3 = (x) => Number(x.toFixed(3));
 var n4 = (x) => Number(x.toFixed(4));
-function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "box") {
+function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "box", cardBackground = "plain") {
   const frame = layout === "frame";
   const card = layout === "card";
   const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : card ? [1, 14, CARD.size, CARD.size] : [K, SHAKE_PX, SIZE, SIZE];
@@ -50453,7 +50457,7 @@ function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "b
     const amount = `min(1,${flashes.join("+")})`;
     chain.push(`eq=brightness='0.5*${amount}':contrast='1-${amount}':saturation='1-${amount}':eval=frame`);
   }
-  const video = frame ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]` : card ? `[0:v]fps=${FPS},${[...chain, `pad=1080:1920:0:${CARD.y}:color=${CARD.color}`, "format=yuv420p"].join(",")}[v]` : `[0:v]${[...chain, "format=yuv420p"].join(",")}[v]`;
+  const video = frame || card && cardBackground === "blur" ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=${frame ? "(W-w)/2:(H-h)/2" : `0:${CARD.y}`},format=yuv420p[v]` : card && cardBackground === "plain" ? `[0:v]fps=${FPS},${[...chain, `pad=1080:1920:0:${CARD.y}:color=${CARD.color}`, "format=yuv420p"].join(",")}[v]` : `[0:v]${card ? `fps=${FPS},` : ""}${[...chain, "format=yuv420p"].join(",")}[v]`;
   const audio = [
     `[0:a]${STEREO}[a0]`,
     ...effects.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=0.8[s${k}]`),
@@ -50471,7 +50475,7 @@ function boxArgs(o) {
     o.file,
     ...o.soundFiles.flatMap((file) => ["-i", file]),
     "-filter_complex",
-    boxGraph(o.piece, o.cmdsFile, o.layout).graph,
+    boxGraph(o.piece, o.cmdsFile, o.layout, o.cardBackground).graph,
     "-map",
     "[v]",
     "-map",
@@ -50503,8 +50507,9 @@ function boxArgs(o) {
 }
 var concatList = (files) => files.map((file) => `file '${file}'`).join("\n") + "\n";
 var concatArgs = (list3, out) => ["-y", "-v", "error", "-f", "concat", "-i", list3, "-c", "copy", out];
-function backgroundArgs(texture, out) {
-  const graph = `[0:v]scale=2660:2660:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920,eq=saturation=0.75,format=gbrp,lutrgb=r='val*0.55':g='val*0.55':b='val*0.55',vignette=angle=PI/6,format=gbrp[t];[1:v]drawbox=x=${BOX.x0}:y=${BOX.y0 + 8}:w=${SIZE}:h=${SIZE}:color=black:t=fill,gblur=sigma=15,format=gbrp[m];[t][m]blend=all_mode=multiply:all_opacity=0.6,format=rgb24[o]`;
+function backgroundArgs(texture, out, rect2 = BOX) {
+  const size = rect2.x1 - rect2.x0;
+  const graph = `[0:v]scale=2660:2660:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920,eq=saturation=0.75,format=gbrp,lutrgb=r='val*0.55':g='val*0.55':b='val*0.55',vignette=angle=PI/6,format=gbrp[t];[1:v]drawbox=x=${rect2.x0}:y=${rect2.y0 + 8}:w=${size}:h=${size}:color=black:t=fill,gblur=sigma=15,format=gbrp[m];[t][m]blend=all_mode=multiply:all_opacity=0.6,format=rgb24[o]`;
   return [...RUN, ...THREADS, "-i", texture, "-f", "lavfi", "-i", "color=c=white:s=1080x1920:r=1", "-filter_complex", graph, "-map", "[o]", "-frames:v", "1", "-update", "1", out];
 }
 var emojiFile = (name) => `${name.replace(/ /g, "_")}.png`;
@@ -50603,20 +50608,22 @@ function stickerChain(input, { at: at2, until }, y) {
     overlay: `overlay=x='${STICKER.x}-w/2':y='${y}-h/2+6*sin(2*PI*1.2*${u}+1)':eval=frame:enable='between(t,${n3(at2)},${n3(until)})'`
   };
 }
-function finalArgs(total2, stickers, audio, layout = "box") {
+function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "plain", fontsDir = "") {
   const frame = layout !== "box";
-  const base = frame ? 1 : 2;
+  const still = !frame || layout === "card" && cardBackground === "texture";
+  const base = still ? 2 : 1;
+  const fonts = fontsDir === "" ? "" : `:fontsdir=${fontsDir.replace(/[\\:']/g, "\\$&")}`;
   const video = [
-    ...frame ? ["[0:v]setpts=PTS-STARTPTS[b0]"] : [
-      `[1:v]format=yuv420p,ass=${FILES.particles}[bg]`,
+    ...!still ? ["[0:v]setpts=PTS-STARTPTS[b0]"] : [
+      frame ? "[1:v]format=yuv420p[bg]" : `[1:v]format=yuv420p,ass=${FILES.particles}[bg]`,
       "[0:v]setpts=PTS-STARTPTS[box]",
-      `[bg][box]overlay=${BOX.x0}:${BOX.y0}:shortest=1,drawbox=x=${BOX.x0 - 4}:y=${BOX.y0 - 4}:w=${SIZE + 8}:h=${SIZE + 8}:color=white@0.85:t=4[b0]`
+      frame ? `[bg][box]overlay=0:${CARD.y}:shortest=1[b0]` : `[bg][box]overlay=${BOX.x0}:${BOX.y0}:shortest=1,drawbox=x=${BOX.x0 - 4}:y=${BOX.y0 - 4}:w=${SIZE + 8}:h=${SIZE + 8}:color=white@0.85:t=4[b0]`
     ],
     ...stickers.flatMap((sticker, j) => {
       const { chain, overlay } = stickerChain(base + j, sticker, frame ? FRAME_STICKER_Y : STICKER.y);
       return [chain, `[b${j}][e${base + j}]${overlay}[b${j + 1}]`];
     }),
-    `[b${stickers.length}]ass=${FILES.text},format=yuv420p[v]`
+    `[b${stickers.length}]ass=${FILES.text}${fonts},format=yuv420p[v]`
   ];
   const first = base + stickers.length;
   const sound = [
@@ -50629,7 +50636,7 @@ function finalArgs(total2, stickers, audio, layout = "box") {
     ...THREADS,
     "-i",
     FILES.boxes,
-    ...frame ? [] : ["-loop", "1", "-framerate", String(FPS), "-t", total2.toFixed(3), "-i", FILES.background],
+    ...still ? ["-loop", "1", "-framerate", String(FPS), "-t", total2.toFixed(3), "-i", FILES.background] : [],
     ...stickers.flatMap(({ file, at: at2, until }) => ["-loop", "1", "-framerate", String(FPS), "-t", (until - at2 + 0.3).toFixed(3), "-i", file]),
     ...audio.flatMap(({ file }) => ["-i", file]),
     "-filter_complex",
@@ -50771,10 +50778,13 @@ async function renderStory(input, settings, tools) {
   const plan = validatePlan(input.story, [...library.keys()]);
   const story = normalizeStory(plan, words2, sentences, laughs);
   const files = matchSources(story.clips, sources);
-  const plainBg = settings.layout !== "box";
   const card = settings.layout === "card";
-  const background = `${tools.stateDir}/backgrounds/${settings.background}.jpg`;
-  if (!plainBg && !await present(tools, background, timeoutMs)) throw new ExecutionFailure(`video-edit story background ${background} was not found in the business state folder.`);
+  const seed = settings.storySeed !== "" ? settings.storySeed : isObject5(input.source) && typeof input.source.id === "string" ? input.source.id : "";
+  const picked = settings.cardBackgrounds[Math.floor(seededRandom(`${seed}-background`)() * settings.cardBackgrounds.length)];
+  const cardBackground = picked === "plain" || picked === "blur" ? picked : "texture";
+  const still = settings.layout === "box" || card && cardBackground === "texture";
+  const background = `${tools.stateDir}/backgrounds/${card ? picked : settings.background}.jpg`;
+  if (still && !await present(tools, background, timeoutMs)) throw new ExecutionFailure(`video-edit story background ${background} was not found in the business state folder.`);
   const ends = [];
   const notes = [];
   for (const [i, clip] of story.clips.entries()) {
@@ -50796,7 +50806,7 @@ async function renderStory(input, settings, tools) {
     const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, last: i === timed.clips.length - 1, intro: i === 1, effects };
     const cmdsFile = `story-box${i}.cmds`;
     const out = `story-box${i}.mp4`;
-    await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout).cmds);
+    await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout, cardBackground).cmds);
     await ffmpeg(boxArgs({
       file: files[i].file,
       seek: r32(clip.start - files[i].offset),
@@ -50805,13 +50815,14 @@ async function renderStory(input, settings, tools) {
       cmdsFile,
       out,
       crf: settings.crf,
-      layout: settings.layout
+      layout: settings.layout,
+      cardBackground
     }));
     boxes.push(out);
   }
   await tools.writeText("run", FILES.list, concatList(boxes));
   await ffmpeg(concatArgs(FILES.list, FILES.boxes));
-  if (!plainBg) await ffmpeg(backgroundArgs(background, FILES.background));
+  if (still) await ffmpeg(backgroundArgs(background, FILES.background, card ? CARD_RECT : void 0));
   const available = /* @__PURE__ */ new Map();
   for (const name of new Set(timed.emojis.map((m) => m.name))) {
     let found = await present(tools, emojiPath(name), timeoutMs);
@@ -50829,14 +50840,13 @@ async function renderStory(input, settings, tools) {
   }
   const emojis = settleEmojis(timed.emojis.filter((m) => available.get(m.name)), timed.total);
   const done = { ...timed, emojis };
-  const seed = settings.storySeed !== "" ? settings.storySeed : isObject5(input.source) && typeof input.source.id === "string" ? input.source.id : "";
-  if (!plainBg) await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
-  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline, headlineDark: card };
+  if (settings.layout === "box") await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
+  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline, headlineDark: card && cardBackground === "plain", headlineFont: settings.headlineFont, ...card ? { headlineY: 280 } : {} };
   const applied = /* @__PURE__ */ new Map();
   await tools.writeText("run", FILES.text, storyTextAss(plan.headline, storyCaptions(done, lines, plan.corrections, applied), text3));
   const { transitions, pops } = soundPlan(done, (sound) => library.get(sound).seconds);
   const audio = [...transitions, ...pops.filter((pop) => pop !== null)].map((a) => ({ ...a, file: `${sfx}/${library.get(a.sound).file}` }));
-  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout));
+  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" ? "" : `${tools.stateDir}/fonts`));
   const short = {
     file: FILES.output,
     duration: done.total,
@@ -50846,7 +50856,8 @@ async function renderStory(input, settings, tools) {
     emojisDropped: [...available].filter(([, found]) => !found).map(([name]) => name),
     sounds: [...audio, ...done.effects.map((e) => ({ sound: e.sound, at: e.storyTime }))].map(({ at: at2, sound }) => ({ at: at2, sound })).sort((a, b) => a.at - b.at),
     ...applied.size > 0 ? { corrections: [...applied].map(([{ heard, meant }, words3]) => ({ heard, meant, words: words3 })) } : {},
-    issues: done.issues
+    issues: done.issues,
+    ...card ? { background: picked } : {}
   };
   return { ...input, [settings.outputKey]: short };
 }
@@ -50878,6 +50889,8 @@ var DEFAULTS3 = {
   renderTimeoutMs: 6e5,
   background: "brick",
   layout: "box",
+  cardBackgrounds: ["plain"],
+  headlineFont: "",
   emojiDir: "emoji",
   storySeed: "",
   outputKey: "short"
@@ -50917,6 +50930,8 @@ var RULES = {
   renderTimeoutMs: [positive, "a positive number of milliseconds"],
   background: [folderName, "a plain file name without the .jpg, such as brick"],
   layout: [(value) => value === "box" || value === "frame" || value === "card", "'box', 'frame' or 'card'"],
+  cardBackgrounds: [(value) => Array.isArray(value) && value.length > 0 && value.every(folderName), "a non-empty list of 'plain', 'blur' or texture names (plain file names without the .jpg)"],
+  headlineFont: [(value) => typeof value === "string" && /^[^,\r\n]*$/.test(value), "a font name without commas or line breaks, or empty"],
   emojiDir: [folderName, "a plain folder name"],
   storySeed: [str, "a string"],
   outputKey: [(value) => typeof value === "string" && value !== "", "a non-empty string"]
@@ -51381,6 +51396,7 @@ var DEFAULTS5 = {
   setCover: true,
   maxHashtags: 10,
   titleHashtags: true,
+  publishAfterHours: 0,
   outputKey: "youtube"
 };
 var PRIVACIES = ["private", "unlisted", "public"];
@@ -51435,6 +51451,7 @@ function readSettings3(config) {
   const setCover = get("setCover");
   const maxHashtags = get("maxHashtags");
   const titleHashtags = get("titleHashtags");
+  const publishAfterHours = get("publishAfterHours");
   const outputKey = get("outputKey");
   if (typeof channelHandle !== "string" || !/^@[A-Za-z0-9._-]{3,100}$/.test(channelHandle)) {
     throw new ExecutionFailure("YouTube publish setting channelHandle must look like @handle (3 to 100 letters, digits, dots, dashes or underscores).");
@@ -51448,8 +51465,11 @@ function readSettings3(config) {
     throw new ExecutionFailure("YouTube publish setting maxHashtags must be a whole number from 0 to 60.");
   }
   if (typeof titleHashtags !== "boolean") throw new ExecutionFailure("YouTube publish setting titleHashtags must be true or false.");
+  if (typeof publishAfterHours !== "number" || !Number.isFinite(publishAfterHours) || publishAfterHours < 0 || publishAfterHours > 720) {
+    throw new ExecutionFailure("YouTube publish setting publishAfterHours must be a number from 0 to 720.");
+  }
   if (!isText(outputKey)) throw new ExecutionFailure("YouTube publish setting outputKey must be a non-empty string.");
-  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, outputKey };
+  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey };
 }
 function readJob2(input, needCover, maxHashtags, titleHashtags) {
   if (!isObject8(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
@@ -51459,6 +51479,7 @@ function readJob2(input, needCover, maxHashtags, titleHashtags) {
   if (meta.description !== void 0 && typeof meta.description !== "string") throw new ExecutionFailure("YouTube publish input job.meta.description must be a string.");
   if (meta.tags !== void 0 && !Array.isArray(meta.tags)) throw new ExecutionFailure("YouTube publish input job.meta.tags must be an array.");
   if (meta.hashtags !== void 0 && !Array.isArray(meta.hashtags)) throw new ExecutionFailure("YouTube publish input job.meta.hashtags must be an array.");
+  if (meta.comment !== void 0 && typeof meta.comment !== "string") throw new ExecutionFailure("YouTube publish input job.meta.comment must be a string.");
   if (needCover && (!isObject8(thumbnail) || !isText(thumbnail.file))) throw new ExecutionFailure("YouTube publish input job.thumbnail.file must be a non-empty string.");
   return {
     job: input,
@@ -51466,7 +51487,8 @@ function readJob2(input, needCover, maxHashtags, titleHashtags) {
     cover: isObject8(thumbnail) ? String(thumbnail.file) : "",
     title: withTitleHashtags(clipTitle(meta.title.trim()), titleHashtags ? cleanHashtags(meta.hashtags ?? [], maxHashtags) : []),
     description: withHashtags(meta.description ?? "", cleanHashtags(meta.hashtags ?? [], maxHashtags)),
-    tags: cleanTags(meta.tags ?? [])
+    tags: cleanTags(meta.tags ?? []),
+    comment: (meta.comment ?? "").trim().slice(0, 1e3)
   };
 }
 async function guard(step, wrap2) {
@@ -51505,10 +51527,11 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
 }
 async function execute13({ input, config, node }, { youtube, tools }) {
   if (!youtube) throw new ExecutionFailure("YouTube publish requires the youtube capability.");
-  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, outputKey } = readSettings3(config);
-  const { job, file, cover, title, description, tags } = readJob2(input, setCover, maxHashtags, titleHashtags);
+  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey } = readSettings3(config);
+  const { job, file, cover, title, description, tags, comment } = readJob2(input, setCover, maxHashtags, titleHashtags);
   await guard(() => youtube.verifyChannel(handle, { studio: setCover }));
-  const videoId = await uploadOnce(youtube, tools, node, handle, file, { title, description, tags, categoryId, madeForKids, containsSyntheticMedia });
+  const publishAt = publishAfterHours > 0 ? new Date(Date.now() + publishAfterHours * 36e5).toISOString() : void 0;
+  const videoId = await uploadOnce(youtube, tools, node, handle, file, { title, description, tags, categoryId, madeForKids, containsSyntheticMedia, ...publishAt && { publishAt } });
   const state = await guard(
     () => youtube.waitForProcessing(handle, videoId),
     (why) => `Video ${videoId} uploaded but YouTube processing could not be confirmed (${why}); it stays private.`
@@ -51520,13 +51543,21 @@ async function execute13({ input, config, node }, { youtube, tools }) {
       (why) => `Video ${videoId} uploaded and left private: cover was not confirmed (${why}).`
     );
   }
-  if (privacy !== "private") {
+  if (privacy !== "private" && !publishAt) {
     await guard(
       () => youtube.setPrivacy(handle, videoId, privacy),
       (why) => `Video ${videoId} uploaded but switching it to ${privacy} failed (${why}); check its visibility in YouTube Studio.`
     );
   }
-  return { output: { ...job, [outputKey]: { videoId, url: `https://youtube.com/shorts/${videoId}`, privacy, coverConfirmed: setCover } }, port: "next" };
+  let posted;
+  if (comment !== "") {
+    posted = await youtube.comment(handle, videoId, comment).catch((error) => {
+      if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure) throw error;
+      return { commentError: reason2(error) };
+    });
+  }
+  const result = { videoId, url: `https://youtube.com/shorts/${videoId}`, privacy: publishAt ? "private" : privacy, coverConfirmed: setCover, ...publishAt && { publishAt }, ...posted };
+  return { output: { ...job, [outputKey]: result }, port: "next" };
 }
 
 // modules/instagram-publish/index.ts
@@ -51661,7 +51692,7 @@ var DEFAULTS7 = {
   render: true,
   timeoutMs: 18e5
 };
-var MODES = ["feeds", "posts", "story", "sources", "facts", "images", "brief", "render", "record", "site"];
+var MODES = ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site"];
 var VOICES = ["kokoro", "elevenlabs"];
 var PORTS = ["next", "invalid", "missing"];
 var LOG_TAIL = 1e3;
@@ -51778,7 +51809,8 @@ function boundYouTube(youtube, signal, deadline) {
     upload: (handle, file, metadata) => runBounded(youtube.upload(handle, file, metadata), signal, deadline, Infinity),
     waitForProcessing: (handle, videoId) => runBounded(youtube.waitForProcessing(handle, videoId), signal, deadline, Infinity),
     setCover: (handle, videoId, image) => runBounded(youtube.setCover(handle, videoId, image), signal, deadline, Infinity),
-    setPrivacy: (handle, videoId, privacy) => runBounded(youtube.setPrivacy(handle, videoId, privacy), signal, deadline, Infinity)
+    setPrivacy: (handle, videoId, privacy) => runBounded(youtube.setPrivacy(handle, videoId, privacy), signal, deadline, Infinity),
+    comment: (handle, videoId, text3) => runBounded(youtube.comment(handle, videoId, text3), signal, deadline, Infinity)
   };
 }
 function boundInstagram(instagram, signal, deadline) {
@@ -55577,7 +55609,8 @@ function createYouTubeCapability({ api, studio, runDir }) {
     upload: async (handle, file, metadata) => api.upload(handle, await resolveRunFile(runDir, file), metadata),
     waitForProcessing: (handle, videoId) => api.waitForProcessing(handle, videoId),
     setCover: async (handle, videoId, image) => studio.setCover(handle, videoId, await resolveRunFile(runDir, image)),
-    setPrivacy: (handle, videoId, privacy) => api.setPrivacy(handle, videoId, privacy)
+    setPrivacy: (handle, videoId, privacy) => api.setPrivacy(handle, videoId, privacy),
+    comment: (handle, videoId, text3) => api.comment(handle, videoId, text3)
   };
 }
 
@@ -55668,7 +55701,7 @@ function createYouTubeDataApi(options) {
           },
           body: JSON.stringify({
             snippet: { title: metadata.title, description: metadata.description, tags: metadata.tags, categoryId: metadata.categoryId },
-            status: { privacyStatus: "private", selfDeclaredMadeForKids: metadata.madeForKids, containsSyntheticMedia: metadata.containsSyntheticMedia }
+            status: { privacyStatus: "private", ...metadata.publishAt ? { publishAt: metadata.publishAt } : {}, selfDeclaredMadeForKids: metadata.madeForKids, containsSyntheticMedia: metadata.containsSyntheticMedia }
           })
         }, REQUEST_TIMEOUT_MS3, "YouTube upload start");
         if (!start.ok) await httpFailure(start, "YouTube upload start");
@@ -55720,6 +55753,18 @@ function createYouTubeDataApi(options) {
         if (now() >= deadline) throw new ExecutionLimitFailure(`YouTube processing of video ${videoId} did not finish within ${Math.round(processingTimeoutMs / 1e3)} s.`);
         await sleep(pollMs);
       }
+    },
+    async comment(handle, videoId, text3) {
+      const { accessToken } = await session(handle);
+      const url = new URL(`${API_ROOT}/commentThreads`);
+      url.searchParams.set("part", "snippet");
+      const body = await readJson2(await timedFetch(fetchImpl, url.href, {
+        method: "POST",
+        headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json" },
+        body: JSON.stringify({ snippet: { videoId, topLevelComment: { snippet: { textOriginal: text3 } } } })
+      }, REQUEST_TIMEOUT_MS3, "YouTube comment"), "YouTube comment");
+      if (typeof body?.id !== "string" || body.id === "") throw new ExecutionFailure("YouTube returned no comment id.");
+      return { commentId: body.id };
     },
     async setPrivacy(handle, videoId, privacy) {
       const { video, accessToken } = await remoteVideo(handle, videoId);

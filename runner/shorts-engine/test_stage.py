@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory() as d:
     assert before[0] < -30 and abs(lufs(v) - stage.VOICE_LUFS) < 1.0, (before, lufs(v))
     assert abs(after - before[1]) < 0.05, "levelling must not move the word timings"
 # The Reddit lane is wired into stage.py: its modes exist and record dispatches on job.lane.
-assert "posts" in stage.MODES and "story" in stage.MODES
+assert "posts" in stage.MODES and "story" in stage.MODES and "nextpart" in stage.MODES
 with tempfile.TemporaryDirectory() as d:
     assert stage.record({"lane": "reddit", "story": {"id": "r1"}}, {}, Path(d), Path(d) / "state")[0] == "next"
     assert json.loads((Path(d) / "state" / "used.json").read_text()) == ["r1"]

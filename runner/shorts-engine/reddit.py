@@ -1,7 +1,7 @@
 # The Reddit stories lane, called from stage.py (modes posts, story, and record for lane reddit).
 # posts: fetch top posts per subreddit (RSS, archive fallback). story: validate the agent's retelling, voice it,
 # cut sped-up b-roll, build the one-word captions + hook card and render short.mp4. No PIL here: the card is a prebuilt png.
-import html, json, math, os, random, re, subprocess, sys, time, urllib.request
+import collections, html, json, math, os, random, re, subprocess, sys, time, urllib.request
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
@@ -9,7 +9,9 @@ from pathlib import Path
 here = Path(__file__).parent.resolve()
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 ATOM = "{http://www.w3.org/2005/Atom}"
-SEG_SECONDS, MAX_NARRATION = 2.0, 59.0  # library sizing unit; Shorts stay under 60 s
+SEG_SECONDS, MIN_NARRATION, MAX_NARRATION, TARGET_NARRATION = 2.0, 30.0, 58.0, 44.0  # library sizing unit; each part runs 30 to 58 s
+SERIES_MAX_CHARS, SERIES_FETCHES, MAX_PARTS = 9000, 5, 3
+NUMBER_WORD = {2: "two", 3: "three"}
 
 
 def lane_cfg():
@@ -52,6 +54,21 @@ def html_text(markup):
     return "\n\n".join(x for x in paras if x)
 
 
+UPDATE_RE = re.compile(r"\b(update|part\s*2|pt\.?\s*2|final update)\b", re.I)
+ORIGINAL_RE = re.compile(r"/comments/([a-z0-9]{5,8})(?![a-z0-9])|redd\.it/([a-z0-9]{5,8})(?![a-z0-9])")
+
+
+def is_update(title):
+    return bool(UPDATE_RE.search(title))
+
+
+def find_original_id(markup, own_id):
+    for m in ORIGINAL_RE.finditer(markup):
+        if (m.group(1) or m.group(2)) != own_id:
+            return m.group(1) or m.group(2)
+    return None
+
+
 def parse_feed(xml_text, sub):
     out = []
     for e in ET.fromstring(xml_text).iter(ATOM + "entry"):
@@ -59,16 +76,24 @@ def parse_feed(xml_text, sub):
         link = e.find(ATOM + "link")
         body = (e.findtext(ATOM + "content") or "").split("<!-- SC_ON -->")[0]  # after it: "submitted by ... [link]"
         if pid:
-            out.append({"id": pid, "subreddit": sub, "title": (e.findtext(ATOM + "title") or "").strip(), "text": html_text(body),
-                        "url": link.get("href") if link is not None else f"https://www.reddit.com/comments/{pid}/"})
+            c = {"id": pid, "subreddit": sub, "title": (e.findtext(ATOM + "title") or "").strip(), "text": html_text(body),
+                 "url": link.get("href") if link is not None else f"https://www.reddit.com/comments/{pid}/"}
+            if is_update(c["title"]) and find_original_id(body, pid):
+                c["originalId"] = find_original_id(body, pid)
+            out.append(c)
     return out
 
 
 def parse_archive(data, sub):
     # shortcut: archive scores are taken at ingest, so ranking by them is weaker than Reddit's weekly top; only a fallback
     posts = sorted(data.get("data", []), key=lambda p: (p.get("score") or 0, p.get("num_comments") or 0), reverse=True)
-    return [{"id": p["id"], "subreddit": sub, "title": (p.get("title") or "").strip(), "text": html_text(p.get("selftext") or ""),
-             "url": "https://www.reddit.com" + p["permalink"]} for p in posts if p.get("id") and p.get("permalink")]
+    out = [{"id": p["id"], "subreddit": sub, "title": (p.get("title") or "").strip(), "text": html_text(p.get("selftext") or ""),
+            "url": "https://www.reddit.com" + p["permalink"], "_raw": p.get("selftext") or ""} for p in posts if p.get("id") and p.get("permalink")]
+    for c in out:
+        raw = c.pop("_raw")
+        if is_update(c["title"]) and find_original_id(raw, c["id"]):
+            c["originalId"] = find_original_id(raw, c["id"])
+    return out
 
 
 def get(url):
@@ -93,7 +118,7 @@ def fetch_sub(sub, wait=True):
 
 def keep(cands, used):
     return [c for c in cands if c["id"] not in used and 600 <= len(c["text"]) <= 5000
-            and not c["text"].startswith(("[removed]", "[deleted]")) and not c["title"].lower().startswith("update")]
+            and not c["text"].startswith(("[removed]", "[deleted]")) and not is_update(c["title"])]
 
 
 def round_robin(by_sub, cap):
@@ -105,32 +130,152 @@ def round_robin(by_sub, cap):
     return out
 
 
+def fetch_post(oid, wait=True):
+    # the post's own feed lists the post first, then its comments
+    if wait:
+        time.sleep(2)
+    try:
+        first = parse_feed(get(f"https://www.reddit.com/comments/{oid}/.rss"), "")[:1]
+        return first[0] if first and first[0]["id"] == oid else None
+    except Exception:
+        return None
+
+
+def series_candidate(upd, orig):
+    if not orig or not upd["text"] or any(x["text"].startswith(("[removed]", "[deleted]")) for x in (orig, upd)):
+        return None
+    text = f"{orig['text']}\n\n--- UPDATE ---\n\n{upd['text']}"
+    if len(text) > SERIES_MAX_CHARS:
+        return None
+    return {"id": upd["id"], "originalId": orig["id"], "subreddit": upd["subreddit"], "title": orig["title"], "text": text, "url": upd["url"], "series": True}
+
+
 def posts(job, cfg, run, state):
     lane, used = lane_cfg(), set(jread(state / "used.json", []))
-    by_sub = {}
+    by_sub, updates = {}, []
     for i, sub in enumerate(lane["subreddits"]):
         seen = {c["id"] for v in by_sub.values() for c in v}
-        by_sub[sub] = [c for c in keep(fetch_sub(sub, wait=i > 0), used) if c["id"] not in seen]
-    cands = round_robin(by_sub, 25)
-    return ("next" if cands else "missing"), {"candidates": cands, "laneContext": {"channelName": lane["channelName"]}}, f"{len(cands)} candidates"
+        found = fetch_sub(sub, wait=i > 0)
+        by_sub[sub] = [c for c in keep(found, used) if c["id"] not in seen]
+        updates += [c for c in found if is_update(c["title"]) and c.get("originalId")]
+    series, tried = [], set()
+    for u in updates:
+        if len(tried) >= SERIES_FETCHES:
+            break
+        if u["id"] in used or u["originalId"] in used or u["id"] in tried:
+            continue
+        tried.add(u["id"])
+        sc = series_candidate(u, fetch_post(u["originalId"]))
+        if sc:
+            series.append(sc)
+    cands = (series + round_robin(by_sub, 25))[:25]
+    return ("next" if cands else "missing"), {"candidates": cands, "laneContext": {"channelName": lane["channelName"]}}, f"{len(cands)} candidates, {len(series)} series"
+
+
+def parse_comments(xml_text):
+    out = []
+    for e in ET.fromstring(xml_text).iter(ATOM + "entry"):
+        author = e.findtext(ATOM + "author/" + ATOM + "name") or ""
+        text = html_text((e.findtext(ATOM + "content") or ""))
+        if (e.findtext(ATOM + "id") or "").startswith("t1_") and text and not text.startswith("[deleted]") \
+                and "automoderator" not in author.lower() and not author.lower().endswith("bot"):
+            out.append(text)
+    return out
+
+
+VERDICT_RE = re.compile(r"\b(NTA|YTA|ESH|NAH)\b")
+VERDICT_LABEL = {"NTA": "NOT the jerk", "YTA": "they WERE the jerk", "ESH": "everyone sucks here", "NAH": "no jerks here"}
+
+
+def classify_verdicts(texts, top=15):
+    texts = texts[:top]
+    counts = collections.Counter(m.group(1) for m in (VERDICT_RE.search(t) for t in texts) if m)
+    return dict(counts), len(texts)
+
+
+def verdict_comment(counts, k, question=None):
+    if sum(counts.values()) >= 3:
+        tok = max(VERDICT_LABEL, key=lambda t: counts.get(t, 0))
+        return f"🗳️ Reddit's verdict: {VERDICT_LABEL[tok]} ({counts[tok]} of the top {k} comments said {tok}). Do you agree? 👇"
+    return question or None
+
+
+def reddit_comment(sub, pid, question):
+    # a failed fetch never fails the step; the question (or nothing) is the fallback
+    if sub.lower() in ("amitheasshole", "aitah"):
+        try:
+            time.sleep(2)
+            counts, k = classify_verdicts(parse_comments(get(f"https://www.reddit.com/r/{sub}/comments/{pid}/.rss")))
+            return verdict_comment(counts, k, question)
+        except Exception:
+            pass
+    return question or None
 
 
 # ---------- story: validation ----------
 
+def story_parts(st):
+    return st["parts"] if "parts" in st else [st]
+
+
+def check_part(p, label, max_words):
+    words = lambda k: len(str(p.get(k) or "").split())
+    errs = []
+    if not 6 <= words("hook") <= 20:
+        errs.append(f"{label}hook is {words('hook')} words; write 6 to 20 (about 8 to 16)")
+    if not 110 <= words("script") <= max_words:
+        errs.append(f"{label}script is {words('script')} words; write 110 to {max_words}")
+    if not 1 <= len(str(p.get("title") or "")) <= 70:
+        errs.append(f"{label}title must be 1 to 70 characters")
+    return errs
+
+
 def check_story(story, candidates):
     if not isinstance(story, dict):
-        return ["story must be a JSON object with id, hook, script and title"]
-    words = lambda k: len(str(story.get(k) or "").split())
+        return ["story must be a JSON object with id, hook, script and title (or id and parts)"]
     errs = []
     if story.get("id") not in [c.get("id") for c in candidates]:
         errs.append(f"story.id {story.get('id')!r} is not one of the candidate ids")
-    if not 6 <= words("hook") <= 20:
-        errs.append(f"hook is {words('hook')} words; write 6 to 20 (about 8 to 16)")
-    if not 110 <= words("script") <= 180:
-        errs.append(f"script is {words('script')} words; write 110 to 180")
-    if not 1 <= len(str(story.get("title") or "")) <= 70:
-        errs.append("title must be 1 to 70 characters")
+    if "parts" in story:
+        ps = story["parts"]
+        if not isinstance(ps, list) or not 2 <= len(ps) <= MAX_PARTS or not all(isinstance(p, dict) for p in ps):
+            return errs + [f"story.parts must be a list of 2 to {MAX_PARTS} objects with hook, script and title"]
+        for i, p in enumerate(ps, 1):
+            errs += check_part(p, f"parts[{i}] ", 220)
+            nxt = NUMBER_WORD.get(i + 1, "")
+            tail = str(p.get("script") or "")[-200:].lower()
+            if i < len(ps) and not (f"part {nxt}" in tail or f"part {i + 1}" in tail):
+                errs.append(f'parts[{i}] script must end on the cliffhanger with a line like "Follow so you don\'t miss part {nxt}!"')
+    else:
+        errs += check_part(story, "", 180)
+    if "question" in story and not (isinstance(story["question"], str) and len(story["question"]) <= 150):
+        errs.append("question must be a string of at most 150 characters")
     return errs
+
+
+def length_error(label, n_words, secs):
+    if MIN_NARRATION <= secs <= MAX_NARRATION:
+        return None
+    fix = int(abs(n_words * TARGET_NARRATION / secs - n_words))
+    how = f"add about {fix} words (or merge it into the neighbouring part)" if secs < MIN_NARRATION else f"cut about {fix} words (or move them into another part)"
+    return f"{label} narration is {secs:.0f}s; each video must run {MIN_NARRATION:.0f} to {MAX_NARRATION:.0f}s, so {how}"
+
+
+def make_title(story_title, part=None):
+    tail = (f" (Part {part})" if part else "") + lane_cfg()["titleSuffix"]
+    t = story_title.strip()
+    return (t if len(t) + len(tail) <= 100 else t[:100 - len(tail) - 1].rstrip() + "…") + tail
+
+
+def build_meta(story_title, comment, part=None):
+    title = make_title(story_title, part)
+    meta = {"title": title, "description": title, "tags": lane_cfg()["tags"], "hashtags": []}
+    return {**meta, "comment": comment} if comment else meta
+
+
+def part_comments(n, question, verdict):
+    # parts publish back to back, so each can carry a comment: the question on all but the last, the verdict (else the question) on the last
+    return [question] * (n - 1) + [verdict]
 
 
 # ---------- captions and hook card ----------
@@ -220,6 +365,35 @@ def source_ids(state, sources):
     return sorted({i for v in cache.get("ids", {}).values() for i in v})
 
 
+def has_overlay_text(boxes):
+    # RapidOCR boxes: [points, text, confidence]; a source's @handle watermark is small and allowed
+    return any(conf >= 0.8 and sum(c.isalpha() for c in text) >= 3 and not text.strip().startswith("@") for _, text, conf in boxes or [])
+
+
+_ocr = []
+
+
+def segment_has_text(seg):
+    if not _ocr:
+        try:
+            from rapidocr_onnxruntime import RapidOCR
+            _ocr.append(RapidOCR())
+        except ImportError:
+            _ocr.append(None)
+            print("rapidocr_onnxruntime missing: b-roll is not checked for burned-in text", file=sys.stderr)
+    if _ocr[0] is None:
+        return False
+    frame = seg.with_suffix(".png")
+    try:
+        for t in (0.3, 1.2, 2.2):  # captions and banners pop in and out, so look at three moments
+            code, _ = sh("ffmpeg", "-v", "error", "-y", "-ss", f"{t}", "-i", seg, "-frames:v", "1", "-vf", "scale=480:-2", frame)
+            if not code and has_overlay_text(_ocr[0](str(frame))[0]):
+                return True
+    finally:
+        frame.unlink(missing_ok=True)
+    return False
+
+
 def cut_source(src, lib, tag):
     code, out = sh("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src)
     dur, made = float(out) if not code and out else 0, 0
@@ -230,8 +404,12 @@ def cut_source(src, lib, tag):
         # setpts first (1.3x faster), then centre 9:16, zoom to drop corner logos and the bottom-centre channel watermark
         vf = ("setpts=PTS/1.3,crop='min(iw,ih*9/16)':'min(ih,iw*16/9)',crop=iw*0.88:ih*0.88:(iw-ow)/2:ih*0.02,scale=720:1280:flags=lanczos,setsar=1,"
               "eq=saturation=1.2:contrast=1.05,fps=30,format=yuv420p")
+        seg = lib / f"seg_{tag}_{made:02d}.mp4"
         code, _ = sh("ffmpeg", "-v", "error", "-y", "-ss", f"{t:.2f}", "-t", "3.2", "-i", src, "-an", "-vf", vf, "-c:v", "libx264", "-preset", "veryfast",
-                     "-crf", "22", "-video_track_timescale", "15360", lib / f"seg_{tag}_{made:02d}.mp4")
+                     "-crf", "22", "-video_track_timescale", "15360", seg)
+        if not code and segment_has_text(seg):
+            seg.unlink()
+            code = 1
         made += 0 if code else 1
     return made
 
@@ -263,34 +441,27 @@ def ffesc(p):
     return str(p).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
 
 
-def story(job, cfg, run, state, level_voice):
-    st, cands = job.get("story"), job.get("candidates", [])
-    errs = check_story(st, cands)
-    if errs:
-        return "invalid", {"agentErrors": errs}, ""
-    lane, proj = lane_cfg(), run / "reddit"
+def narrate(proj, hook, script, lane, level_voice, label):
     proj.mkdir(parents=True, exist_ok=True)
-    (proj / "script.json").write_text(json.dumps([{"id": "hook", "text": st["hook"]}, {"id": "body", "text": st["script"]}]))
+    (proj / "script.json").write_text(json.dumps([{"id": "hook", "text": hook}, {"id": "body", "text": script}]))
     code, out = sh(sys.executable, here / "tts.py", proj, lane["voice"], lane["speed"])
     if code:
         raise SystemExit(f"voice failed: {out[-500:]}")
     level_voice(proj / "voice.mp3")
     timing = json.loads((proj / "timing.js").read_text()[len("window.TIMING = "):].rstrip().rstrip(";"))
-    dur = timing["duration"]
     code, vd = sh("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", proj / "voice.mp3")
-    end = min(dur, float(vd) + 0.4) if not code else dur  # tts.py adds a 1.2 s hold the audio does not have; cut it
-    if dur > MAX_NARRATION:
-        n = len(st["script"].split())
-        return "invalid", {"agentErrors": [f"narration is {dur:.0f}s; shorten the script to about {int(n * 56 / dur)} words"]}, ""
-    lib = state / "broll"
-    top_up(lib, math.ceil(dur / SEG_SECONDS) + 4, state, run, lane["brollSources"])
-    chosen = pick_segments([p.name for p in lib.glob("seg_*.mp4")], math.ceil(end / 2.3), st["id"])
+    end = min(timing["duration"], float(vd) + 0.4) if not code else timing["duration"]  # tts.py adds a 1.2 s hold the audio does not have; cut it
+    return timing, end, length_error(label, len((hook + " " + script).split()), end)
+
+
+def render_part(proj, hook, timing, end, lib, seed, out_file):
+    chosen = pick_segments([p.name for p in lib.glob("seg_*.mp4")], math.ceil(end / 2.3), seed)
     (proj / "list.txt").write_text("".join(f"file '{lib / n}'\n" for n in chosen))
     code, out = sh("ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", proj / "list.txt", "-c", "copy", proj / "broll.mp4")
     if code:
         raise SystemExit(f"b-roll concat failed: {out[-500:]}")
     hook_end = next(s["end"] for s in timing["scenes"] if s["id"] == "hook")
-    (proj / "captions.ass").write_text(build_ass(timing, st["hook"]), encoding="utf-8")
+    (proj / "captions.ass").write_text(build_ass(timing, hook), encoding="utf-8")
     music = sorted((here / "lanes" / "reddit" / "music").glob("*.mp3"))
     fc = (f"[0:v]scale=1080:1920:flags=lanczos,setsar=1,fps=30[b];[1:v]format=rgba,fade=t=out:st={max(hook_end - 0.25, 0):.2f}:d=0.25:alpha=1[card];"
           f"[b][card]overlay=0:0:enable='lt(t,{hook_end:.2f})'[o];[o]subtitles=filename='{ffesc(proj / 'captions.ass')}':fontsdir='{ffesc(here / 'fonts')}'[v]")
@@ -302,18 +473,61 @@ def story(job, cfg, run, state, level_voice):
     else:
         audio = "2:a"
     code, out = sh("ffmpeg", "-v", "error", "-y", *inputs, "-filter_complex", fc, "-map", "[v]", "-map", audio, "-t", f"{end:.2f}",
-                   "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", run / "short.mp4")
+                   "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out_file)
     if code:
         raise SystemExit(f"render failed: {out[-800:]}")
-    for n in set(chosen):  # each segment is used once ever
+    for n in set(chosen):  # each segment is used once ever, so later parts never reuse it
         (lib / n).unlink(missing_ok=True)
+    return len(set(chosen))
+
+
+def story(job, cfg, run, state, level_voice):
+    st, cands = job.get("story"), job.get("candidates", [])
+    errs = check_story(st, cands)
+    if errs:
+        return "invalid", {"agentErrors": errs}, ""
+    lane, ps = lane_cfg(), story_parts(st)
+    multi = "parts" in st
+    voiced, errs = [], []
+    for i, p in enumerate(ps, 1):
+        proj = run / ("reddit" if i == 1 else f"reddit{i}")
+        timing, end, err = narrate(proj, p["hook"], p["script"], lane, level_voice, f"parts[{i}]" if multi else "script")
+        errs += [err] if err else []
+        voiced.append((proj, p, timing, end))
+    if errs:
+        return "invalid", {"agentErrors": errs}, ""
+    lib = state / "broll"
+    top_up(lib, sum(math.ceil(t["duration"] / SEG_SECONDS) + 4 for _, _, t, _ in voiced), state, run, lane["brollSources"])
+    out_parts, used_segs = [], 0
+    for i, (proj, p, timing, end) in enumerate(voiced, 1):
+        name = "short.mp4" if i == 1 else f"short{i}.mp4"
+        used_segs += render_part(proj, p["hook"], timing, end, lib, f"{st['id']}-{i}", run / name)
+        out_parts.append((name, p))
     sub = next(c["subreddit"] for c in cands if c["id"] == st["id"])
-    desc = f"{st['hook']}\n\nStory from r/{sub}, retold.\n\n" + "#redditstories #reddit #shorts"
-    return "next", {"short": {"file": "short.mp4"}, "meta": {"title": st["title"], "description": desc, "hashtags": lane["hashtags"]}}, f"rendered {end:.1f}s from {len(set(chosen))} segments"
+    q = st.get("question")
+    comments = part_comments(len(ps), q, reddit_comment(sub, st["id"], q))
+    parts = [{"short": {"file": name}, "meta": build_meta(p["title"], comments[i], i + 1 if multi else None)} for i, (name, p) in enumerate(out_parts)]
+    out = {"short": parts[0]["short"], "meta": parts[0]["meta"]}
+    if multi:
+        out.update(parts=parts, partIndex=0)
+    return "next", out, f"rendered {len(ps)} part(s), {sum(v[3] for v in voiced):.1f}s from {used_segs} segments"
+
+
+def nextpart(job, cfg, run, state):
+    ids = list(job.get("partVideoIds") or []) + [(job.get("youtube") or {}).get("videoId")]
+    parts, i = job.get("parts") or [], (job.get("partIndex") or 0) + 1
+    if i >= len(parts):
+        return "missing", {}, "no more parts"
+    meta = dict(parts[i]["meta"])
+    if ids[0]:
+        meta["description"] += f"\n\nPart 1: https://youtube.com/shorts/{ids[0]}"
+    return "next", {"partVideoIds": ids, "partIndex": i, "short": parts[i]["short"], "meta": meta}, f"part {i + 1} of {len(parts)}"
 
 
 def record(job, cfg, run, state):
     state.mkdir(parents=True, exist_ok=True)
-    used = jread(state / "used.json", []) + [job["story"]["id"]]
+    sid = job["story"]["id"]
+    orig = job["story"].get("originalId") or next((c.get("originalId") for c in job.get("candidates", []) if c["id"] == sid), None)
+    used = jread(state / "used.json", []) + [sid] + ([orig] if orig else [])
     (state / "used.json").write_text(json.dumps(used[-3000:]))
     return "next", {}, f"recorded; {len(used)} stories used"
