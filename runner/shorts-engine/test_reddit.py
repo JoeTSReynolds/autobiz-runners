@@ -216,3 +216,17 @@ assert not reddit.has_overlay_text([box("@sand.tagious", 0.99)])
 assert not reddit.has_overlay_text([box("ab", 0.99), box("SO", 0.68), box("NICE", 0.5)])
 assert not reddit.has_overlay_text(None)
 print("overlay tests ok")
+
+# end card: a part that ends "Follow so you don't miss part two!" shows the follow card from "Follow" to the end, without word captions
+cliff = {"duration": 6.0, "scenes": [
+    {"id": "hook", "start": 0, "end": 1.0, "words": [{"w": "Hi", "s": 0.1, "e": 0.4}]},
+    {"id": "body", "start": 1.0, "end": 6.0, "words": [{"w": "Then", "s": 1.2, "e": 1.5}, {"w": "silence.", "s": 1.6, "e": 2.2},
+        {"w": "Follow", "s": 3.0, "e": 3.3}, {"w": "so", "s": 3.3, "e": 3.4}, {"w": "part", "s": 3.6, "e": 3.8}, {"w": "two!", "s": 3.8, "e": 4.2}]}]}
+assert reddit.follow_start(cliff) == 3.0
+assert reddit.follow_start(timing) is None  # a single or last part has no follow line
+ass = reddit.build_ass(cliff, "Hook line here", next_part=2, end=4.6)
+words = [l.rsplit(",", 1)[-1] for l in ass.splitlines() if l.startswith("Dialogue") and ",Word," in l]
+assert words[-1].endswith("silence.") and not any("Follow" in x for x in words), words
+cards = [l for l in ass.splitlines() if ",Card," in l]
+assert len(cards) == 2 and cards[1].split(",")[1:3] == ["0:00:03.00", "0:00:04.60"] and "Part 2 is up next!" in cards[1], cards
+print("follow card tests ok")

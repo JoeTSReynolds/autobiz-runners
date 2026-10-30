@@ -304,7 +304,13 @@ def wrap_hook(text):
     return lines, size
 
 
-def build_ass(timing, hook_text):
+def follow_start(timing):
+    # where the closing "Follow so you don't miss part two!" line starts (None when this part has none)
+    words = [w for sc in timing["scenes"] if sc["id"] != "hook" for w in sc["words"]][-12:]
+    return next((w["s"] for w in reversed(words) if w["w"].lower().strip("\"'“”").startswith("follow")), None)
+
+
+def build_ass(timing, hook_text, next_part=None, end=None):
     pop = r"{\an5\pos(540,960)\fscx70\fscy70\t(0,90,\fscx112\fscy112)\t(90,160,\fscx100\fscy100)}"
     head = ("[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\nWrapStyle: 2\nScaledBorderAndShadow: yes\n\n"
             "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
@@ -312,7 +318,7 @@ def build_ass(timing, hook_text):
             "Style: Word,Lilita One,120,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,8,3,5,40,40,40,1\n"
             "Style: Card,Lilita One,54,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,4,0,0,0,1\n\n"
             "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
-    lines = []
+    lines, follow = [], follow_start(timing) if next_part else None
     for sc in timing["scenes"]:
         if sc["id"] == "hook":
             lines.append(f"Dialogue: 1,{ts(0)},{ts(sc['end'])},Card,,0,0,0,,"
@@ -320,8 +326,13 @@ def build_ass(timing, hook_text):
             continue
         ws = sc["words"]
         for i, w in enumerate(ws):
-            end = ws[i + 1]["s"] if i + 1 < len(ws) else w["e"] + 0.3
-            lines.append(f"Dialogue: 0,{ts(w['s'])},{ts(end)},Word,,0,0,0,,{pop}{esc(w['w'])}")
+            if follow is not None and w["s"] >= follow:
+                break  # the follow card says it instead
+            stop = ws[i + 1]["s"] if i + 1 < len(ws) else w["e"] + 0.3
+            lines.append(f"Dialogue: 0,{ts(w['s'])},{ts(stop)},Word,,0,0,0,,{pop}{esc(w['w'])}")
+    if follow is not None:
+        lines.append(f"Dialogue: 1,{ts(follow)},{ts(end if end is not None else timing['duration'])},Card,,0,0,0,,"
+                     + "{\\an4\\pos(90,800)\\fs64\\fad(200,0)}" + f"Part {next_part} is up next!\\N{{\\fs48}}Follow so you don't miss it")
     return head + "\n".join(lines) + "\n"
 
 
@@ -454,14 +465,15 @@ def narrate(proj, hook, script, lane, level_voice, label):
     return timing, end, length_error(label, len((hook + " " + script).split()), end)
 
 
-def render_part(proj, hook, timing, end, lib, seed, out_file):
+def render_part(proj, hook, timing, end, lib, seed, out_file, next_part=None):
     chosen = pick_segments([p.name for p in lib.glob("seg_*.mp4")], math.ceil(end / 2.3), seed)
     (proj / "list.txt").write_text("".join(f"file '{lib / n}'\n" for n in chosen))
     code, out = sh("ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", proj / "list.txt", "-c", "copy", proj / "broll.mp4")
     if code:
         raise SystemExit(f"b-roll concat failed: {out[-500:]}")
     hook_end = next(s["end"] for s in timing["scenes"] if s["id"] == "hook")
-    (proj / "captions.ass").write_text(build_ass(timing, hook), encoding="utf-8")
+    (proj / "captions.ass").write_text(build_ass(timing, hook, next_part, end), encoding="utf-8")
+    follow = follow_start(timing) if next_part else None
     music = sorted((here / "lanes" / "reddit" / "music").glob("*.mp3"))
     fc = (f"[0:v]scale=1080:1920:flags=lanczos,setsar=1,fps=30[b];[1:v]format=rgba,fade=t=out:st={max(hook_end - 0.25, 0):.2f}:d=0.25:alpha=1[card];"
           f"[b][card]overlay=0:0:enable='lt(t,{hook_end:.2f})'[o];[o]subtitles=filename='{ffesc(proj / 'captions.ass')}':fontsdir='{ffesc(here / 'fonts')}'[v]")
@@ -472,6 +484,10 @@ def render_part(proj, hook, timing, end, lib, seed, out_file):
         audio = "[a]"
     else:
         audio = "2:a"
+    if follow is not None:  # the end card (same panel, a Subscribe pill) under the "Part N is up next!" text, from "Follow" to the end
+        n = inputs.count("-i")
+        inputs += ["-framerate", "30", "-loop", "1", "-t", f"{end + 1:.2f}", "-i", here / "lanes" / "reddit" / "card_follow.png"]
+        fc = fc.replace("[o];[o]subtitles", f"[o];[{n}:v]format=rgba,fade=t=in:st={follow:.2f}:d=0.2:alpha=1[fc];[o][fc]overlay=0:0:enable='gte(t,{follow:.2f})'[o2];[o2]subtitles")
     code, out = sh("ffmpeg", "-v", "error", "-y", *inputs, "-filter_complex", fc, "-map", "[v]", "-map", audio, "-t", f"{end:.2f}",
                    "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", out_file)
     if code:
@@ -501,7 +517,7 @@ def story(job, cfg, run, state, level_voice):
     out_parts, used_segs = [], 0
     for i, (proj, p, timing, end) in enumerate(voiced, 1):
         name = "short.mp4" if i == 1 else f"short{i}.mp4"
-        used_segs += render_part(proj, p["hook"], timing, end, lib, f"{st['id']}-{i}", run / name)
+        used_segs += render_part(proj, p["hook"], timing, end, lib, f"{st['id']}-{i}", run / name, i + 1 if i < len(voiced) else None)
         out_parts.append((name, p))
     sub = next(c["subreddit"] for c in cands if c["id"] == st["id"])
     q = st.get("question")

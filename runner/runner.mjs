@@ -47275,6 +47275,9 @@ function starterModules() {
       field("layout", "Story layout", "select", "box", ["box", "frame", "card"]),
       field("cardBackgrounds", "Card backgrounds (one picked per run)", "json", ["plain"]),
       field("headlineFont", "Headline font (empty: the caption font)", "string", ""),
+      field("storyHook", "Story opens with a hook", "boolean", true),
+      field("storySounds", "Story sound effects", "boolean", true),
+      field("captionItalic", "Italic captions", "boolean", true),
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
       field("outputKey", "Output key", "string", "short")
@@ -50052,7 +50055,7 @@ var SERIOUS_MAX_EFFECTS = 2;
 function fail(rest) {
   throw new ExecutionFailure(`video-edit job.story${rest}`);
 }
-function validatePlan(plan, knownSounds) {
+function validatePlan(plan, knownSounds, { hook = true } = {}) {
   if (!isObject4(plan)) fail(" must be an object.");
   const { tone, headline, clips: rawClips, effects: rawEffects, emojis: rawEmojis, corrections: rawCorrections } = plan;
   if (tone !== "light" && tone !== "serious") fail(".tone must be light or serious.");
@@ -50068,9 +50071,9 @@ function validatePlan(plan, knownSounds) {
   });
   const roles = clips.map((c) => c.role);
   const beats = roles.filter((role) => role === "beat").length;
-  const expected = ["hook", "intro", ...Array(beats).fill("beat"), "payoff"];
+  const expected = [...hook ? ["hook"] : [], "intro", ...Array(beats).fill("beat"), "payoff"];
   if (beats < 2 || beats > 4 || roles.join() !== expected.join()) {
-    fail(`.clips roles must be hook, intro, 2-4 beats, payoff in that order; got ${roles.join()}.`);
+    fail(`.clips roles must be ${hook ? "hook, " : ""}intro, 2-4 beats, payoff in that order; got ${roles.join()}.`);
   }
   if (rawEffects !== void 0 && rawEffects !== null && !Array.isArray(rawEffects)) fail(".effects must be a list.");
   if (tone === "serious") {
@@ -50347,7 +50350,7 @@ function wrap(words2, maxChars, maxRows = Infinity) {
   rows.push(row);
   return rows.map((words3) => words3.join(" "));
 }
-function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline, headlineDark, headlineFont = "", headlineY = HEADLINE.y }) {
+function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline, headlineDark, headlineFont = "", headlineY = HEADLINE.y, italic = true }) {
   const style = (name, size, dark = false, face = font, upright = dark) => `Style: ${name},${face},${size},${dark ? "&H00000000,&H00000000" : "&H00FFFFFF,&H00FFFFFF"},&H00000000,&H00000000,-1,${upright ? 0 : -1},0,0,100,100,0,0,1,${dark ? 0 : outline},0,5,60,60,0,1`;
   const event = (start, end, name, x, y, text3) => `Dialogue: 0,${stamp2(start)},${stamp2(end)},${name},,0,0,0,,{\\an5\\pos(${x},${y})}${text3}`;
   const title = clean(headline);
@@ -50361,7 +50364,7 @@ function storyTextAss(headline, captions2, { font, headlineSize, captionSize, ou
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     style("Head", headlineSize, headlineDark, headlineFont || font, headlineDark || headlineFont !== ""),
-    style("Cap", captionSize),
+    style("Cap", captionSize, false, font, !italic),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -50417,19 +50420,19 @@ var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.
 var r32 = (x) => Math.round(x * 1e3) / 1e3;
 var n3 = (x) => Number(x.toFixed(3));
 var n4 = (x) => Number(x.toFixed(4));
-function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "box", cardBackground = "plain") {
+function boxGraph({ frames, first, last, intro, effects, bigExit = first, silent }, cmdsFile, layout = "box", cardBackground = "plain") {
   const frame = layout === "frame";
   const card = layout === "card";
   const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : card ? [1, 14, CARD.size, CARD.size] : [K, SHAKE_PX, SIZE, SIZE];
   const length3 = frames / FPS;
   const dIn = 0.2;
-  const dOut = first ? 0.25 : 0.2;
+  const dOut = bigExit ? 0.25 : 0.2;
   const blurIn = 12 * k1;
-  const blurOut = (first ? 30 : 12) * k1;
+  const blurOut = (bigExit ? 30 : 12) * k1;
   const zooms = [
     ...effects.filter((e) => e.visual === "zoom").map((e) => `0.18*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.35),2)`),
     ...first ? [] : [`0.25*max(0,1-time/${dIn})`],
-    ...last ? [] : [`${first ? 0.5 : 0.25}*max(0,(time-${n4(length3 - dOut)}+${n4(1 / FPS)})/${dOut})`]
+    ...last ? [] : [`${bigExit ? 0.5 : 0.25}*max(0,(time-${n4(length3 - dOut)}+${n4(1 / FPS)})/${dOut})`]
   ];
   const shakes = effects.filter((e) => e.visual === "shake").map((e) => `between(time,${e.t0},${n4(e.t0 + 0.3)})`);
   const shake = shakes.length ? `(${shakes.join("+")})` : "0";
@@ -50458,10 +50461,11 @@ function boxGraph({ frames, first, last, intro, effects }, cmdsFile, layout = "b
     chain.push(`eq=brightness='0.5*${amount}':contrast='1-${amount}':saturation='1-${amount}':eval=frame`);
   }
   const video = frame || card && cardBackground === "blur" ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=${frame ? "(W-w)/2:(H-h)/2" : `0:${CARD.y}`},format=yuv420p[v]` : card && cardBackground === "plain" ? `[0:v]fps=${FPS},${[...chain, `pad=1080:1920:0:${CARD.y}:color=${CARD.color}`, "format=yuv420p"].join(",")}[v]` : `[0:v]${card ? `fps=${FPS},` : ""}${[...chain, "format=yuv420p"].join(",")}[v]`;
+  const sounds = silent ? [] : effects;
   const audio = [
     `[0:a]${STEREO}[a0]`,
-    ...effects.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=0.8[s${k}]`),
-    effects.length ? `[a0]${effects.map((_, k) => `[s${k}]`).join("")}amix=inputs=${effects.length + 1}:duration=first:normalize=0,alimiter=limit=0.95[aout]` : "[a0]anull[aout]"
+    ...sounds.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=0.8[s${k}]`),
+    sounds.length ? `[a0]${sounds.map((_, k) => `[s${k}]`).join("")}amix=inputs=${sounds.length + 1}:duration=first:normalize=0,alimiter=limit=0.95[aout]` : "[a0]anull[aout]"
   ];
   return { graph: `${video};${audio.join(";")}`, cmds: cmds.length ? cmds.join("\n") + "\n" : "" };
 }
@@ -50576,8 +50580,9 @@ function matchSources(clips, sources) {
 }
 function soundPlan(story, seconds3) {
   const busy = [];
+  const hook = story.clips[0]?.role === "hook";
   const transitions = story.clips.slice(1).map(({ storyStart: cut }, i) => {
-    if (i === 0) {
+    if (i === 0 && hook) {
       const at3 = r32(cut - seconds3("reverse-whoosh"));
       busy.push([Math.max(0, at3), cut]);
       return { sound: "reverse-whoosh", at: Math.max(0, at3), skip: Math.max(0, -at3), volume: VOLUME };
@@ -50629,7 +50634,7 @@ function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "pl
   const sound = [
     `[0:a]asetpts=PTS-STARTPTS,${STEREO}[a0]`,
     ...audio.map(({ at: at2, skip, volume }, j) => `[${first + j}:a]${STEREO},${skip > 0 ? `atrim=start=${skip.toFixed(3)},asetpts=PTS-STARTPTS,` : ""}adelay=${Math.round(at2 * 1e3)}:all=1,volume=${volume}[s${j}]`),
-    `[a0]${audio.map((_, j) => `[s${j}]`).join("")}amix=inputs=${audio.length + 1}:duration=first:normalize=0,alimiter=limit=0.9[aout]`
+    audio.length ? `[a0]${audio.map((_, j) => `[s${j}]`).join("")}amix=inputs=${audio.length + 1}:duration=first:normalize=0,alimiter=limit=0.9[aout]` : "[a0]anull[aout]"
   ];
   return [
     ...RUN,
@@ -50670,7 +50675,7 @@ function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "pl
 }
 function particleEvents(story) {
   return [
-    ...story.clips.slice(1).map((clip, i) => ({ t: clip.storyStart, kind: i === 0 ? "big" : "cut" })),
+    ...story.clips.slice(1).map((clip, i) => ({ t: clip.storyStart, kind: i === 0 && story.clips[0].role === "hook" ? "big" : "cut" })),
     ...story.effects.map((effect) => ({ t: effect.storyTime, kind: effect.visual })),
     ...story.emojis.map((emoji) => ({ t: emoji.storyTime, kind: "emoji", x: STICKER.x, y: STICKER.y }))
   ].sort((a, b) => a.t - b.t);
@@ -50752,7 +50757,7 @@ async function checkStory(input, settings, tools) {
   const library = readLibrary(await tools.readText("state", manifest), manifest);
   const { agentErrors, ...job } = input;
   try {
-    validatePlan(input.story, [...library.keys()]);
+    validatePlan(input.story, [...library.keys()], { hook: settings.storyHook });
   } catch (error) {
     if (!(error instanceof ExecutionFailure)) throw error;
     return { output: { ...job, agentErrors: [...Array.isArray(agentErrors) ? agentErrors : [], error.message] }, port: "invalid" };
@@ -50775,7 +50780,7 @@ async function renderStory(input, settings, tools) {
   const raw = await tools.readText("run", wordsFile);
   if (raw === void 0) throw new ExecutionFailure(`Words file ${wordsFile} was not found in the run folder.`);
   const { lines, words: words2, sentences, laughs } = readWords(raw, wordsFile);
-  const plan = validatePlan(input.story, [...library.keys()]);
+  const plan = validatePlan(input.story, [...library.keys()], { hook: settings.storyHook });
   const story = normalizeStory(plan, words2, sentences, laughs);
   const files = matchSources(story.clips, sources);
   const card = settings.layout === "card";
@@ -50803,7 +50808,7 @@ async function renderStory(input, settings, tools) {
   const boxes = [];
   for (const [i, clip] of timed.clips.entries()) {
     const effects = timed.effects.filter((e) => e.clip === i).map((e) => ({ t0: n4(e.storyTime - clip.storyStart), sound: e.sound, visual: e.visual }));
-    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, last: i === timed.clips.length - 1, intro: i === 1, effects };
+    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds };
     const cmdsFile = `story-box${i}.cmds`;
     const out = `story-box${i}.mp4`;
     await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout, cardBackground).cmds);
@@ -50811,7 +50816,7 @@ async function renderStory(input, settings, tools) {
       file: files[i].file,
       seek: r32(clip.start - files[i].offset),
       piece,
-      soundFiles: effects.map((e) => `${sfx}/${library.get(e.sound).file}`),
+      soundFiles: !settings.storySounds ? [] : effects.map((e) => `${sfx}/${library.get(e.sound).file}`),
       cmdsFile,
       out,
       crf: settings.crf,
@@ -50841,12 +50846,12 @@ async function renderStory(input, settings, tools) {
   const emojis = settleEmojis(timed.emojis.filter((m) => available.get(m.name)), timed.total);
   const done = { ...timed, emojis };
   if (settings.layout === "box") await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
-  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline, headlineDark: card && cardBackground === "plain", headlineFont: settings.headlineFont, ...card ? { headlineY: 280 } : {} };
+  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline, italic: settings.captionItalic, headlineDark: card && cardBackground === "plain", headlineFont: settings.headlineFont, ...card ? { headlineY: 280 } : {} };
   const applied = /* @__PURE__ */ new Map();
   await tools.writeText("run", FILES.text, storyTextAss(plan.headline, storyCaptions(done, lines, plan.corrections, applied), text3));
-  const { transitions, pops } = soundPlan(done, (sound) => library.get(sound).seconds);
+  const { transitions, pops } = settings.storySounds ? soundPlan(done, (sound) => library.get(sound).seconds) : { transitions: [], pops: [] };
   const audio = [...transitions, ...pops.filter((pop) => pop !== null)].map((a) => ({ ...a, file: `${sfx}/${library.get(a.sound).file}` }));
-  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" ? "" : `${tools.stateDir}/fonts`));
+  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" && settings.captionFont === "Roboto" ? "" : `${tools.stateDir}/fonts`));
   const short = {
     file: FILES.output,
     duration: done.total,
@@ -50854,7 +50859,7 @@ async function renderStory(input, settings, tools) {
     effects: done.effects.map((e) => ({ at: e.storyTime, sound: e.sound, visual: e.visual })),
     emojis: done.emojis.map((m, i) => ({ at: m.storyTime, until: m.until, name: m.name, glyph: m.glyph, funny: m.funny, word: m.word, sound: pops[i]?.sound ?? null })),
     emojisDropped: [...available].filter(([, found]) => !found).map(([name]) => name),
-    sounds: [...audio, ...done.effects.map((e) => ({ sound: e.sound, at: e.storyTime }))].map(({ at: at2, sound }) => ({ at: at2, sound })).sort((a, b) => a.at - b.at),
+    sounds: [...audio, ...settings.storySounds ? done.effects.map((e) => ({ sound: e.sound, at: e.storyTime })) : []].map(({ at: at2, sound }) => ({ at: at2, sound })).sort((a, b) => a.at - b.at),
     ...applied.size > 0 ? { corrections: [...applied].map(([{ heard, meant }, words3]) => ({ heard, meant, words: words3 })) } : {},
     issues: done.issues,
     ...card ? { background: picked } : {}
@@ -50891,6 +50896,9 @@ var DEFAULTS3 = {
   layout: "box",
   cardBackgrounds: ["plain"],
   headlineFont: "",
+  storyHook: true,
+  storySounds: true,
+  captionItalic: true,
   emojiDir: "emoji",
   storySeed: "",
   outputKey: "short"
@@ -50932,6 +50940,9 @@ var RULES = {
   layout: [(value) => value === "box" || value === "frame" || value === "card", "'box', 'frame' or 'card'"],
   cardBackgrounds: [(value) => Array.isArray(value) && value.length > 0 && value.every(folderName), "a non-empty list of 'plain', 'blur' or texture names (plain file names without the .jpg)"],
   headlineFont: [(value) => typeof value === "string" && /^[^,\r\n]*$/.test(value), "a font name without commas or line breaks, or empty"],
+  storyHook: [flag, "true or false"],
+  storySounds: [flag, "true or false"],
+  captionItalic: [flag, "true or false"],
   emojiDir: [folderName, "a plain folder name"],
   storySeed: [str, "a string"],
   outputKey: [(value) => typeof value === "string" && value !== "", "a non-empty string"]
