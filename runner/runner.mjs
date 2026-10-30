@@ -49421,6 +49421,7 @@ var captions = async (job, config, tools, outputKey) => {
     if (error instanceof ExecutionCancelled) throw error;
     if (!isBlock(error)) return missing();
     const refused = `YouTube refused the captions request (bot check or rate limit): ${error.message.slice(-300)}`;
+    if ((sourceDuration ?? 0) > downloadTimeoutMs / 1e3 * 2) return missing();
     try {
       await transcribe();
     } catch (fallback) {
