@@ -47277,6 +47277,7 @@ function starterModules() {
       field("headlineFont", "Headline font (empty: the caption font)", "string", ""),
       field("storyHook", "Story opens with a hook", "boolean", true),
       field("storySounds", "Story sound effects", "boolean", true),
+      field("storyTransitions", "Zoom and blur at story cuts (off: hard cuts)", "boolean", true),
       field("captionItalic", "Italic captions", "boolean", true),
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
@@ -50420,10 +50421,11 @@ var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.
 var r32 = (x) => Math.round(x * 1e3) / 1e3;
 var n3 = (x) => Number(x.toFixed(3));
 var n4 = (x) => Number(x.toFixed(4));
-function boxGraph({ frames, first, last, intro, effects, bigExit = first, silent }, cmdsFile, layout = "box", cardBackground = "plain") {
+function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = noIn, silent, cut }, cmdsFile, layout = "box", cardBackground = "plain") {
   const frame = layout === "frame";
   const card = layout === "card";
   const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : card ? [1, 14, CARD.size, CARD.size] : [K, SHAKE_PX, SIZE, SIZE];
+  const [first, last] = [noIn || !!cut, noOut || !!cut];
   const length3 = frames / FPS;
   const dIn = 0.2;
   const dOut = bigExit ? 0.25 : 0.2;
@@ -50808,7 +50810,7 @@ async function renderStory(input, settings, tools) {
   const boxes = [];
   for (const [i, clip] of timed.clips.entries()) {
     const effects = timed.effects.filter((e) => e.clip === i).map((e) => ({ t0: n4(e.storyTime - clip.storyStart), sound: e.sound, visual: e.visual }));
-    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds };
+    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds, cut: !settings.storyTransitions };
     const cmdsFile = `story-box${i}.cmds`;
     const out = `story-box${i}.mp4`;
     await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout, cardBackground).cmds);
@@ -50898,6 +50900,7 @@ var DEFAULTS3 = {
   headlineFont: "",
   storyHook: true,
   storySounds: true,
+  storyTransitions: true,
   captionItalic: true,
   emojiDir: "emoji",
   storySeed: "",
@@ -50942,6 +50945,7 @@ var RULES = {
   headlineFont: [(value) => typeof value === "string" && /^[^,\r\n]*$/.test(value), "a font name without commas or line breaks, or empty"],
   storyHook: [flag, "true or false"],
   storySounds: [flag, "true or false"],
+  storyTransitions: [flag, "true or false"],
   captionItalic: [flag, "true or false"],
   emojiDir: [folderName, "a plain folder name"],
   storySeed: [str, "a string"],

@@ -88,7 +88,8 @@
             "storySounds": false,
             "captionFont": "Lilita One",
             "captionItalic": false,
-            "captionOutline": 6
+            "captionOutline": 6,
+            "storyTransitions": false
           }
         },
         {
@@ -630,7 +631,7 @@
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-31T06:06:21.396Z"
+    "updatedAt": "2026-10-31T15:21:29.103Z"
   },
   "modules": [
     {
@@ -1555,6 +1556,12 @@
           "default": true
         },
         {
+          "key": "storyTransitions",
+          "label": "Zoom and blur at story cuts (off: hard cuts)",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "captionItalic",
           "label": "Italic captions",
           "type": "boolean",
@@ -1611,6 +1618,7 @@
         "headlineFont": "",
         "storyHook": true,
         "storySounds": true,
+        "storyTransitions": true,
         "captionItalic": true,
         "emojiDir": "emoji",
         "storySeed": "",
