@@ -198,18 +198,7 @@
           },
           "config": {
             "options": [
-              "archive",
-              "archive",
-              "archive",
-              "archive",
-              "archive",
-              "archive",
-              "main",
-              "main",
-              "main",
-              "main",
-              "calendar",
-              "remake"
+              "archive"
             ],
             "outputKey": "route"
           }
@@ -641,7 +630,7 @@
       ]
     },
     "createdAt": "2026-10-08T23:55:40.973Z",
-    "updatedAt": "2026-10-30T21:06:47.756Z"
+    "updatedAt": "2026-10-31T06:06:21.396Z"
   },
   "modules": [
     {
