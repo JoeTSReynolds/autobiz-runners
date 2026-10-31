@@ -237,3 +237,26 @@ assert words[-1].endswith("silence.") and not any("Follow" in x for x in words),
 cards = [l for l in ass.splitlines() if ",Card," in l]
 assert len(cards) == 2 and cards[1].split(",")[1:3] == ["0:00:03.00", "0:00:04.60"] and "Part 2 is up next!" in cards[1], cards
 print("follow card tests ok")
+
+# b-roll top-up: a 3-part story needs ~90 shots, so a run may fetch about need/2 videos (not a fixed 12);
+# a run of failed downloads stops early and names yt-dlp's error
+with tempfile.TemporaryDirectory() as d:
+    d = Path(d)
+    calls = []
+    reddit.source_ids = lambda state, sources: [f"vid{i:08d}" for i in range(100)]
+    reddit.ytdlp = lambda *a: (calls.append(a), (1, "ERROR: [youtube] abc: Sign in to confirm you're not a bot"))[1]
+    try:
+        reddit.top_up(d / "lib", 91, d, d, ["@x/shorts"])
+        raise AssertionError("expected SystemExit")
+    except SystemExit as e:
+        assert "Sign in to confirm" in str(e), e
+    assert len(calls) == 5, len(calls)
+    calls.clear()
+    reddit.ytdlp = lambda *a: (calls.append(a), (0, ""))[1]
+    reddit.cut_source = lambda src, lib, tag: 0  # every video downloads but yields no usable shot
+    try:
+        reddit.top_up(d / "lib", 91, d, d, ["@x/shorts"])
+    except SystemExit:
+        pass
+    assert len(calls) == 45, len(calls)
+print("top-up tests ok")

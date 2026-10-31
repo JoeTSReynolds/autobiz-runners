@@ -439,10 +439,14 @@ def top_up(lib, need, state, run, sources):
     done = set(archive.read_text().split()) if archive.exists() else set()
     pool = [i for i in source_ids(state, sources) if i not in done]
     random.shuffle(pool)
-    for vid in pool[:12]:
-        if len(list(lib.glob("seg_*.mp4"))) >= need:
+    error, fails = "", 0
+    for vid in pool[:max(12, need // 2)]:  # a video gives at most 4 shots, about 2 after the text filter
+        if len(list(lib.glob("seg_*.mp4"))) >= need or fails >= 5:  # 5 failures in a row: blocked, don't burn more sources
             break
         code, out = ytdlp("-f", "bv*[height<=1280][height>=640]/bv*", "--no-playlist", "-o", str(run / f"src_{vid}.%(ext)s"), f"https://www.youtube.com/shorts/{vid}")
+        fails = fails + 1 if code else 0
+        if code:
+            error = (out.strip().splitlines() or [""])[-1][:300]
         with archive.open("a") as f:
             f.write(vid + "\n")
         for src in run.glob(f"src_{vid}.*"):
@@ -451,7 +455,7 @@ def top_up(lib, need, state, run, sources):
             src.unlink()
     have = len(list(lib.glob("seg_*.mp4")))
     if have < need and have < 0.6 * need:
-        raise SystemExit(f"b-roll library has {have} segments, need {need}; downloads failed or sources are used up (check YTDLP_COOKIES_FILE)")
+        raise SystemExit(f"b-roll library has {have} segments, need {need}; downloads failed or sources are used up (check YTDLP_COOKIES_FILE)" + (f"; last yt-dlp error: {error}" if error else ""))
 
 
 # ---------- story: render ----------
