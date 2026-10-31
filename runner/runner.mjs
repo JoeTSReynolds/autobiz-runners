@@ -47277,7 +47277,7 @@ function starterModules() {
       field("headlineFont", "Headline font (empty: the caption font)", "string", ""),
       field("storyHook", "Story opens with a hook", "boolean", true),
       field("storySounds", "Story sound effects", "boolean", true),
-      field("storyTransitions", "Zoom and blur at story cuts (off: hard cuts)", "boolean", true),
+      field("storyTransitions", "Zoom and blur at story cuts and zoom effects (off: hard cuts, no zoom)", "boolean", true),
       field("captionItalic", "Italic captions", "boolean", true),
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
@@ -50432,7 +50432,7 @@ function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = 
   const blurIn = 12 * k1;
   const blurOut = (bigExit ? 30 : 12) * k1;
   const zooms = [
-    ...effects.filter((e) => e.visual === "zoom").map((e) => `0.18*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.35),2)`),
+    ...effects.filter((e) => e.visual === "zoom" && !cut).map((e) => `0.18*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.35),2)`),
     ...first ? [] : [`0.25*max(0,1-time/${dIn})`],
     ...last ? [] : [`${bigExit ? 0.5 : 0.25}*max(0,(time-${n4(length3 - dOut)}+${n4(1 / FPS)})/${dOut})`]
   ];
