@@ -49,19 +49,15 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/apt
-          key: tools-apt-83908f313725-${{ steps.apt-week.outputs.week }}-${{ runner.os }}-${{ runner.arch }}
+          key: tools-apt-66e9477b43dd-${{ steps.apt-week.outputs.week }}-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/pipx
-          key: tools-pipx-yt-dlp-2026.08.19-bgutil-2.0.2-whisper-0.5.8-${{ runner.os }}-${{ runner.arch }}
+          key: tools-pipx-yt-dlp-2026.08.19-bgutil-2.0.2-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
         with:
           path: runner/node_modules
           key: tools-runner-node24-${{ hashFiles('runner/package.json') }}-${{ runner.os }}-${{ runner.arch }}
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: tools-playwright-${{ hashFiles('runner/package.json') }}-${{ runner.os }}
       - name: Install tools
         timeout-minutes: 10
         run: |
@@ -70,7 +66,7 @@ jobs:
           a="$HOME/.cache/autobiz/apt"
           mkdir -p "$a/archives/partial" "$a/lists/partial"
           APT="-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180 -o Dir::Cache::Archives=$a/archives -o Dir::State::Lists=$a/lists"
-          PKGS='fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp espeak-ng libgl1 xvfb fonts-noto-color-emoji fonts-unifont libfontconfig1 libfreetype6 xfonts-cyrillic xfonts-scalable fonts-liberation fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf fonts-freefont-ttf libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libcairo2 libcups2t64 libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 libnspr4 libnss3 libpango-1.0-0 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2'
+          PKGS='fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp espeak-ng libgl1 fonts-noto-color-emoji fonts-unifont xfonts-cyrillic xfonts-scalable fonts-liberation fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf fonts-freefont-ttf'
           # A cache hit installs from the cached lists and packages without the mirror; a miss or a stale cache updates first.
           if ! sudo apt-get $APT install -y -qq --no-download $PKGS > /dev/null 2>&1; then
             sudo apt-get $APT update -qq
@@ -81,21 +77,13 @@ jobs:
           if [ ! -x "$PIPX_BIN_DIR/yt-dlp" ]; then
             pipx install "yt-dlp[default]==2026.08.19"
             pipx inject yt-dlp "bgutil-ytdlp-pot-provider==2.0.2"
-            pipx install "whisper-ctranslate2==0.5.8"
           fi
           echo "$PIPX_BIN_DIR" >> "$GITHUB_PATH"
           if [ ! -d runner/node_modules ]; then npm install --prefix runner --no-audit --no-fund; fi
-          npx --prefix runner playwright install chromium
       - uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
           key: shorts-kokoro-82m-v1
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/hyperframes
-            ~/.npm/_npx
-          key: shorts-hyperframes-0.8.174-${{ runner.os }}
       - uses: actions/cache@v4
         with:
           path: .venv-shorts
@@ -107,7 +95,6 @@ jobs:
             .venv-shorts/bin/pip install --quiet torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
             .venv-shorts/bin/pip install --quiet kokoro==0.9.4 misaki==0.9.4 numpy==2.5.3 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl rapidocr-onnxruntime==1.4.4 onnxruntime==1.31.1
           fi
-          npx --yes hyperframes@0.8.174 browser ensure
       - name: Start Cloudflare WARP for yt-dlp
         run: bash runner/warp.sh start
       - name: Start the PO token provider for yt-dlp

@@ -80,7 +80,7 @@
             "channelHandle": "@EpicRedditStories101",
             "privacy": "public",
             "setCover": false,
-            "containsSyntheticMedia": true,
+            "containsSyntheticMedia": false,
             "titleHashtags": false
           }
         },
@@ -150,7 +150,7 @@
             "channelHandle": "@EpicRedditStories101",
             "privacy": "public",
             "setCover": false,
-            "containsSyntheticMedia": true,
+            "containsSyntheticMedia": false,
             "titleHashtags": false
           }
         },
@@ -177,7 +177,7 @@
             "channelHandle": "@EpicRedditStories101",
             "privacy": "public",
             "setCover": false,
-            "containsSyntheticMedia": true,
+            "containsSyntheticMedia": false,
             "titleHashtags": false
           }
         },
@@ -323,7 +323,7 @@
       ]
     },
     "createdAt": "2026-10-30T20:12:15.130Z",
-    "updatedAt": "2026-10-30T20:47:37.471Z"
+    "updatedAt": "2026-11-04T20:36:22.403Z"
   },
   "modules": [
     {
@@ -1248,6 +1248,12 @@
           "default": true
         },
         {
+          "key": "storyTransitions",
+          "label": "Zoom and blur at story cuts (off: hard cuts)",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "captionItalic",
           "label": "Italic captions",
           "type": "boolean",
@@ -1304,6 +1310,7 @@
         "headlineFont": "",
         "storyHook": true,
         "storySounds": true,
+        "storyTransitions": true,
         "captionItalic": true,
         "emojiDir": "emoji",
         "storySeed": "",

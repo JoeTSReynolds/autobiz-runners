@@ -78,7 +78,7 @@
             "channelHandle": "@JTSRTech",
             "privacy": "public",
             "setCover": false,
-            "containsSyntheticMedia": true
+            "containsSyntheticMedia": false
           }
         },
         {
@@ -135,7 +135,7 @@
       "operators": []
     },
     "createdAt": "2026-10-20T11:01:03.409Z",
-    "updatedAt": "2026-10-30T20:17:02.457Z"
+    "updatedAt": "2026-11-04T20:36:21.565Z"
   },
   "modules": [
     {
@@ -1034,6 +1034,44 @@
           ]
         },
         {
+          "key": "cardBackgrounds",
+          "label": "Card backgrounds (one picked per run)",
+          "type": "json",
+          "default": [
+            "plain"
+          ]
+        },
+        {
+          "key": "headlineFont",
+          "label": "Headline font (empty: the caption font)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "storyHook",
+          "label": "Story opens with a hook",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "storySounds",
+          "label": "Story sound effects",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "storyTransitions",
+          "label": "Zoom and blur at story cuts (off: hard cuts)",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "captionItalic",
+          "label": "Italic captions",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "emojiDir",
           "label": "Emoji cache folder",
           "type": "string",
@@ -1078,6 +1116,14 @@
         "renderTimeoutMs": 600000,
         "background": "brick",
         "layout": "box",
+        "cardBackgrounds": [
+          "plain"
+        ],
+        "headlineFont": "",
+        "storyHook": true,
+        "storySounds": true,
+        "storyTransitions": true,
+        "captionItalic": true,
         "emojiDir": "emoji",
         "storySeed": "",
         "outputKey": "short"
@@ -1262,6 +1308,12 @@
           "default": true
         },
         {
+          "key": "publishAfterHours",
+          "label": "Publish after hours (0-720, 0 = now)",
+          "type": "number",
+          "default": 0
+        },
+        {
           "key": "outputKey",
           "label": "Output key",
           "type": "string",
@@ -1277,6 +1329,7 @@
         "setCover": true,
         "maxHashtags": 10,
         "titleHashtags": true,
+        "publishAfterHours": 0,
         "outputKey": "youtube"
       },
       "outputs": [
@@ -1357,6 +1410,7 @@
             "feeds",
             "posts",
             "story",
+            "nextpart",
             "sources",
             "facts",
             "images",
