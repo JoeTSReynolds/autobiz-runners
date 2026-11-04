@@ -215,11 +215,39 @@ with tempfile.TemporaryDirectory() as d:
     assert json.loads((st / "used.json").read_text()) == ["up1", "org9"]
 print("reddit tests ok")
 
-# b-roll overlay text: a shot with burned-in captions or banners is dropped; small @handle watermarks are allowed
+# b-roll overlay text: a shot with burned-in captions, banners or a creator's @handle watermark is dropped
 box = lambda text, conf: [[[0, 0], [1, 0], [1, 1], [0, 1]], text, conf]
 assert reddit.has_overlay_text([box("Ranking Best", 1.0), box("AI ASMR", 0.94)])
 assert reddit.has_overlay_text([box("NEWVIDEOONCHANNEL", 1.0)])
-assert not reddit.has_overlay_text([box("@sand.tagious", 0.99)])
+assert reddit.has_overlay_text([box("@sand.tagious", 0.99)])
+
+# the library cut before this rule is rechecked once: clips with text go, every clip is recorded as checked
+with tempfile.TemporaryDirectory() as d:
+    lib = Path(d)
+    for n in ("seg_a_00.mp4", "seg_a_01.mp4", "seg_b_00.mp4"):
+        (lib / n).write_bytes(b"x")
+    (lib / "checked-v2.txt").write_text("seg_b_00.mp4\n")
+    seen, real = [], reddit.segment_has_text
+    reddit.segment_has_text = lambda seg: seen.append(seg.name) or seg.name == "seg_a_01.mp4"
+    try:
+        reddit.recheck_library(lib)
+        reddit.recheck_library(lib)  # a second pass checks nothing new
+    finally:
+        reddit.segment_has_text = real
+    assert seen == ["seg_a_00.mp4", "seg_a_01.mp4"], seen
+    assert sorted(p.name for p in lib.glob("seg_*.mp4")) == ["seg_a_00.mp4", "seg_b_00.mp4"]
+    assert set((lib / "checked-v2.txt").read_text().split()) == {"seg_a_00.mp4", "seg_a_01.mp4", "seg_b_00.mp4"}
+
+# without OCR nothing is recorded as checked, so the next run with OCR still checks the clips
+with tempfile.TemporaryDirectory() as d:
+    lib = Path(d)
+    (lib / "seg_c_00.mp4").write_bytes(b"x")
+    real, reddit._ocr[:] = reddit._ocr[:], [None]
+    try:
+        reddit.recheck_library(lib)
+    finally:
+        reddit._ocr[:] = real
+    assert (lib / "seg_c_00.mp4").exists() and not (lib / "checked-v2.txt").exists()
 assert not reddit.has_overlay_text([box("ab", 0.99), box("SO", 0.68), box("NICE", 0.5)])
 assert not reddit.has_overlay_text(None)
 print("overlay tests ok")

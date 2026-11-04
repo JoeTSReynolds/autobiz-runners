@@ -385,8 +385,8 @@ def source_ids(state, sources):
 
 
 def has_overlay_text(boxes):
-    # RapidOCR boxes: [points, text, confidence]; a source's @handle watermark is small and allowed
-    return any(conf >= 0.8 and sum(c.isalpha() for c in text) >= 3 and not text.strip().startswith("@") for _, text, conf in boxes or [])
+    # RapidOCR boxes: [points, text, confidence]; captions, banners and a creator's @handle watermark all drop the shot
+    return any(conf >= 0.8 and sum(c.isalpha() for c in text) >= 3 for _, text, conf in boxes or [])
 
 
 _ocr = []
@@ -429,12 +429,35 @@ def cut_source(src, lib, tag):
         if not code and segment_has_text(seg):
             seg.unlink()
             code = 1
+        elif not code:
+            with (lib / CHECKED).open("a") as f:
+                f.write(seg.name + "\n")
         made += 0 if code else 1
     return made
 
 
+CHECKED = "checked-v2.txt"  # clips checked under the current text rule; a new rule takes a new name
+
+
+def recheck_library(lib):
+    """Drops library clips cut under an older rule (or before OCR) that now show text; each clip is checked once."""
+    log = lib / CHECKED
+    done = set(log.read_text().split()) if log.exists() else set()
+    for seg in sorted(lib.glob("seg_*.mp4")):
+        if seg.name in done:
+            continue
+        found = segment_has_text(seg)
+        if _ocr and _ocr[0] is None:  # no OCR here: record nothing, so a run that has it still checks
+            return
+        if found:
+            seg.unlink()
+        with log.open("a") as f:
+            f.write(seg.name + "\n")
+
+
 def top_up(lib, need, state, run, sources):
     lib.mkdir(parents=True, exist_ok=True)
+    recheck_library(lib)
     archive = state / "broll-archive.txt"
     done = set(archive.read_text().split()) if archive.exists() else set()
     pool = [i for i in source_ids(state, sources) if i not in done]
