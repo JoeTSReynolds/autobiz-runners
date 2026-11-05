@@ -1,7 +1,7 @@
 # The Reddit stories lane, called from stage.py (modes posts, story, and record for lane reddit).
 # posts: fetch top posts per subreddit (RSS, archive fallback). story: validate the agent's retelling, voice it,
 # cut sped-up b-roll, build the one-word captions + hook card and render short.mp4. No PIL here: the card is a prebuilt png.
-import collections, html, json, math, os, random, re, subprocess, sys, time, urllib.request
+import collections, html, json, math, os, random, re, subprocess, sys, time, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
@@ -455,6 +455,57 @@ def recheck_library(lib):
             f.write(seg.name + "\n")
 
 
+def get_json(url, headers):
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA, **headers}), timeout=30) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def fetch_file(url, dest):
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=120) as r, open(dest, "wb") as f:
+        while chunk := r.read(1 << 20):
+            f.write(chunk)
+
+
+PEXELS_QUERIES = ["slime", "kinetic sand", "paint mixing", "soap cutting", "satisfying"]
+
+
+def pexels_fill(lib, need, state, run, queries=PEXELS_QUERIES):
+    """Tops the library up with licensed Pexels clips (free to use, no attribution, no watermarks). Each clip is used once."""
+    key = os.environ.get("PEXELS_API_KEY")
+    if not key:
+        return
+    archive = state / "broll-archive.txt"
+    done = set(archive.read_text().split()) if archive.exists() else set()
+    have = lambda: len(list(lib.glob("seg_*.mp4")))
+    for q in queries:
+        for page in (1, 2):  # bounded: two pages a query
+            if have() >= need:
+                return
+            try:
+                found = get_json(f"https://api.pexels.com/videos/search?query={urllib.parse.quote(q)}&orientation=portrait&size=medium&per_page=15&page={page}", {"Authorization": key})
+            except Exception as e:
+                print(f"pexels search {q!r} failed: {e}", file=sys.stderr)
+                break
+            for v in found.get("videos", []):
+                tag = f"px{v['id']:09d}"  # 11 characters, like a YouTube id (source_of reads seg_<11>_nn)
+                files = [f for f in v.get("video_files", []) if f.get("file_type") == "video/mp4" and (f.get("height") or 0) >= 1280]
+                if tag in done or not files:
+                    continue
+                src = run / f"src_{tag}.mp4"
+                try:
+                    fetch_file(min(files, key=lambda f: f["height"])["link"], src)  # smallest that is at least 720x1280
+                    with archive.open("a") as f:
+                        f.write(tag + "\n")
+                    done.add(tag)
+                    cut_source(src, lib, tag)
+                except Exception as e:
+                    print(f"pexels clip {tag} failed: {e}", file=sys.stderr)
+                finally:
+                    src.unlink(missing_ok=True)
+                if have() >= need:
+                    return
+
+
 def top_up(lib, need, state, run, sources):
     lib.mkdir(parents=True, exist_ok=True)
     recheck_library(lib)
@@ -462,10 +513,16 @@ def top_up(lib, need, state, run, sources):
     done = set(archive.read_text().split()) if archive.exists() else set()
     pool = [i for i in source_ids(state, sources) if i not in done]
     random.shuffle(pool)
-    error, fails = "", 0
+    error, fails, resets = "", 0, 0
+    reset = os.environ.get("AUTOBIZ_NETWORK_RESET_COMMAND")
     for vid in pool[:max(12, need // 2)]:  # a video gives at most 4 shots, about 2 after the text filter
-        if len(list(lib.glob("seg_*.mp4"))) >= need or fails >= 5:  # 5 failures in a row: blocked, don't burn more sources
+        if len(list(lib.glob("seg_*.mp4"))) >= need:
             break
+        if fails >= 5:  # 5 failures in a row: this address is blocked; take a new one (twice at most), else stop burning sources
+            if not reset or resets >= 2:
+                break
+            sh("bash", "-c", reset, timeout=120)
+            resets, fails = resets + 1, 0
         code, out = ytdlp("-f", "bv*[height<=1280][height>=640]/bv*", "--no-playlist", "-o", str(run / f"src_{vid}.%(ext)s"), f"https://www.youtube.com/shorts/{vid}")
         fails = fails + 1 if code else 0
         if code:
@@ -476,6 +533,8 @@ def top_up(lib, need, state, run, sources):
             if not code:
                 cut_source(src, lib, vid)
             src.unlink()
+    if len(list(lib.glob("seg_*.mp4"))) < need:
+        pexels_fill(lib, need, state, run)
     have = len(list(lib.glob("seg_*.mp4")))
     if have < need and have < 0.6 * need:
         raise SystemExit(f"b-roll library has {have} segments, need {need}; downloads failed or sources are used up (check YTDLP_COOKIES_FILE)" + (f"; last yt-dlp error: {error}" if error else ""))

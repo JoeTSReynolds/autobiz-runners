@@ -52238,7 +52238,7 @@ var toolNames = ["yt-dlp", "ffmpeg", "ffprobe", "whisper-ctranslate2", "python3"
 var HYPERFRAMES_VERSION = "0.8.174";
 var hyperframesCommands = ["check", "lint", "render", "snapshot"];
 var toolEnvKeys = {
-  python3: ["PEXELS_API_KEY", "PIXABAY_API_KEY", "ELEVEN_LABS_API_KEY", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "NEWSROOM_SITE_CLOUDFLARE_PROJECT"]
+  python3: ["PEXELS_API_KEY", "PIXABAY_API_KEY", "ELEVEN_LABS_API_KEY", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "NEWSROOM_SITE_CLOUDFLARE_PROJECT", "YTDLP_COOKIES_FILE", "AUTOBIZ_NETWORK_RESET_COMMAND"]
 };
 var defaultTimeoutMs2 = 6e5;
 var resetTimeoutMs = 12e4;

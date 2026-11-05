@@ -1,5 +1,5 @@
 # Offline tests for reddit.py (the Reddit stories lane). No network, no ffmpeg. Run: python3 test_reddit.py
-import json, sys, tempfile
+import json, os, sys, tempfile
 from html import escape
 from pathlib import Path
 
@@ -287,4 +287,50 @@ with tempfile.TemporaryDirectory() as d:
     except SystemExit:
         pass
     assert len(calls) == 45, len(calls)
+# a blocked address gets a new one: after 5 failures in a row the network reset command runs (at most twice), then it stops
+with tempfile.TemporaryDirectory() as d:
+    d = Path(d); calls, resets = [], []
+    os.environ["AUTOBIZ_NETWORK_RESET_COMMAND"] = "true"
+    real_sh = reddit.sh
+    reddit.sh = lambda *cmd, timeout=1500: (resets.append(cmd), (0, ""))[1] if cmd[:2] == ("bash", "-c") else real_sh(*cmd, timeout=timeout)
+    reddit.ytdlp = lambda *a: (calls.append(a), (1, "ERROR: [youtube] abc: Sign in to confirm you're not a bot"))[1]
+    real_fill, reddit.pexels_fill = reddit.pexels_fill, lambda *a, **k: None
+    try:
+        reddit.top_up(d / "lib", 91, d, d, ["@x/shorts"])
+    except SystemExit:
+        pass
+    finally:
+        reddit.sh, reddit.pexels_fill = real_sh, real_fill
+        del os.environ["AUTOBIZ_NETWORK_RESET_COMMAND"]
+    assert len(resets) == 2 and resets[0] == ("bash", "-c", "true"), resets
+    assert len(calls) == 15, len(calls)
+
+# when YouTube can't fill the library, licensed Pexels clips top it up (no watermarks, no bot checks); each clip is used once
+real_get_json, real_fetch = reddit.get_json, reddit.fetch_file
+with tempfile.TemporaryDirectory() as d:
+    d = Path(d); lib = d / "lib"; lib.mkdir(); asked = []
+    os.environ["PEXELS_API_KEY"] = "k"
+    page = lambda q: {"videos": [{"id": 1000 + i, "video_files": [{"width": 720, "height": 1280, "file_type": "video/mp4", "link": f"https://p/{q}/{i}.mp4"},
+                                                                {"width": 1080, "height": 1920, "file_type": "video/mp4", "link": f"https://p/{q}/{i}-hd.mp4"}]} for i in range(3)]}
+    reddit.get_json = lambda url, headers: (asked.append((url, headers)), page(url))[1]
+    reddit.fetch_file = lambda url, dest: dest.write_bytes(url.encode())
+    def cut(src, lib_, tag):
+        assert src.read_bytes().endswith(b"/0.mp4") or src.read_bytes().endswith(b".mp4"), src.read_bytes()
+        assert len(tag) == 11 and tag.startswith("px"), tag
+        for k in range(2): (lib_ / f"seg_{tag}_{k:02d}.mp4").write_bytes(b"x")
+        return 2
+    reddit.cut_source = cut
+    (d / "broll-archive.txt").write_text("px000001000\n")   # already used
+    try:
+        reddit.pexels_fill(lib, 4, d, d, ["slime", "paint mixing"])
+    finally:
+        del os.environ["PEXELS_API_KEY"]
+    names = sorted(p.name for p in lib.glob("seg_*.mp4"))
+    assert names == ["seg_px000001001_00.mp4", "seg_px000001001_01.mp4", "seg_px000001002_00.mp4", "seg_px000001002_01.mp4"], names
+    assert asked[0][1] == {"Authorization": "k"} and "orientation=portrait" in asked[0][0] and "query=slime" in asked[0][0], asked[0]
+    assert "px000001001" in (d / "broll-archive.txt").read_text()
+    assert not list(d.glob("src_*")), "downloads are deleted after cutting"
+    # no key: nothing is asked
+    asked.clear(); reddit.pexels_fill(lib, 99, d, d, ["slime"]); assert asked == []
+reddit.get_json, reddit.fetch_file = real_get_json, real_fetch
 print("top-up tests ok")
