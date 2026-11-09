@@ -1,7 +1,8 @@
 # One step of the Shorts pipeline, called by the autobiz `shorts` block (one mode per call).
 #   python3 stage.py <mode> --run <run-dir> --state <state-dir> --job job.json --config config.json --out result.json
 # Reads the job (JSON), writes {"port": "next"|"invalid"|"missing", "output": {keys to add to the job}, "log": "..."}.
-# Modes: feeds, sources, facts, images, brief, render, record; posts, story and nextpart for the reddit lane (reddit.py). Every judgement happens in agent blocks
+# Modes: feeds, sources, facts, images, brief, render, record; posts, story and nextpart for the reddit lane (reddit.py);
+# refresh, people, route, mediaplan, verify, music, probe, assets, cut, gate for the trending lane (trending/, record delegates there). Every judgement happens in agent blocks
 # between these steps; this file only fetches, checks, assembles and renders.
 import argparse, json, os, re, shutil, subprocess, sys, time, urllib.request
 
@@ -258,6 +259,8 @@ def nextpart(job, cfg, run, state):
 def record(job, cfg, run, state):
     if job.get("lane") == "reddit":
         return reddit.record(job, cfg, run, state)
+    if job.get("lane") == "trending":
+        return trending("stages_end", "record")(job, cfg, run, state)
     state.mkdir(parents=True, exist_ok=True)
     cand = next((c for c in job.get("candidates", []) if c["id"] == (job.get("pick") or {}).get("id")), {})
     covered, hooks = jread(state / "covered.json", []), jread(state / "hooks.json", [])
@@ -311,7 +314,17 @@ def site(job, cfg, run, state):
     return "next", {"siteUrl": f"{SITE}/videos/{slug}/"}, f"site deployed with {len(videos)} videos"
 
 
+def trending(module, name):
+    # imported on first call: the trending stages need numpy and OpenCV, which the other lanes' runners do not install
+    def call(job, cfg, run, state):
+        import importlib
+        return getattr(importlib.import_module(f"trending.{module}"), name)(job, cfg, run, state)
+    return call
+
+
 MODES = {f.__name__: f for f in (feeds, posts, story, nextpart, sources, facts, images, brief, render, record, site)}
+for _module, _names in (("stages", "refresh people route mediaplan"), ("stages_mid", "verify brollpick music probe assets"), ("stages_end", "cut gate")):
+    MODES.update({n: trending(_module, n) for n in _names.split()})
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()

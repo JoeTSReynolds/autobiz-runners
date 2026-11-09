@@ -1,0 +1,8 @@
+{"type": "object", "required": ["source", "lines", "dropLine", "slams", "popups", "broll", "tail"], "properties": {
+  "source": {"type": "string"},
+  "lines": {"type": "array", "minItems": 6, "maxItems": 12, "items": {"type": "string"}},
+  "dropLine": {"type": "integer"},
+  "slams": {"type": "array", "minItems": 2, "maxItems": 3, "items": {"type": "string"}},
+  "popups": {"type": "array", "minItems": 2, "maxItems": 3, "items": {"type": "object", "required": ["text", "line"], "properties": {"text": {"type": "string"}, "line": {"type": "integer"}}}},
+  "broll": {"type": "array", "minItems": 6, "maxItems": 12, "items": {"type": "object", "required": ["query", "line"], "properties": {"query": {"type": "string"}, "line": {"type": "integer"}}}},
+  "tail": {"type": "array", "minItems": 6, "maxItems": 10, "items": {"type": "string"}}}}

@@ -47181,8 +47181,10 @@ function starterModules() {
       field("fileKeys", "File keys", "json", []),
       field("outputKey", "Output key", "string", ""),
       field("webSearch", "Web search", "boolean", false),
-      field("includeDate", "Include today's date", "boolean", false)
-    ], { prompt: "", format: "text", requiredKeys: [], inputKeys: [], imageKeys: [], fileKeys: [], outputKey: "", webSearch: false, includeDate: false }, [
+      field("includeDate", "Include today's date", "boolean", false),
+      field("model", "Model (blank = server default)", "string", ""),
+      field("onlyWhen", "Run only when (key=value or key!=value)", "string", "")
+    ], { prompt: "", format: "text", requiredKeys: [], inputKeys: [], imageKeys: [], fileKeys: [], outputKey: "", webSearch: false, includeDate: false, model: "", onlyWhen: "" }, [
       { id: "next", label: "Next" },
       { id: "invalid", label: "Invalid" }
     ]),
@@ -47212,7 +47214,7 @@ function starterModules() {
       field("listSize", "Candidates in a list", "number", 25),
       field("maxAgeDays", "Maximum upload age (days, 0 = any)", "number", 0),
       field("sort", "List order", "select", "views", ["views", "velocity"]),
-      field("languages", "Caption languages", "json", ["en", "en-orig", "en-US", "en-GB"]),
+      field("languages", "Caption languages", "json", ["en-orig", "en", "en-US", "en-GB"]),
       field("captionsTimeoutMs", "Captions time limit (ms)", "number", 12e4),
       field("hotspots", "Find hotspots", "boolean", false),
       field("commentsToScan", "Top comments to scan", "number", 300),
@@ -47315,12 +47317,13 @@ function starterModules() {
       field("outputKey", "Output key", "string", "instagram")
     ], ["next"]),
     seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, records what was published, and publishes its sources page.", [
-      field("mode", "Mode", "select", "feeds", ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site"]),
+      field("mode", "Mode", "select", "feeds", ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site", "refresh", "people", "route", "mediaplan", "verify", "brollpick", "music", "probe", "assets", "cut", "gate"]),
       field("lane", "Lane (empty keeps job.lane)", "string", ""),
       field("hours", "Feed window (hours)", "number", 72),
       field("minFacts", "Fewest checked facts", "number", 5),
       field("voice", "Voice", "select", "kokoro", ["kokoro", "elevenlabs"]),
       field("elevenModel", "ElevenLabs model", "string", "eleven_v4_turbo"),
+      field("elevenVoice", "ElevenLabs voice id (empty = engine default)", "string", ""),
       field("render", "Render the video", "boolean", true),
       field("timeoutMs", "Time limit (ms)", "number", 18e5)
     ], ["next", "invalid", "missing"])
@@ -47534,7 +47537,7 @@ function createConfiguredAgent(env = process.env) {
     if (wantsWebSearch(config)) throw new Error("Web search needs the Claude CLI provider (AGENT_CLI=claude).");
     const text3 = agentText(prompt, input, config);
     const content = images?.length ? [{ type: "text", text: text3 }, ...await Promise.all(images.map(imagePart))] : text3;
-    const requestBody = JSON.stringify({ model, messages: [{ role: "user", content }] });
+    const requestBody = JSON.stringify({ model: modelFor(config, model), messages: [{ role: "user", content }] });
     if (Buffer.byteLength(requestBody) > requestLimitBytes) throw new Error("Agent provider request exceeds the 1 MiB payload limit.");
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
@@ -47568,6 +47571,10 @@ function createConfiguredAgent(env = process.env) {
     }
   };
 }
+var modelFor = (config, fallback) => {
+  const m = config?.model;
+  return typeof m === "string" && m ? m : fallback;
+};
 var wantsWebSearch = (config) => config?.webSearch === true;
 var webSearchMaxTurns = 12;
 var settingsText = (config) => `Configuration: ${JSON.stringify(isRecord(config) ? Object.fromEntries(Object.entries(config).filter(([key]) => key !== "prompt")) : config)}`;
@@ -47599,10 +47606,10 @@ async function imagePart(path) {
 var claudeSystemPrompt = "You are one step of an automated content pipeline. Follow the instructions exactly and reply with only the requested output.";
 var claudeEnvKeys = ["PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"];
 function createClaudeCliAgent(model, timeoutMs, env) {
-  const args = (webSearch) => [
+  const args = (webSearch, callModel) => [
     "-p",
     "--model",
-    model,
+    callModel,
     "--input-format",
     "stream-json",
     "--output-format",
@@ -47632,7 +47639,7 @@ Input: ${JSON.stringify(stable)}` }, ...imageBlocks];
 ` : ""}${settingsText(config)}`;
     const message2 = JSON.stringify({ type: "user", message: { role: "user", content: [...cached, { type: "text", text: tail }] } });
     if (Buffer.byteLength(message2) > requestLimitBytes) throw new Error("Agent provider request exceeds the 1 MiB payload limit.");
-    const { stdout, stderr, code } = await runClaude(args(wantsWebSearch(config)), childEnv, `${message2}
+    const { stdout, stderr, code } = await runClaude(args(wantsWebSearch(config), modelFor(config, model)), childEnv, `${message2}
 `, timeoutMs);
     const result = stdout.split("\n").flatMap((line2) => {
       try {
@@ -48847,6 +48854,7 @@ function execute3({ input, config }) {
 // modules/agent/index.ts
 var isObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var fileName = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+var modelId = /^[A-Za-z0-9][A-Za-z0-9.-]*$/;
 var maxImages = 8;
 var maxFiles = 8;
 function keyList(config, name) {
@@ -48928,7 +48936,14 @@ async function execute4({ input, config, module }, { agent, tools }) {
   const outputKey = config.outputKey === void 0 ? "" : config.outputKey;
   if (typeof outputKey !== "string") throw new ExecutionFailure("Agent setting outputKey must be a string.");
   if (config.webSearch !== void 0 && typeof config.webSearch !== "boolean") throw new ExecutionFailure("Agent setting webSearch must be true or false.");
+  if (config.model !== void 0 && (typeof config.model !== "string" || !(config.model === "" || modelId.test(config.model)))) {
+    throw new ExecutionFailure('Agent setting model must be empty or a model id of letters, digits, "." and "-", starting with a letter or digit.');
+  }
   if (config.includeDate !== void 0 && typeof config.includeDate !== "boolean") throw new ExecutionFailure("Agent setting includeDate must be true or false.");
+  const onlyWhen = config.onlyWhen === void 0 ? "" : config.onlyWhen;
+  const condition = typeof onlyWhen === "string" ? /^(\w+)(!?)=(.*)$/s.exec(onlyWhen) : null;
+  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('Agent setting onlyWhen must be empty, "key=value" or "key!=value" with a key of letters, digits and _.');
+  if (condition && isObject(input) && String(input[condition[1]]) === condition[3] === (condition[2] === "!")) return { output: input, port: "next" };
   const value = cloneJson(input);
   if ((inputKeys.length > 0 || imageKeys.length > 0 || fileKeys.length > 0 || outputKey) && !isObject(value)) {
     throw new ExecutionFailure("Agent input must be an object when inputKeys, imageKeys, fileKeys or outputKey is set.");
@@ -49049,7 +49064,8 @@ var DEFAULTS2 = {
   maxAgeDays: 0,
   sort: "views",
   // captions
-  languages: ["en", "en-orig", "en-US", "en-GB"],
+  languages: ["en-orig", "en", "en-US", "en-GB"],
+  // YouTube's own track first: it times every word; uploaded captions time whole lines
   captionsTimeoutMs: 12e4,
   hotspots: false,
   commentsToScan: 300,
@@ -49125,14 +49141,14 @@ function rejectedSources(job) {
   if (!Array.isArray(value) || value.some((id) => typeof id !== "string")) throw new ExecutionFailure("media-fetch job.rejectedSources must be a list of source ids.");
   return value;
 }
-function sourceOf(job) {
-  const { source } = job;
-  if (!isObject3(source)) throw new ExecutionFailure("media-fetch job.source must be an object.");
+function parseSource(source, name) {
+  if (!isObject3(source)) throw new ExecutionFailure(`media-fetch ${name} must be an object.`);
   const { duration } = source;
-  if (typeof source.id !== "string" || source.id === "") throw new ExecutionFailure("media-fetch job.source.id must be a non-empty string.");
-  if (duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration))) throw new ExecutionFailure("media-fetch job.source.duration must be a number.");
-  return { id: source.id, url: positional(source.url, "job.source.url"), duration };
+  if (typeof source.id !== "string" || source.id === "") throw new ExecutionFailure(`media-fetch ${name}.id must be a non-empty string.`);
+  if (duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration))) throw new ExecutionFailure(`media-fetch ${name}.duration must be a number.`);
+  return { id: source.id, url: positional(source.url, `${name}.url`), duration };
 }
+var sourceOf = (job) => parseSource(job.source, "job.source");
 var BLOCKED = /confirm you.re not a bot|HTTP Error 429/i;
 var isBlock = (error) => error instanceof Error && !(error instanceof ExecutionCancelled) && !(error instanceof ExecutionLimitFailure) && BLOCKED.test(error.message);
 var timedOut = (error) => error instanceof ExecutionLimitFailure && /^yt-dlp exceeded its \d+ ms time limit/.test(error.message);
@@ -49551,59 +49567,72 @@ var section = async (job, config, tools, outputKey) => {
   const length3 = await probe(tools, CLIP_FILE, timeoutMs);
   return { output: { ...job, [outputKey]: { file: CLIP_FILE, offset: from, duration: length3 } }, port: "next" };
 };
-var ROLES = ["hook", "intro", "beat", "payoff"];
+var ROLES = ["hook", "intro", "beat", "moment", "payoff"];
 var sections = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
   const maxHeight = count(config, "maxHeight", true);
   const timeoutMs = count(config, "downloadTimeoutMs", true);
   const [hookLead, clipLead, clipTail, payoffTail] = ["hookLead", "clipLead", "clipTail", "payoffTail"].map((key) => count(config, key));
-  const { id, url, duration } = sourceOf(job);
   const clips = isObject3(job.story) && Array.isArray(job.story.clips) ? job.story.clips : [];
   if (clips.length === 0) throw new ExecutionFailure("media-fetch job.story.clips must be a non-empty list of { role, start, end }.");
+  const own = clips.map((clip, i) => isObject3(clip) && clip.source !== void 0 ? parseSource(clip.source, `job.story.clips[${i}].source`) : void 0);
+  const base = own.includes(void 0) ? sourceOf(job) : void 0;
   const wanted = clips.map((clip, i) => {
     const { role, start, end } = isObject3(clip) ? clip : {};
-    if (typeof role !== "string" || !ROLES.includes(role) || typeof start !== "number" || typeof end !== "number" || !(start >= 0 && start < end && Number.isFinite(end)) || duration !== void 0 && end > duration) {
+    const source = own[i] ?? base;
+    if (typeof role !== "string" || !ROLES.includes(role) || typeof start !== "number" || typeof end !== "number" || !(start >= 0 && start < end && Number.isFinite(end)) || source.duration !== void 0 && end > source.duration) {
       throw new ExecutionFailure(`media-fetch job.story.clips[${i}] needs a role (${ROLES.join(", ")}) and numeric 0 <= start < end, ending inside the source (got ${JSON.stringify(clip)}).`);
     }
     const tail = end + (role === "payoff" ? payoffTail : clipTail);
-    return { role, from: round(Math.max(0, start - (role === "hook" ? hookLead : clipLead))), to: round(duration === void 0 ? tail : Math.min(duration, tail)) };
+    return { role, source, from: round(Math.max(0, start - (role === "hook" ? hookLead : clipLead))), to: round(source.duration === void 0 ? tail : Math.min(source.duration, tail)) };
   });
-  const downloads = /* @__PURE__ */ new Map();
-  for (const { from, to } of wanted) downloads.set(from, Math.max(downloads.get(from) ?? 0, to));
-  const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "clip-%(section_start).3f.%(ext)s", "--no-warnings", "--", url];
-  const throttled = () => ({ output: { ...job, rejectedSources: [...rejectedSources(job), sourceOf(job).id] }, port: "missing" });
-  const archive = isArchive(url);
-  if (archive) {
-    for (const [from, to] of downloads) {
-      await ffmpegTwice(tools, ["-v", "error", "-y", "-ss", String(from), "-i", url, "-t", String(round(to - from)), "-map", "0:v:0", "-map", "0:a:0", "-vf", `scale=-2:'min(${maxHeight},ih)'`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-movflags", "+faststart", `clip-${from.toFixed(3)}.mp4`], timeoutMs);
+  const groups = /* @__PURE__ */ new Map();
+  for (const { source, from, to } of wanted) {
+    const group = groups.get(source.id) ?? { source, prefix: "", downloads: /* @__PURE__ */ new Map() };
+    groups.set(source.id, group);
+    group.downloads.set(from, Math.max(group.downloads.get(from) ?? 0, to));
+  }
+  const plain = groups.size === 1 && groups.has(base?.id ?? "");
+  for (const group of groups.values()) group.prefix = plain ? "clip-" : `clip-${group.source.id}-`;
+  const fileOf = (id, from) => `${groups.get(id).prefix}${from.toFixed(3)}.mp4`;
+  for (const { source: { id, url }, prefix, downloads } of groups.values()) {
+    const throttled = () => ({ output: { ...job, rejectedSources: [...rejectedSources(job), id] }, port: "missing" });
+    if (isArchive(url)) {
+      for (const [from, to] of downloads) {
+        await ffmpegTwice(tools, ["-v", "error", "-y", "-ss", String(from), "-i", url, "-t", String(round(to - from)), "-map", "0:v:0", "-map", "0:a:0", "-vf", `scale=-2:'min(${maxHeight},ih)'`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-movflags", "+faststart", `${prefix}${from.toFixed(3)}.mp4`], timeoutMs);
+      }
+      continue;
     }
-  } else try {
-    await yt2(args, timeoutMs);
-  } catch (error) {
-    if (timedOut(error)) return throttled();
-    if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure || isBlock(error)) throw error;
+    const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", `${prefix}%(section_start).3f.%(ext)s`, "--no-warnings", "--", url];
     try {
       await yt2(args, timeoutMs);
-    } catch (retry) {
-      if (timedOut(retry)) return throttled();
-      throw retry;
+    } catch (error) {
+      if (timedOut(error)) return throttled();
+      if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure || isBlock(error)) throw error;
+      try {
+        await yt2(args, timeoutMs);
+      } catch (retry) {
+        if (timedOut(retry)) return throttled();
+        throw retry;
+      }
     }
   }
   const lengths = /* @__PURE__ */ new Map();
   const found = [];
-  for (const [i, { role, from }] of wanted.entries()) {
-    const file = `clip-${from.toFixed(3)}.mp4`;
+  for (const [i, { role, source, from }] of wanted.entries()) {
+    const file = fileOf(source.id, from);
     try {
-      if (!lengths.has(from)) lengths.set(from, await probe(tools, file, timeoutMs));
+      if (!lengths.has(file)) lengths.set(file, await probe(tools, file, timeoutMs));
     } catch (error) {
       throw error instanceof ExecutionFailure ? new ExecutionFailure(`media-fetch job.story.clips[${i}] (${role}): ${error.message.replace(/^media-fetch /, "")}`) : error;
     }
-    found.push({ role, file, offset: from, duration: lengths.get(from) });
+    found.push({ role, file, offset: from, duration: lengths.get(file), sourceId: source.id });
   }
-  if (archive) {
+  const archived = [...groups.values()].filter(({ source }) => isArchive(source.url));
+  if (archived.length > 0) {
     const seen = await tools.readText("state", "archive.txt") ?? "";
-    await tools.writeText("state", "archive.txt", `${seen}${seen && !seen.endsWith("\n") ? "\n" : ""}archive ${id}
-`);
+    await tools.writeText("state", "archive.txt", `${seen}${seen && !seen.endsWith("\n") ? "\n" : ""}${archived.map(({ source }) => `archive ${source.id}
+`).join("")}`);
   }
   return { output: { ...job, [outputKey]: found }, port: "next" };
 };
@@ -51704,10 +51733,11 @@ var DEFAULTS7 = {
   minFacts: 5,
   voice: "kokoro",
   elevenModel: "eleven_v4_turbo",
+  elevenVoice: "",
   render: true,
   timeoutMs: 18e5
 };
-var MODES = ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site"];
+var MODES = ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site", "refresh", "people", "route", "mediaplan", "verify", "brollpick", "music", "probe", "assets", "cut", "gate"];
 var VOICES = ["kokoro", "elevenlabs"];
 var PORTS = ["next", "invalid", "missing"];
 var LOG_TAIL = 1e3;
@@ -51716,16 +51746,17 @@ var isObject10 = (value) => typeof value === "object" && value !== null && !Arra
 var whole = (value, min, max) => typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 function readSettings5(config) {
   const merged = { ...DEFAULTS7, ...config };
-  const { mode, lane, hours, minFacts, voice, elevenModel, render: render2, timeoutMs } = merged;
+  const { mode, lane, hours, minFacts, voice, elevenModel, elevenVoice, render: render2, timeoutMs } = merged;
   if (typeof mode !== "string" || !MODES.includes(mode)) throw new ExecutionFailure(`Shorts setting mode must be one of ${MODES.join(", ")}.`);
   if (typeof lane !== "string") throw new ExecutionFailure("Shorts setting lane must be text (empty keeps job.lane).");
   if (!whole(hours, 1, 240)) throw new ExecutionFailure("Shorts setting hours must be a whole number from 1 to 240.");
   if (!whole(minFacts, 1, 20)) throw new ExecutionFailure("Shorts setting minFacts must be a whole number from 1 to 20.");
   if (typeof voice !== "string" || !VOICES.includes(voice)) throw new ExecutionFailure(`Shorts setting voice must be one of ${VOICES.join(", ")}.`);
   if (typeof elevenModel !== "string" || elevenModel.trim() === "") throw new ExecutionFailure("Shorts setting elevenModel must be a non-empty string.");
+  if (typeof elevenVoice !== "string") throw new ExecutionFailure("Shorts setting elevenVoice must be text (empty keeps the engine default).");
   if (typeof render2 !== "boolean") throw new ExecutionFailure("Shorts setting render must be true or false.");
   if (!whole(timeoutMs, 1, 36e5)) throw new ExecutionFailure("Shorts setting timeoutMs must be a whole number of milliseconds up to 3600000.");
-  return { mode, lane, timeoutMs, engine: { hours, minFacts, voice, elevenModel, render: render2 } };
+  return { mode, lane, timeoutMs, engine: { hours, minFacts, voice, elevenModel, elevenVoice, render: render2 } };
 }
 function readResult(text3) {
   let parsed;

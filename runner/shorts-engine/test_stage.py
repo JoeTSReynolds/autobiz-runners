@@ -35,4 +35,12 @@ assert "posts" in stage.MODES and "story" in stage.MODES and "nextpart" in stage
 with tempfile.TemporaryDirectory() as d:
     assert stage.record({"lane": "reddit", "story": {"id": "r1"}}, {}, Path(d), Path(d) / "state")[0] == "next"
     assert json.loads((Path(d) / "state" / "used.json").read_text()) == ["r1"]
+# The trending modes are wired in (imported on first use) and record dispatches on lane trending.
+for m in "refresh people route mediaplan verify brollpick music probe assets cut gate".split():
+    assert m in stage.MODES, m
+with tempfile.TemporaryDirectory() as d:
+    job = {"lane": "trending", "person": {"qid": "Q1", "name": "A"}, "plan": {"format": "tribute"}}
+    assert stage.record(job, {}, Path(d), Path(d) / "state")[0] == "next"
+    assert json.loads((Path(d) / "state" / "trending-covered.json").read_text())[0]["qid"] == "Q1"
+    assert not (Path(d) / "state" / "covered.json").exists()
 print("stage tests ok")

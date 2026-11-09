@@ -1,0 +1,357 @@
+{
+ "entities": {
+  "Q1": {
+   "id": "Q1",
+   "labels": {
+    "en": {
+     "value": "Alice Smith"
+    }
+   },
+   "descriptions": {
+    "en": {
+     "value": "British actress"
+    }
+   },
+   "sitelinks": {
+    "enwiki": {
+     "title": "Alice Smith"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q5"
+        }
+       }
+      }
+     }
+    ],
+    "P569": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "time": "+1980-03-02T00:00:00Z"
+        }
+       }
+      }
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "Alice_Smith.jpg"
+       }
+      }
+     }
+    ],
+    "P106": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q33999"
+        }
+       }
+      }
+     }
+    ]
+   }
+  },
+  "Q2": {
+   "id": "Q2",
+   "labels": {
+    "en": {
+     "value": "Bob Dead"
+    }
+   },
+   "descriptions": {
+    "en": {
+     "value": "British singer"
+    }
+   },
+   "sitelinks": {
+    "enwiki": {
+     "title": "Bob Dead"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q5"
+        }
+       }
+      }
+     }
+    ],
+    "P569": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "time": "+1950-01-05T00:00:00Z"
+        }
+       }
+      }
+     }
+    ],
+    "P570": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "time": "+2026-10-28T00:00:00Z"
+        }
+       }
+      }
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "Bob_Dead.jpg"
+       }
+      }
+     }
+    ],
+    "P106": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q177220"
+        }
+       }
+      }
+     }
+    ]
+   }
+  },
+  "Q3": {
+   "id": "Q3",
+   "labels": {
+    "en": {
+     "value": "Carl Thing"
+    }
+   },
+   "descriptions": {
+    "en": {
+     "value": "a village"
+    }
+   },
+   "sitelinks": {
+    "enwiki": {
+     "title": "Carl Thing"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q486972"
+        }
+       }
+      }
+     }
+    ]
+   }
+  },
+  "Q4": {
+   "id": "Q4",
+   "labels": {
+    "en": {
+     "value": "Dan Covered"
+    }
+   },
+   "descriptions": {
+    "en": {
+     "value": "footballer"
+    }
+   },
+   "sitelinks": {
+    "enwiki": {
+     "title": "Dan Covered"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q5"
+        }
+       }
+      }
+     }
+    ],
+    "P569": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "time": "+1990-01-01T00:00:00Z"
+        }
+       }
+      }
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "Dan_Covered.jpg"
+       }
+      }
+     }
+    ],
+    "P106": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q33999"
+        }
+       }
+      }
+     }
+    ]
+   }
+  },
+  "Q5": {
+   "id": "Q5",
+   "labels": {
+    "en": {
+     "value": "Eve Rejected"
+    }
+   },
+   "descriptions": {
+    "en": {
+     "value": "chef"
+    }
+   },
+   "sitelinks": {
+    "enwiki": {
+     "title": "Eve Rejected"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q5"
+        }
+       }
+      }
+     }
+    ],
+    "P569": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "time": "+1985-05-05T00:00:00Z"
+        }
+       }
+      }
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "Eve_Rejected.jpg"
+       }
+      }
+     }
+    ],
+    "P106": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q33999"
+        }
+       }
+      }
+     }
+    ]
+   }
+  },
+  "Q6": {
+   "id": "Q6",
+   "labels": {
+    "en": {
+     "value": "Flat Fred"
+    }
+   },
+   "descriptions": {
+    "en": {
+     "value": "comedian"
+    }
+   },
+   "sitelinks": {
+    "enwiki": {
+     "title": "Flat Fred"
+    }
+   },
+   "claims": {
+    "P31": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q5"
+        }
+       }
+      }
+     }
+    ],
+    "P569": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "time": "+1970-07-07T00:00:00Z"
+        }
+       }
+      }
+     }
+    ],
+    "P18": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": "Flat_Fred.jpg"
+       }
+      }
+     }
+    ],
+    "P106": [
+     {
+      "mainsnak": {
+       "datavalue": {
+        "value": {
+         "id": "Q33999"
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "success": 1
+}

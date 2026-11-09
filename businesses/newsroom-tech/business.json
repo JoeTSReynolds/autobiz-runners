@@ -307,6 +307,18 @@
           "label": "Include today's date",
           "type": "boolean",
           "default": false
+        },
+        {
+          "key": "model",
+          "label": "Model (blank = server default)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "onlyWhen",
+          "label": "Run only when (key=value or key!=value)",
+          "type": "string",
+          "default": ""
         }
       ],
       "defaults": {
@@ -318,7 +330,9 @@
         "fileKeys": [],
         "outputKey": "",
         "webSearch": false,
-        "includeDate": false
+        "includeDate": false,
+        "model": "",
+        "onlyWhen": ""
       },
       "outputs": [
         {
@@ -574,8 +588,8 @@
           "label": "Caption languages",
           "type": "json",
           "default": [
-            "en",
             "en-orig",
+            "en",
             "en-US",
             "en-GB"
           ]
@@ -811,8 +825,8 @@
         "maxAgeDays": 0,
         "sort": "views",
         "languages": [
-          "en",
           "en-orig",
+          "en",
           "en-US",
           "en-GB"
         ],
@@ -1061,7 +1075,7 @@
         },
         {
           "key": "storyTransitions",
-          "label": "Zoom and blur at story cuts (off: hard cuts)",
+          "label": "Zoom and blur at story cuts and zoom effects (off: hard cuts, no zoom)",
           "type": "boolean",
           "default": true
         },
@@ -1417,7 +1431,18 @@
             "brief",
             "render",
             "record",
-            "site"
+            "site",
+            "refresh",
+            "people",
+            "route",
+            "mediaplan",
+            "verify",
+            "brollpick",
+            "music",
+            "probe",
+            "assets",
+            "cut",
+            "gate"
           ]
         },
         {
@@ -1455,6 +1480,12 @@
           "default": "eleven_v4_turbo"
         },
         {
+          "key": "elevenVoice",
+          "label": "ElevenLabs voice id (empty = engine default)",
+          "type": "string",
+          "default": ""
+        },
+        {
           "key": "render",
           "label": "Render the video",
           "type": "boolean",
@@ -1474,6 +1505,7 @@
         "minFacts": 5,
         "voice": "kokoro",
         "elevenModel": "eleven_v4_turbo",
+        "elevenVoice": "",
         "render": true,
         "timeoutMs": 1800000
       },

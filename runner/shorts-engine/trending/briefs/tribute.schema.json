@@ -1,0 +1,5 @@
+{"type": "object", "required": ["name", "spine", "moments", "closingLine"], "properties": {
+  "name": {"type": "string"},
+  "spine": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object", "required": ["source", "quote"], "properties": {"source": {"type": "string"}, "quote": {"type": "string"}}}},
+  "moments": {"type": "array", "minItems": 4, "maxItems": 8, "items": {"type": "object", "required": ["source", "start", "end"], "properties": {"source": {"type": "string"}, "start": {"type": "number"}, "end": {"type": "number"}, "why": {"type": "string"}}}},
+  "closingLine": {"type": "string"}}}

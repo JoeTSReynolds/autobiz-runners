@@ -1,0 +1,4 @@
+{"type": "object", "required": ["title", "theme", "moments", "closer"], "properties": {
+  "title": {"type": "string"}, "theme": {"type": "string"},
+  "moments": {"type": "array", "minItems": 6, "maxItems": 8, "items": {"type": "object", "required": ["source", "fromQuote", "toQuote", "label"], "properties": {"source": {"type": "string"}, "fromQuote": {"type": "string"}, "toQuote": {"type": "string"}, "label": {"type": "string"}}}},
+  "closer": {"type": "object", "required": ["headline", "line1", "line2"], "properties": {"headline": {"type": "string"}, "line1": {"type": "string"}, "line2": {"type": "string"}}}}}

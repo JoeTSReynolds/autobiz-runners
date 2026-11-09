@@ -1,0 +1,36 @@
+{
+ "id": "vid1",
+ "upload_date": "20260101",
+ "heatmap": [
+  {
+   "start_time": 0,
+   "end_time": 10,
+   "value": 0.2
+  },
+  {
+   "start_time": 300,
+   "end_time": 310,
+   "value": 1.0
+  },
+  {
+   "start_time": 600,
+   "end_time": 610,
+   "value": 0.5
+  }
+ ],
+ "subtitles": {},
+ "automatic_captions": {
+  "en": [
+   {
+    "ext": "json3",
+    "url": "https://y/t?lang=en"
+   }
+  ],
+  "fr-en": [
+   {
+    "ext": "json3",
+    "url": "https://y/t?lang=fr&tlang=en"
+   }
+  ]
+ }
+}

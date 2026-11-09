@@ -250,6 +250,18 @@
           "label": "Include today's date",
           "type": "boolean",
           "default": false
+        },
+        {
+          "key": "model",
+          "label": "Model (blank = server default)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "onlyWhen",
+          "label": "Run only when (key=value or key!=value)",
+          "type": "string",
+          "default": ""
         }
       ],
       "defaults": {
@@ -261,7 +273,9 @@
         "fileKeys": [],
         "outputKey": "",
         "webSearch": false,
-        "includeDate": false
+        "includeDate": false,
+        "model": "",
+        "onlyWhen": ""
       },
       "outputs": [
         {
@@ -404,7 +418,7 @@
     {
       "id": "media-fetch",
       "name": "Media fetch",
-      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, or locates a scene by its dialogue.",
+      "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).",
       "kind": "media-fetch",
       "version": 1,
       "fields": [
@@ -420,7 +434,8 @@
             "sections",
             "download",
             "index",
-            "locate"
+            "locate",
+            "frinkiac"
           ]
         },
         {
@@ -516,8 +531,8 @@
           "label": "Caption languages",
           "type": "json",
           "default": [
-            "en",
             "en-orig",
+            "en",
             "en-US",
             "en-GB"
           ]
@@ -636,7 +651,7 @@
         },
         {
           "key": "onlyWhen",
-          "label": "Run only when (key=value)",
+          "label": "Run only when (key=value or key!=value)",
           "type": "string",
           "default": ""
         },
@@ -701,6 +716,24 @@
           "default": 60
         },
         {
+          "key": "quoteSite",
+          "label": "Quote search site (https)",
+          "type": "string",
+          "default": "https://frinkiac.com"
+        },
+        {
+          "key": "archiveItem",
+          "label": "archive.org item",
+          "type": "string",
+          "default": "SimpsonsCommentary"
+        },
+        {
+          "key": "archiveWindow",
+          "label": "Archive subtitle window (s)",
+          "type": "number",
+          "default": 90
+        },
+        {
           "key": "outputKey",
           "label": "Output key (empty: the mode's own key)",
           "type": "string",
@@ -735,8 +768,8 @@
         "maxAgeDays": 0,
         "sort": "views",
         "languages": [
-          "en",
           "en-orig",
+          "en",
           "en-US",
           "en-GB"
         ],
@@ -769,6 +802,9 @@
         "minQuoteScore": 0.6,
         "minKeywordHits": 2,
         "keywordWindow": 60,
+        "quoteSite": "https://frinkiac.com",
+        "archiveItem": "SimpsonsCommentary",
+        "archiveWindow": 90,
         "outputKey": ""
       },
       "outputs": [
@@ -955,6 +991,44 @@
           ]
         },
         {
+          "key": "cardBackgrounds",
+          "label": "Card backgrounds (one picked per run)",
+          "type": "json",
+          "default": [
+            "plain"
+          ]
+        },
+        {
+          "key": "headlineFont",
+          "label": "Headline font (empty: the caption font)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "storyHook",
+          "label": "Story opens with a hook",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "storySounds",
+          "label": "Story sound effects",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "storyTransitions",
+          "label": "Zoom and blur at story cuts and zoom effects (off: hard cuts, no zoom)",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "captionItalic",
+          "label": "Italic captions",
+          "type": "boolean",
+          "default": true
+        },
+        {
           "key": "emojiDir",
           "label": "Emoji cache folder",
           "type": "string",
@@ -999,6 +1073,14 @@
         "renderTimeoutMs": 600000,
         "background": "brick",
         "layout": "box",
+        "cardBackgrounds": [
+          "plain"
+        ],
+        "headlineFont": "",
+        "storyHook": true,
+        "storySounds": true,
+        "storyTransitions": true,
+        "captionItalic": true,
         "emojiDir": "emoji",
         "storySeed": "",
         "outputKey": "short"
@@ -1177,6 +1259,18 @@
           "default": 10
         },
         {
+          "key": "titleHashtags",
+          "label": "Hashtags in title",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "publishAfterHours",
+          "label": "Publish after hours (0-720, 0 = now)",
+          "type": "number",
+          "default": 0
+        },
+        {
           "key": "outputKey",
           "label": "Output key",
           "type": "string",
@@ -1191,6 +1285,8 @@
         "containsSyntheticMedia": false,
         "setCover": true,
         "maxHashtags": 10,
+        "titleHashtags": true,
+        "publishAfterHours": 0,
         "outputKey": "youtube"
       },
       "outputs": [
@@ -1269,13 +1365,27 @@
           "default": "feeds",
           "options": [
             "feeds",
+            "posts",
+            "story",
+            "nextpart",
             "sources",
             "facts",
             "images",
             "brief",
             "render",
             "record",
-            "site"
+            "site",
+            "refresh",
+            "people",
+            "route",
+            "mediaplan",
+            "verify",
+            "brollpick",
+            "music",
+            "probe",
+            "assets",
+            "cut",
+            "gate"
           ]
         },
         {
@@ -1313,6 +1423,12 @@
           "default": "eleven_v4_turbo"
         },
         {
+          "key": "elevenVoice",
+          "label": "ElevenLabs voice id (empty = engine default)",
+          "type": "string",
+          "default": ""
+        },
+        {
           "key": "render",
           "label": "Render the video",
           "type": "boolean",
@@ -1332,6 +1448,7 @@
         "minFacts": 5,
         "voice": "kokoro",
         "elevenModel": "eleven_v4_turbo",
+        "elevenVoice": "",
         "render": true,
         "timeoutMs": 1800000
       },

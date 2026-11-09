@@ -1,0 +1,38 @@
+{
+ "events": [
+  {
+   "tStartMs": 0,
+   "dDurationMs": 2000,
+   "segs": [
+    {
+     "utf8": ">> Hello"
+    },
+    {
+     "utf8": " there",
+     "tOffsetMs": 500
+    },
+    {
+     "utf8": " [applause]",
+     "tOffsetMs": 1000
+    }
+   ]
+  },
+  {
+   "tStartMs": 3000,
+   "dDurationMs": 2000,
+   "segs": [
+    {
+     "utf8": "Alice"
+    },
+    {
+     "utf8": " Smith",
+     "tOffsetMs": 500
+    },
+    {
+     "utf8": " here.",
+     "tOffsetMs": 1000
+    }
+   ]
+  }
+ ]
+}

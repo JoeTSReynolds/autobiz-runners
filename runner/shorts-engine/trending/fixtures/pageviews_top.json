@@ -1,0 +1,53 @@
+{
+ "items": [
+  {
+   "articles": [
+    {
+     "article": "Main_Page",
+     "views": 9000000,
+     "rank": 1
+    },
+    {
+     "article": "Special:Search",
+     "views": 8000000,
+     "rank": 2
+    },
+    {
+     "article": "Alice_Smith",
+     "views": 9000,
+     "rank": 3
+    },
+    {
+     "article": "Bob_Dead",
+     "views": 60000,
+     "rank": 4
+    },
+    {
+     "article": "Carl_Thing",
+     "views": 50000,
+     "rank": 5
+    },
+    {
+     "article": "Dan_Covered",
+     "views": 40000,
+     "rank": 6
+    },
+    {
+     "article": "Eve_Rejected",
+     "views": 30000,
+     "rank": 7
+    },
+    {
+     "article": "Flat_Fred",
+     "views": 11000,
+     "rank": 8
+    },
+    {
+     "article": "-",
+     "views": 5,
+     "rank": 9
+    }
+   ]
+  }
+ ]
+}

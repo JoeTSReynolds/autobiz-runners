@@ -1,0 +1,5 @@
+{"type": "object", "required": ["title", "script", "claims", "timeline"], "properties": {
+  "title": {"type": "string"},
+  "script": {"type": "array", "minItems": 8, "maxItems": 14, "items": {"type": "object", "required": ["text", "visual"], "properties": {"text": {"type": "string"}, "visual": {"type": "object", "required": ["kind"]}}}},
+  "claims": {"type": "array", "minItems": 4, "maxItems": 8, "items": {"type": "object", "required": ["text", "support"], "properties": {"text": {"type": "string"}, "support": {"type": "array", "minItems": 2, "items": {"type": "object", "required": ["outlet", "quote"], "properties": {"outlet": {"type": "string"}, "quote": {"type": "string"}}}}}}},
+  "timeline": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "object", "required": ["label", "text"], "properties": {"label": {"type": "string"}, "text": {"type": "string"}}}}}}
