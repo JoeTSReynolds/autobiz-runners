@@ -207,10 +207,12 @@ def _articles(arts):
     for a in arts:
         dom = outlets.domain(a.get('url', ''))
         if not outlets.allowed(dom) or any(o['domain'] == dom for o in out): continue
-        try:
-            import sources  # engine folder is on sys.path
-            text = '\n\n'.join(sources.extract(net.get_text(a['url']))[2])[:12000]
-        except Exception: continue
+        import sources  # engine folder is on sys.path
+        text = ''
+        for get in (net.get_text, lambda u: net.jina(u, 'html') if os.environ.get('JINA_API_KEY') else ''):   # Jina: sites that block cloud IPs
+            try: text = '\n\n'.join(sources.extract(get(a['url']))[2])[:12000]
+            except Exception: text = ''
+            if text: break
         if text: out.append(dict(outlet=a.get('outlet') or dom, domain=dom, url=a['url'], text=text))
     return out
 

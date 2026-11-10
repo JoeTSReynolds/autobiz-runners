@@ -3,7 +3,8 @@ from urllib.parse import urlsplit
 
 ALLOWLIST = ('bbc.co.uk theguardian.com thetimes.co.uk telegraph.co.uk independent.co.uk standard.co.uk sky.com itv.com channel4.com ft.com '
              'reuters.com apnews.com bloomberg.com nytimes.com washingtonpost.com cnn.com nbcnews.com cbsnews.com abcnews.go.com npr.org '
-             'theatlantic.com politico.com politico.eu economist.com latimes.com wsj.com variety.com hollywoodreporter.com deadline.com').split()
+             'theatlantic.com politico.com politico.eu economist.com latimes.com wsj.com variety.com hollywoodreporter.com deadline.com '
+             'bbc.com cnbc.com axios.com usatoday.com time.com fortune.com wired.com theverge.com').split()
 
 
 def domain(url):

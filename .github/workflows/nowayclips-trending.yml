@@ -160,6 +160,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEWSROOM_SITE_CLOUDFLARE_PROJECT: ${{ secrets.NEWSROOM_SITE_CLOUDFLARE_PROJECT }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
           ELEVEN_LABS_API_KEY: ${{ secrets.ELEVEN_LABS_API_KEY }}
         run: node runner/runner.mjs businesses/nowayclips-trending/business.json --data data
       - name: Forget credentials and browser caches before saving state

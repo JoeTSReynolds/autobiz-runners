@@ -40,13 +40,28 @@ r0 = tmp(); clip(r0 / 'short.mp4')
 _, out0, _ = se.gate({'short': {'file': 'short.mp4'}, 'meta': {'title': 'The Rape Case', 'description': 'A murder.', 'tags': ['rape', 'news'], 'hashtags': ['#murder', '#news']},
                       'credits': ['Footage: https://y/1']}, {}, r0, tmp())
 m0 = out0['meta']
-assert m0['title'] == 'The R*pe Case' and m0['description'].startswith('A m*rder.') and m0['description'].endswith('Footage: https://y/1'), m0
+assert m0['title'] == 'The R*pe Case' and m0['description'].startswith('A m*rder.') and m0['description'].endswith('Clips: YouTube'), m0
 assert m0['tags'] == ['r*pe', 'news'] and m0['hashtags'] == ['#m*rder', '#news'], m0
 
 r = tmp(); clip(r / 'short.mp4')
 base = {'short': {'file': 'short.mp4', 'duration': 25}, 'timeline': [{'start': 0, 'end': 25, 'kind': 'a', 'person': False}]}
 port, out, log = gate(base, r)
-assert port == 'next' and out['meta']['description'] == 'story\n\nFootage: https://y/1\nMusic: m' and out['meta']['title'] == 't', (port, out, log)
+assert port == 'next' and out['meta']['description'] == 'story\n\nClips: YouTube\nMusic: m' and out['meta']['title'] == 't', (port, out, log)
+# a long title keeps its first clause (live 2026-11-10: 86 characters, cut off on phones); a short or one-clause title stays
+for t, want in [('He Confessed to Killing Natalee Holloway. Joran van der Sloot Still Has No Murder Trial', 'He Confessed to K*lling Natalee Holloway'),
+                ('Huang Caught: The Affair That Could Cost Nvidia Its Whole China Business Overnight', 'Huang Caught: The Affair That Could Cost Nvidia Its Whole China Business Overnight'),
+                ('Jensen Huang Is In Big Trouble', 'Jensen Huang Is In Big Trouble'),
+                ('The Nvidia CEO Scandal Nobody Saw Coming - And Why It Matters For Every Investor Now', 'The Nvidia CEO Scandal Nobody Saw Coming')]:
+    _, o2, _ = se.gate({**base, 'meta': {'title': t, 'description': 'd'}}, {}, r, tmp())
+    assert o2['meta']['title'] == want, (t, o2['meta']['title'])
+# credits are one short line per kind, no links (owner 2026-11-10: a list of URLs looked messy); clips name their channels
+cr = ['Photo: SIryn / CC BY-SA 4.0 (Wikimedia Commons) https://commons.wikimedia.org/wiki/File%3AA.jpg', 'Source: NBC News https://www.nbcnews.com/x',
+      'Footage: https://www.youtube.com/watch?v=abcdefghijk', 'Photo: Rinus de Graaff / CC0 (Wikimedia Commons) https://c/b', 'Source: CBS News https://cbs/y',
+      'Photo: SIryn / CC BY-SA 4.0 (Wikimedia Commons) https://c/c', 'Footage: https://www.youtube.com/watch?v=zzzzzzzzzzz', 'Jane Doe', 'Music: Song']
+port, out, log = gate({**base, 'credits': cr, 'pool': [{'id': 'abcdefghijk', 'channel': 'BBC News'}]}, r)
+assert out['meta']['description'] == ('story\n\nReporting: NBC News, CBS News\nClips: BBC News, YouTube\n'
+                                      'Photos (Wikimedia Commons): SIryn (CC BY-SA 4.0), Rinus de Graaff (CC0)\nAlso: Jane Doe\nMusic: Song'), out['meta']['description']
+assert 'http' not in out['meta']['description']
 
 r = tmp(); clip(r / 'short.mp4', secs=12)
 port, out, _ = gate({**base, 'short': {'file': 'short.mp4'}}, r)

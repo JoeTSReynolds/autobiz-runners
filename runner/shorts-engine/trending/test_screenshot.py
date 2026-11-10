@@ -7,6 +7,24 @@ from trending import screenshot
 
 def png_size(p): return struct.unpack('>II', Path(p).read_bytes()[16:24])
 
+# when our browser cannot get the article (cloud IPs blocked: live 2026-11-10, Brand on CNN/CBS), Jina renders it on its own
+# servers; only with a key (anonymous access is refused for some outlets), and its shot has the headline, not the highlight
+import os
+from trending import net
+_run, _jina, _bytes = screenshot._run, getattr(net, 'jina', None), getattr(net, 'get_bytes', None)
+screenshot._run = lambda *a, **k: None
+net.jina = lambda url, fmt, timeout=90: 'https://img/shot.png'
+net.get_bytes = lambda url, timeout=60: b'\x89PNG\r\n\x1a\nfake'
+with tempfile.TemporaryDirectory() as d0:
+    os.environ.pop('JINA_API_KEY', None)
+    assert screenshot.article('https://cnn.com/a', f'{d0}/j.png', 'quote') is None
+    os.environ['JINA_API_KEY'] = 'k'
+    assert screenshot.article('https://cnn.com/a', f'{d0}/j.png', 'quote') == f'{d0}/j.png' and Path(f'{d0}/j.png').read_bytes().startswith(b'\x89PNG')
+    net.get_bytes = lambda url, timeout=60: b'<html>error</html>'   # not an image: no shot
+    assert screenshot.article('https://cnn.com/b', f'{d0}/k.png', 'quote') is None
+    del os.environ['JINA_API_KEY']
+screenshot._run, net.jina, net.get_bytes = _run, _jina, _bytes
+
 with tempfile.TemporaryDirectory() as d:
     d = Path(d)
     page = d / 'a.html'

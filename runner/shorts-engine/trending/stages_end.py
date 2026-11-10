@@ -96,6 +96,28 @@ def _identity(video, shots, ref, models, work, frames=ID_FRAMES, faceless_ok=Fal
     return hit, len(sample) - (faceless if faceless_ok else 0)
 
 
+TITLE_SOFT_MAX = 60   # characters; Shorts titles are cut off on phones well before YouTube's 100
+
+
+def _credit_lines(credits, pool):
+    """One short line per kind, names only, no links (owner 2026-11-10: a URL per photo and clip looked messy)."""
+    channel = {p['id']: p.get('channel') for p in pool}
+    kinds = {'Reporting': [], 'Clips': [], 'Photos (Wikimedia Commons)': [], 'Also': [], 'Music': []}
+    for c in credits:
+        if c.startswith('Footage: '):
+            m = re.search(r'v=([\w-]{11})', c)
+            kinds['Clips'].append(channel.get(m.group(1)) if m and channel.get(m.group(1)) else 'YouTube')
+        elif c.startswith('Source: '):
+            kinds['Reporting'].append(re.sub(r'\s+https?://\S+$', '', c[8:]))
+        elif m := re.match(r'Photo: (.*?) / (.*?) \(Wikimedia Commons\)', c):
+            kinds['Photos (Wikimedia Commons)'].append(f'{m[1]} ({m[2]})')
+        elif c.startswith('Music: '):
+            kinds['Music'].append(c[7:])
+        else:
+            kinds['Also'].append(re.sub(r'\s*https?://\S+', '', c))
+    return [f'{k}: {", ".join(dict.fromkeys(x for x in v if x))}' for k, v in kinds.items() if any(v)]
+
+
 def gate(job, cfg, run, state):
     import numpy as np
     run = Path(run)
@@ -125,12 +147,15 @@ def gate(job, cfg, run, state):
     for k in ('title', 'description'):
         if isinstance(meta.get(k), str):
             meta[k] = caption_text(meta[k])
+    if isinstance(meta.get('title'), str) and len(meta['title']) > TITLE_SOFT_MAX:   # phones cut long titles: keep the first clause
+        head = re.split(r'(?<=[a-z0-9])\. | [-–—|] ', meta['title'], maxsplit=1)[0].strip()
+        meta['title'] = head if len(head) >= 20 else meta['title']
     for k in ('tags', 'hashtags'):
         if isinstance(meta.get(k), list):
             meta[k] = [caption_text(x) if isinstance(x, str) else x for x in meta[k]]
         elif isinstance(meta.get(k), str):
             meta[k] = caption_text(meta[k])
-    credits = '\n'.join(job.get('credits') or [])
+    credits = '\n'.join(_credit_lines(job.get('credits') or [], job.get('pool') or []))
     if credits:
         meta['description'] = (meta.get('description', '') + '\n\n' + credits)[:DESC_MAX]
     return 'next', {'meta': meta}, log

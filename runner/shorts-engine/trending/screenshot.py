@@ -1,6 +1,7 @@
 """Python wrapper for screenshot.mjs (Node + Playwright). Both return the PNG path, or None if the shot failed."""
-import json, subprocess
+import json, os, subprocess
 from pathlib import Path
+from . import net
 
 MJS = str(Path(__file__).with_name('screenshot.mjs'))
 
@@ -20,6 +21,14 @@ def article(url, out_png, highlight=None):
         res = _run('article', url, str(out_png), *([highlight] if highlight else []))
         if res and (not highlight or res.get('found_highlight')):
             return res['path']
+    if os.environ.get('JINA_API_KEY'):   # rendered on Jina's servers: the top of the article (headline), no highlight
+        try:
+            png = net.get_bytes(net.jina(url, 'screenshot').strip())
+        except Exception:
+            return None
+        if png.startswith(b'\x89PNG'):
+            Path(out_png).parent.mkdir(parents=True, exist_ok=True); Path(out_png).write_bytes(png)
+            return str(out_png)
     return None
 
 

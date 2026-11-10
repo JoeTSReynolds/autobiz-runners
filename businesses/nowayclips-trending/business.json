@@ -221,7 +221,7 @@
             "y": 747
           },
           "config": {
-            "prompt": "Write YouTube Shorts metadata for a `format` Short about `person` (`pick.angle` is why they are trending; `plan` is what the video shows). The title must describe what the video actually shows (`plan`): never claim the video is about the trending event in `pick.angle` unless `plan` is about it (an old interview stays an old interview). Title: at most 70 characters, a hook a curious viewer clicks, the person's name in it, one emoji at the end at most (tribute: a dove or no emoji, never clickbait). Description: two short sentences on what the video shows (no links; credits and sources are added after yours). Hashtags: 3 to 5 without `#`. Tags: 5 to 10 search phrases.",
+            "prompt": "Write YouTube Shorts metadata for a `format` Short about `person` (`pick.angle` is why they are trending; `plan` is what the video shows). The title must describe what the video actually shows (`plan`): never claim the video is about the trending event in `pick.angle` unless `plan` is about it (an old interview stays an old interview). Title: 30 to 55 characters (phones cut longer ones off), one punchy hook in the style of viral Shorts that makes a scrolling viewer need to know more: a curiosity gap, a strong verb, drama (\"Nvidia's CEO Just Got Caught\", \"The Confession That Changed Everything\", \"He Told Ramsay The Truth\"). One clause, not two sentences; no dates. Every word must stay true to `plan`. Name the person or how people know them, one emoji at the end at most (tribute: a dove or no emoji, never clickbait). Description: two short sentences on what the video shows (no links; credits and sources are added after yours). Hashtags: 3 to 5 without `#`. Tags: 5 to 10 search phrases.",
             "format": "json",
             "inputKeys": [
               "person",
@@ -642,7 +642,7 @@
       ]
     },
     "createdAt": "2026-11-07T17:43:13.811Z",
-    "updatedAt": "2026-11-10T17:16:10.468Z"
+    "updatedAt": "2026-11-10T18:04:49.084Z"
   },
   "modules": [
     {

@@ -1,5 +1,5 @@
 # Offline tests for the trending front stages: refresh, people, route, mediaplan. Run: python test_stages_front.py
-import datetime as dt, json, sys, tempfile, urllib.error
+import os, datetime as dt, json, sys, tempfile, urllib.error
 from pathlib import Path
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -17,6 +17,8 @@ assert people.spike([100] * 29 + [450]) == 4.5 and people.spike([5, 5]) is None
 assert people.died_recently('2026-10-28', dt.date(2026, 11, 5)) and not people.died_recently('2026-10-01', dt.date(2026, 11, 5))
 assert not people.died_recently('2026-00-00', dt.date(2026, 11, 5)) and not people.died_recently(None, dt.date(2026, 11, 5))
 assert outlets.allowed('news.sky.com') and outlets.allowed('www.bbc.co.uk') and not outlets.allowed('dailymail.co.uk') and not outlets.allowed('notbbc.co.uk')
+# bbc.com is the BBC's international site and CNBC broke much of the Jensen Huang story (live 2026-11-10: both dropped, case file died)
+assert outlets.allowed('www.bbc.com') and outlets.allowed('cnbc.com') and outlets.root('www.bbc.com') == 'bbc.com'
 assert outlets.distinct(['www.bbc.co.uk', 'bbc.co.uk', 'x.com', 'news.sky.com']) == {'bbc.co.uk', 'sky.com'}
 assert formats.surname('Sir José Müller Jr.') == 'muller' and formats.surname('Madonna') == 'madonna'
 assert ytsrc.pick_track(load('info.json')) == 'en'  # the fr->en translated track is never chosen
@@ -190,6 +192,19 @@ d, (port, out, log) = plan('casefile', cpick)
 assert port == 'next' and [x['domain'] for x in out['articles']] == ['bbc.co.uk', 'theguardian.com'] and len(fetched) == 2, out['articles']
 assert out['articles'][0]['outlet'] == 'BBC' and out['articles'][0]['text'].startswith('Alice Smith was reported')
 assert '### BBC | https://www.bbc.co.uk/n/1' in (d / 'articles.txt').read_text()
+# a site that refuses the direct fetch (cloud IPs) is read through Jina when a key is set; without a key it is skipped
+def blocked(url, timeout=30):
+    if 'theguardian' in url: raise urllib.error.HTTPError(url, 403, 'forbidden', {}, None)
+    return HTML
+net.get_text, jina_calls = blocked, []
+net.jina = lambda url, fmt, timeout=90: jina_calls.append((url, fmt)) or HTML
+os.environ.pop('JINA_API_KEY', None)
+d, (port, out, log) = plan('casefile', cpick)
+assert port == 'missing' and jina_calls == [], (port, jina_calls)
+os.environ['JINA_API_KEY'] = 'k'
+d, (port, out, log) = plan('casefile', cpick)
+assert port == 'next' and [x['domain'] for x in out['articles']] == ['bbc.co.uk', 'theguardian.com'] and jina_calls == [('https://www.theguardian.com/n/2', 'html')], (port, jina_calls)
+del os.environ['JINA_API_KEY']; net.get_text = lambda url, timeout=30: HTML
 d, (port, out, log) = plan('casefile', dict(cpick, articles=cpick['articles'][:1] + cpick['articles'][2:]))
 assert port == 'missing' and out['rejectedPeople'][-1] == 'Q1' and 'allowlisted' in out['agentErrors'][0], out
 assert (d / 'articles.txt').exists()
