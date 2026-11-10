@@ -91,4 +91,9 @@ v = tts.narrate(["A.", "End."], ["A.", "End."], {}, r2)
 assert abs(v["words"][1][0]["s"] - 59.0 * tts.MAX_VOICE / 60) < 0.01 and v["words"][0][0]["cap"] == "a", v["words"]
 tts._kokoro = lambda spoken, voice, speed, out: {"file": str(long), "duration": 70.0, "words": [], "spans": [(0, 70.0)]}
 assert abs(tts.narrate(texts, ["a"], {}, r2)["duration"] - 70 / 1.08) < 0.01  # capped: the gate then refuses it
+# several voices (comma separated): one per run, the same run always the same one (its cached audio stays valid)
+picks = {tts.pick_voice("A,B", f"/runs/r{i}") for i in range(40)}
+assert picks == {"A", "B"}, picks
+assert tts.pick_voice("A, B", "/runs/x") == tts.pick_voice("A, B", "/runs/x") and tts.pick_voice("A", "/runs/x") == "A"
+assert tts.pick_voice("", "/runs/x") == tts.VOICE
 print("ok")

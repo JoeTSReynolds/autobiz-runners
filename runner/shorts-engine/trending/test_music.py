@@ -37,4 +37,16 @@ assert music._share(sc) == 0.9, music._share(sc)
 bad = os.path.join(tempfile.mkdtemp(), music.YAMNET_NAME); open(bad, 'wb').write(b'nope')
 try: music.yamnet_path(os.path.dirname(bad)); raise SystemExit('wrong hash accepted')
 except RuntimeError: pass
+# swell: the music rises from ducked to full over 2 s before a speech pause (the stat slams) and falls back over 2 s
+# after it, instead of jumping 12 dB at its edges (owner, 2026-11-10)
+_d = tempfile.mkdtemp(); _v, _m, _o = (os.path.join(_d, n) for n in ('v.wav', 'm.wav', 'o.m4a'))
+subprocess.run(['ffmpeg', '-y', '-v', 'error', '-f', 'lavfi', '-i', 'sine=f=1000:d=14', '-af', "volume='if(between(t,6,8),0,1)':eval=frame", _v], check=True)
+subprocess.run(['ffmpeg', '-y', '-v', 'error', '-f', 'lavfi', '-i', 'anoisesrc=d=16:c=pink:a=0.5', '-af', 'lowpass=f=300', _m], check=True)
+def _band(path, a, b):   # music level (dB) in [a, b]: the voice is a 1 kHz tone, filtered out
+    r = subprocess.run(['ffmpeg', '-v', 'info', '-ss', str(a), '-t', str(b - a), '-i', path, '-af', 'lowpass=f=250,volumedetect', '-f', 'null', '-'],
+                       capture_output=True, text=True).stderr
+    return float(r.split('mean_volume:')[1].split('dB')[0])
+music.mix(_v, _m, 0, _o, music_gain_db=-6, duck_db=12, video_duration=14, swell=[(6, 8)])
+lo, ramp, full, back, lo2 = _band(_o, 1.5, 3), _band(_o, 4.9, 5.2), _band(_o, 6.4, 7.6), _band(_o, 8.8, 9.1), _band(_o, 10.5, 11.5)
+assert full > lo + 6 and lo + 2 < ramp < full - 1 and lo + 2 < back < full - 1 and abs(lo2 - lo) < 2, (lo, ramp, full, back, lo2)
 print('ok')

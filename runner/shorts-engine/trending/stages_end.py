@@ -118,7 +118,7 @@ def gate(job, cfg, run, state):
         edit = (job.get('plan') or {}).get('format') == 'edit'   # a wide stage shot has no detectable face: not someone else
         hit, n = _identity(video, shots, np.load(run / ref_file), Path(state) / 'models', run / 'gate', 4 if topn else ID_FRAMES, faceless_ok=edit)
         share = ID_SHARE_TOPN if (job.get('plan') or {}).get('format') == 'topn' else ID_SHARE
-        if hit < share * n:
+        if hit < share * n and not (edit and hit >= n - 1):   # an edit may miss one shot: the person turned away mid-climb
             return _invalid(f'gate: identity matched in {hit}/{n} sampled person shots (need {share:.0%})')
         log += f', identity {hit}/{n}'
     meta = dict(job.get('meta') or {})
@@ -142,8 +142,11 @@ def record(job, cfg, run, state):
     state, date = Path(state), _today().isoformat()
     state.mkdir(parents=True, exist_ok=True)
     p = job.get('person') or {}
-    covered = _jread(state / 'trending-covered.json', []) + [{'qid': p.get('qid'), 'name': p.get('name'), 'format': (job.get('plan') or {}).get('format') or job.get('format'), 'date': date}]
-    (state / 'trending-covered.json').write_text(json.dumps(covered[-500:], indent=1, ensure_ascii=False))
+    covered = _jread(state / 'trending-covered.json', []) + [{'qid': p.get('qid'), 'name': p.get('name'), 'format': (job.get('plan') or {}).get('format') or job.get('format'),
+                                                               'date': date, 'title': (job.get('meta') or {}).get('title'), 'angle': (job.get('pick') or {}).get('angle')}]
+    rest = [c for c in covered if c.get('format') != 'tribute'][-500:]   # tributes are kept: one per person, ever
+    covered = [c for c in covered if c.get('format') == 'tribute' or c in rest]
+    (state / 'trending-covered.json').write_text(json.dumps(covered, indent=1, ensure_ascii=False))
     sid = (job.get('track') or {}).get('id')
     if sid:
         used = _jread(state / 'trending-used-sounds.json', []) + [{'id': sid, 'date': date}]

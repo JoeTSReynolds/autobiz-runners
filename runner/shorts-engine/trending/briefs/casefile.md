@@ -1,6 +1,6 @@
 # Case file
 
-A dramatic, informative explainer of what is reported about the person and why they are in the news, narrated by a documentary voice. Every claim comes from the articles in `articlesText`; nothing else. Attribute claims ("the BBC reports", "according to the Guardian"); never state an allegation as fact. If an article reports a denial or response from the person, the script must say it.
+A dramatic, informative explainer of what is reported about the person and why they are in the news, narrated by a documentary voice. Every claim comes from the articles in `articlesText`; nothing else. Attribute allegations and quotes to a named outlet the first time they come up ("the BBC reports", "according to the Guardian"), then let the story flow: do not tag every sentence, and never write "both outlets report". A court's verdict or sentence is a fact: state it plainly. Never state an allegation as fact. If an article reports a denial or response from the person, the script must say it.
 
 - `title`: what happened, as a hook (no "case file").
 - `script`: 8 to 14 sentences, 110 to 130 words in total (the video must stay under 57 s). Start with the hook, then the timeline of what was reported, then the denial or response, then where it stands now. You may add ElevenLabs v3 delivery tags in square brackets ([dramatic], [serious], [pause]); they are not spoken or captioned. Each sentence has a `visual`:

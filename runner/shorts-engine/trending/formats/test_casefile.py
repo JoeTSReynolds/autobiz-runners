@@ -42,7 +42,7 @@ plan = {"format": "casefile", "title": "t", "script": [{"text": "[dramatic] " + 
         "clips": [{"key": "a0", "source": {"id": "a0", "url": "https://www.youtube.com/watch?v=a0", "duration": 100.0}, "start": 41.0, "end": 44.0, "person": True}],
         "musicOffset": 0.0}
 job = {"plan": plan, "clips": [{"role": "moment", "file": "a0.mp4", "offset": 40.0, "duration": 6.0, "sourceId": "a0"}],
-       "assets": {"screenshots": {"https://x/a": "assets/shots/0.png"}, "photos": [{"query": "q0", "file": "assets/photos/0.jpg", "credit": "A. Author", "licence": "CC BY 4.0", "page": "https://c/0"},
+       "assets": {"screenshots": {"https://x/a#closed for good here today": "assets/shots/0.png"}, "photos": [{"query": "q0", "file": "assets/photos/0.jpg", "credit": "A. Author", "licence": "CC BY 4.0", "page": "https://c/0"},
                                                                           {"query": "q1", "file": "assets/photos/1.jpg", "credit": "B. Author", "licence": "CC BY-SA 4.0", "page": "https://c/1"}]},
        "track": {"file": "track.m4a", "title": "t", "analysis": {"bpm": 90, "beats": [], "drop": 0.0, "duration": 40}}}
 t0 = __import__("time").time()

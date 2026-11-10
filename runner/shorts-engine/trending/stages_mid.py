@@ -230,6 +230,8 @@ def _v_tribute(cx, sb):
             errs.append(f'moments[{i}]: {e - s:.1f} s, must be 1.5 to 5 s')
         else:
             moments.append(_clip(f'm{i}', src, s, e))
+    if len({m['source']['id'] for m in moments}) < 2:
+        errs.append('moments: all come from one video; take the silent moments from at least 2 different videos')
     n = _nwords(sb.get('closingLine') or '')
     if not 1 <= n <= 14:
         errs.append(f'closingLine: {n} words, must be 1 to 14')
@@ -286,6 +288,8 @@ def _v_topn(cx, sb):
         good.append((a[0], max(0.0, s - TOPN_PRE), e, m.get('label') or '', words, b[2], _reply(ws_all, b[2])))
     if len(good) < 4:
         raise _Short(f'only {len(good)} of {len(ms)} moments found in the captions (topn needs 4): ' + '; '.join(why)[:600])
+    if len({g[0]['id'] for g in good}) < 2:   # separate times: one video is usually one exchange cut into pieces
+        errs.append('moments: all come from one video; a Top N is separate times, take them from at least 2 different videos')
     good, spare = good[:5], good[5:]   # spares stand in for moments the identity probe removes
     n = len(good)
     c = sb.get('closer') or {}
@@ -437,6 +441,9 @@ def _v_casefile(cx, sb):
         for s in _sentences(a['text']):
             if surname in _fold(s).split() and BLOCKED.search(s):
                 raise _Missing(f'blocked topic ("{BLOCKED.search(s).group(0)}") reported by {a["outlet"]}')
+    for i, sp in enumerate(spoken):   # name the outlet once, naturally; "both outlets report" on line after line reads robotic
+        if re.search(r'\b(both|the two|all) outlets\b|\boutlets (report|say)\b', sp, re.I):
+            errs.append(f'script[{i}]: do not write "both outlets" or "outlets report": name the outlet ("the BBC reports") once where it matters, and state court verdicts plainly')
     words = sum(len(s.split()) for s in spoken)
     if words / WPS > 57:
         errs.append(f'script: {words} words is {words / WPS:.0f} s at {WPS} words/s, must be at most 57 s (about {int(57 * WPS)} words)')
@@ -621,7 +628,7 @@ def _passes(set_, a, labelled=False):
     if set_ == 'edit':
         return _drop_ok(a)
     if set_ == 'sad':
-        return bpm <= 100 and _swell(a) is not None
+        return _swell(a) is not None   # no bpm cap: slow piano reads at double time, and sad comes only from instrumental searches
     return bpm <= 100 and not _drop_ok(a)
 
 
@@ -702,7 +709,8 @@ def _target(plan):
 
 def _candidates(sd, set_, skip, tried, labelled):
     """Tracked trending sounds of the set first, then (only if none passed) instrumental search results; MAX_TRIES of each."""
-    for searched, source in ((False, lambda: _ranked(sd, set_)), (True, lambda: _searched(set_))):
+    # sad: instrumental search only, the sad/rip tags trend pop songs (live 2026-11-10: "SugarCrash Slowed" under a tribute)
+    for searched, source in ((False, lambda: [] if set_ == 'sad' else _ranked(sd, set_)), (True, lambda: _searched(set_))):
         for c in [c for c in source() if c[0] not in skip and c[0] not in tried][:MAX_TRIES]:
             if searched:
                 labelled.add(c[0])
@@ -725,14 +733,19 @@ def music(job, cfg, run, state):
                 continue
             _jwrite(f, a)
         if _passes(set_, a, labelled=sid in labelled and bool(LABELLED.search(title))):
+            if not (sd / 'tracks' / f'{sid}.m4a').exists():   # the cloud seed ships analyses without the audio
+                try:
+                    _fetch_track(sid, sd / 'tracks')
+                except Exception:
+                    continue
             pick = (sid, title, a)
             break
         rej = _jread(sd / 'rejected.json', {})
         rej = {k: ['edit', 'sad', 'documentary'] for k in rej} if isinstance(rej, list) else rej
         _jwrite(sd / 'rejected.json', {**rej, sid: sorted({*rej.get(sid, []), set_})})
     else:
-        pick = next(((f.stem, f.stem, a) for f in sorted((sd / 'tracks').glob('*.json'))
-                     if f.stem not in skip | set(tried) and 'vocal_share' in (a := _jread(f, {})) and _passes(set_, a)), None)
+        pick = None if set_ == 'sad' else next(((f.stem, f.stem, a) for f in sorted((sd / 'tracks').glob('*.json'))
+                     if f.stem not in skip | set(tried) and f.with_suffix('.m4a').exists() and 'vocal_share' in (a := _jread(f, {})) and _passes(set_, a)), None)
     if not pick:
         return _missing(job, 'music', f'no {set_} sound passed (tried {", ".join(tried) or "none"})')
     sid, title, a = pick
@@ -810,7 +823,7 @@ def _cluster_reference(embs):
 def _probe_targets(plan):
     cl = plan['clips']
     if plan['format'] == 'edit':
-        return [cl[i] for i in sorted({0, len(cl) // 2, len(cl) - 1}) if cl] if cl else []
+        return cl   # every line: 3 sampled lines can all be face-free b-roll inside the source (live 2026-11-09)
     return [c for c in cl if c.get('person')]
 
 
@@ -852,11 +865,13 @@ def probe(job, cfg, run, state):
     bad = lambda *why: _invalid(notes + list(why))
     keep = [c for c in plan['clips'] if c['key'] not in failed]
     if fmt == 'edit':
-        # a point where no face can be found at all (a wide stage shot) is no evidence of someone else: the speech is one talk
+        # his talk when he is on camera in at least 2 lines; a line showing someone else keeps its audio under a cutaway
+        # picture (cover), and a line with no face found (a wide shot) is no evidence either way
         failed = [k for k in failed if any(windows[k])]
-        if len(failed) > len(targets) - 2:
-            return _missing(job, 'probe', f'the speaker did not match {name} in {len(failed)} of {len(targets)} probe points ({", ".join(failed)})')
-        keep = plan['clips']   # a failed point only names a doubt, the speech stays continuous
+        if len(targets) - len(failed) - sum(not any(windows[c['key']]) for c in targets) < 2:
+            return _invalid([f'{name} is on camera in fewer than 2 of the {len(targets)} lines: choose another source where {name} speaks on camera'])
+        keep = [dict(c, cover=True) if c['key'] in failed else c for c in plan['clips']]
+        notes = []
     elif fmt == 'tribute':
         if any(c['clip'] in failed for c in plan['spine']):
             return bad('a spine line failed the identity check: choose other lines of the person on camera')
@@ -992,6 +1007,9 @@ def _person_photos(job, run, state, base):
     return out
 
 
+from .formats.casefile import shot_key
+
+
 def assets(job, cfg, run, state):
     plan, base = job['plan'], Path(run) / 'assets'
     if plan['format'] in ROWS:
@@ -1012,10 +1030,10 @@ def assets(job, cfg, run, state):
         return 'next', {'assets': {}, 'agentErrors': [], **({'plan': plan} if plan['format'] in ROWS else {})}, 'no assets for this format'
     visuals = [s['visual'] for s in plan['script']]
     shots = {}
-    for v in visuals:
-        if v['kind'] == 'screenshot' and v['url'] not in shots:
+    for v in visuals:   # one per highlight: two quotes from one article are two screenshots
+        if v['kind'] == 'screenshot' and shot_key(v) not in shots:
             png = _screenshot(v['url'], base / 'shots' / f'{len(shots)}.png', v.get('highlight'))
-            shots[v['url']] = f'assets/shots/{len(shots)}.png' if png else None
+            shots[shot_key(v)] = f'assets/shots/{len(shots)}.png' if png else None
     done = {u: f for u, f in shots.items() if f}
     need = min(2, len(shots))
     if len(done) < need:
@@ -1046,10 +1064,16 @@ def assets(job, cfg, run, state):
 
     for q, cands in lists:   # one photo per photo visual first
         take(q, cands)
-    while len(photos) < POOL_PHOTOS and any(fresh(c) for _, c in lists):   # then top the pool up, round robin over the queries
+    cap = {q: max(2, sum(x == q for x, _ in lists)) for q, _ in lists}   # one place or object never fills the pool
+    room = lambda q, cands: fresh(cands) and sum(p['query'] == q for p in photos) < cap[q]
+    while len(photos) < POOL_PHOTOS and any(room(q, c) for q, c in lists):   # then top the pool up, round robin over the queries
         for q, cands in lists:
-            if len(photos) < POOL_PHOTOS and fresh(cands) and not take(q, fresh(cands)[:1]):
+            if len(photos) < POOL_PHOTOS and room(q, cands) and not take(q, fresh(cands)[:1]):
                 seen.add(fresh(cands)[0].get('page'))   # failed or refused: do not try it again
+    if len(photos) < POOL_PHOTOS:   # then the person themselves: face-checked photos, the case is about them
+        name = (job.get('person') or {}).get('name', '')
+        photos += [{'query': name, **{k: p[k] for k in ('file', 'credit', 'licence', 'page')}}
+                   for p in _person_photos(job, run, state, base) if p['page'] not in seen][:POOL_PHOTOS - len(photos)]
     if len(photos) < 2:
         return _missing(job, 'assets', f'only {len(photos)} photos could be downloaded (2 needed)')
     return 'next', {'assets': {'screenshots': done, 'photos': photos}, 'agentErrors': []}, f'{len(done)} screenshots, {len(photos)} photos'

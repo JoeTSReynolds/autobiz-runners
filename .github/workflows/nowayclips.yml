@@ -2,15 +2,9 @@
 name: "NoWayClips"
 on:
   schedule:
-    - cron: '37 10 * * *'
-      timezone: 'Europe/London'
-    - cron: '37 13 * * *'
-      timezone: 'Europe/London'
-    - cron: '37 16 * * *'
+    - cron: '37 12 * * *'
       timezone: 'Europe/London'
     - cron: '37 19 * * *'
-      timezone: 'Europe/London'
-    - cron: '37 23 * * *'
       timezone: 'Europe/London'
   workflow_dispatch:
 concurrency:

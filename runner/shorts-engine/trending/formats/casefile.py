@@ -262,6 +262,11 @@ def shot_cap(lens, total):
     return cap
 
 
+def shot_key(v):
+    """A screenshot visual's key in assets.screenshots: the article and its highlight (two quotes, two screenshots)."""
+    return f"{v['url']}#{v.get('highlight') or ''}"
+
+
 def pick_photo(photos, uses, query, last):
     """Least-used photo, the query's own preferred, never `last` again when another exists; counts the use in `uses`."""
     if not photos:
@@ -282,7 +287,7 @@ def render(job, cfg, run):
     spans = [(a, b) for a, b in v["spans"]]
     spans[-1] = (spans[-1][0], D)
     shots, photos = assets.get("screenshots") or {}, assets.get("photos") or []
-    lens = [b - a for (a, b), s in zip(spans, script) if s["visual"]["kind"] == "screenshot" and shots.get(s["visual"].get("url"))]
+    lens = [b - a for (a, b), s in zip(spans, script) if s["visual"]["kind"] == "screenshot" and s["visual"].get("url") and shots.get(shot_key(s["visual"]))]
     cap = shot_cap(lens, D)
     used, credits, uses, last = [], [], {}, [None]
 
@@ -307,9 +312,9 @@ def render(job, cfg, run):
     for i, ((a, b), s) in enumerate(zip(spans, script)):
         vis, L = s["visual"], b - a
         kind, rest_from = vis["kind"], None
-        if kind == "screenshot" and shots.get(vis["url"]):
+        if kind == "screenshot" and shots.get(shot_key(vis)):
             f = min(first_len(L, cap), D - a)
-            add(a, a + f, "screenshot", False, lambda a=a, f=f, vis=vis: CardSeg(run / shots[vis["url"]], vis["outlet"], a, a + f))
+            add(a, a + f, "screenshot", False, lambda a=a, f=f, vis=vis: CardSeg(run / shots[shot_key(vis)], vis["outlet"], a, a + f))
             credits.append(f"Source: {vis['outlet']} {vis['url']}")
             rest_from = a + f
             if rest_from < b - 1e-6:   # then a photo or the highlighted quote

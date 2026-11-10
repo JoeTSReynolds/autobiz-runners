@@ -6,7 +6,7 @@
 `b` marks a word that ends a clause or sentence. ElevenLabs request/cache/alignment approach follows shorts-engine/tts_el.py; Kokoro follows
 shorts-engine/tts.py. Responses are cached by request hash in run/cut/tts-cache/ and in $AUTOBIZ_TTS_CACHE when set, so a re-render costs no credits.
 """
-import base64, hashlib, json, os, re, subprocess, urllib.request, wave
+import base64, hashlib, json, os, re, subprocess, urllib.request, wave, zlib
 from pathlib import Path
 from .sensitive import cap_words, spoken_map
 
@@ -107,6 +107,12 @@ def _fit(v, out):
             "spans": [(a / k, b / k) for a, b in v["spans"]]}
 
 
+def pick_voice(voices, run):
+    """One of the comma-separated ElevenLabs voice ids, chosen by the run folder: random across runs, stable within one."""
+    ids = [v.strip() for v in (voices or "").split(",") if v.strip()] or [VOICE]
+    return ids[zlib.crc32(Path(run).name.encode()) % len(ids)]
+
+
 def narrate(texts, spoken, cfg, run):
     cut = Path(run) / "cut"
     cut.mkdir(parents=True, exist_ok=True)
@@ -114,7 +120,7 @@ def narrate(texts, spoken, cfg, run):
     texts, spoken = [t for t, _ in tm], [t for t, _ in sm]
     caps = [c for _, c in (tm if cfg.get("voice") == "elevenlabs" else sm)]
     if cfg.get("voice") == "elevenlabs":
-        mp3, dur, words = _eleven(texts, cfg.get("elevenVoice") or VOICE, cfg.get("elevenModel") or MODEL, run)
+        mp3, dur, words = _eleven(texts, pick_voice(cfg.get("elevenVoice"), run), cfg.get("elevenModel") or MODEL, run)
         v = {"file": str(mp3), "duration": dur, "words": words, "spans": _spans(words, dur)}
     else:
         v = _kokoro(spoken, KOKORO_VOICE, KOKORO_SPEED, cut / "voice.wav")

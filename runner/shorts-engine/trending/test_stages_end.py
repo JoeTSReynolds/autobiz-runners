@@ -97,18 +97,26 @@ se._embed = embed([HIT] * 8 + [[], []] + [HIT])
 assert gate({**ij, 'plan': {'format': 'edit'}}, r)[0] == 'next'
 se._embed = embed([HIT] * 8 + [MISS, MISS] * 2)                         # 2 shots of someone else: 8/10
 assert gate({**ij, 'plan': {'format': 'edit'}}, r)[0] == 'invalid'
+# one missed shot is allowed in an edit: every line already passed the probe, and the person climbing with the face turned
+# away scores below the match line (live 2026-11-09: CBS's Alex Honnold edit failed at 7/8 on its one climbing shot)
+se._embed = embed([HIT] * 7 + [[], []] * 2 + [MISS, MISS])   # 2 faceless shots left out: 7/8
+assert gate({**ij, 'plan': {'format': 'edit'}}, r)[0] == 'next'
 
 # ---- record
 st = tmp() / 'state'
-job = {'person': {'qid': 'Q1', 'name': 'A B'}, 'plan': {'format': 'tribute'}, 'track': {'id': 's9'}}
+job = {'person': {'qid': 'Q1', 'name': 'A B'}, 'plan': {'format': 'tribute'}, 'track': {'id': 's9'}, 'pick': {'angle': 'why'}, 'meta': {'title': 'T'}}
 se._today = lambda: dt.date(2026, 11, 6)
 assert se.record(job, {}, tmp(), st)[0] == 'next'
-assert json.loads((st / 'trending-covered.json').read_text()) == [{'qid': 'Q1', 'name': 'A B', 'format': 'tribute', 'date': '2026-11-06'}]
+assert json.loads((st / 'trending-covered.json').read_text()) == [{'qid': 'Q1', 'name': 'A B', 'format': 'tribute', 'date': '2026-11-06', 'title': 'T', 'angle': 'why'}]
 assert json.loads((st / 'trending-used-sounds.json').read_text()) == [{'id': 's9', 'date': '2026-11-06'}]
 (st / 'trending-covered.json').write_text(json.dumps([{'qid': f'Q{i}', 'date': '2026-01-01'} for i in range(500)]))
-se.record({**job, 'person': {'qid': 'NEW', 'name': 'N'}}, {}, tmp(), st)
+se.record({**job, 'person': {'qid': 'NEW', 'name': 'N'}, 'plan': {'format': 'topn'}}, {}, tmp(), st)
 cov = json.loads((st / 'trending-covered.json').read_text())
 assert len(cov) == 500 and cov[-1]['qid'] == 'NEW' and cov[0]['qid'] == 'Q1', (len(cov), cov[0])   # only the last 500 are kept
+(st / 'trending-covered.json').write_text(json.dumps([{'qid': 'T0', 'format': 'tribute', 'date': '2025-01-01'}] + [{'qid': f'Q{i}', 'date': '2026-01-01'} for i in range(500)]))
+se.record({**job, 'person': {'qid': 'NEW2', 'name': 'N'}, 'plan': {'format': 'topn'}}, {}, tmp(), st)
+cov = json.loads((st / 'trending-covered.json').read_text())
+assert cov[0]['qid'] == 'T0' and len(cov) == 501 and cov[-1]['qid'] == 'NEW2', (len(cov), cov[0])   # tributes are kept: one per person, ever
 st2 = tmp() / 'state'
 se.record({'person': {'qid': 'Q2', 'name': 'N'}, 'plan': {'format': 'topn'}}, {}, tmp(), st2)   # no track: no sound entry
 assert not (st2 / 'trending-used-sounds.json').exists()

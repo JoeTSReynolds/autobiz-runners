@@ -1,6 +1,6 @@
 """Front stages of the NoWayClips trending graph: refresh, people, route, mediaplan.
 Each is (job, cfg, run, state) -> (port, output, log). No stage here downloads video or audio."""
-import datetime as dt, json, os, re, statistics, time, urllib.error, urllib.parse
+import datetime as dt, itertools, json, os, re, statistics, time, urllib.error, urllib.parse
 from pathlib import Path
 from . import legal, sourcerules as formats, net, outlets, people as pp, soundmomentum as sm, transcripts, ytsrc
 
@@ -80,6 +80,13 @@ def _headlines(c):
     try: c['headlines'] = pp.parse_rss(net.get_text('https://news.google.com/rss/search?q=' + urllib.parse.quote(f'"{c["name"]}" when:3d')
                                                       + '&hl=en-GB&gl=GB&ceid=GB:en'))
     except Exception: pass  # headlines are a bonus; casefile routing will reject without them
+    # a death in the news before Wikidata has it, confirmed by the person's own Wikipedia lead (a namesake's headline is not theirs)
+    if not c.get('died') and (d := pp.death_in_headlines(c['name'], c.get('headlines') or [])) and c.get('title'):
+        try:
+            lead = net.get_json('https://en.wikipedia.org/api/rest_v1/page/summary/' + urllib.parse.quote(c['title'], safe='')).get('extract')
+        except Exception: lead = ''
+        if pp.lead_says_dead(lead):
+            c['died'] = d
     return c
 
 
@@ -113,8 +120,9 @@ def people(job, cfg, run, state):
         titles = '|'.join(t.replace('_', ' ') for t, _ in rows[i:i + 50])
         humans.update(pp.humans(_get('https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&sites=enwiki&languages=en'
                                              f'&props=claims|descriptions|labels|sitelinks&titles={urllib.parse.quote(titles)}')))
-    skip = set(job.get('rejectedPeople', [])) | {c['qid'] for c in jread(Path(state) / 'trending-covered.json', [])
-                                                  if (now - dt.date.fromisoformat(c['date'])).days <= 30}
+    covered = jread(Path(state) / 'trending-covered.json', [])
+    skip = set(job.get('rejectedPeople', [])) | {c['qid'] for c in covered   # a Short in the last 2 days: skipped before any lookup
+                                                  if (now - dt.date.fromisoformat(c['date'])).days < pp.GAP_DAYS}
     kept = []
     for title, views in rows:
         h = humans.get(title.replace('_', ' '))
@@ -129,6 +137,11 @@ def people(job, cfg, run, state):
             kept.append(dict(h, title=title, views=views, spike=sp, age=pp.age(h['born'], h['died'], now), headlines=[]))
     for c in sorted(kept, key=lambda c: -c['views'])[:12]:
         _headlines(c)
+    for c in kept:   # earlier Shorts of the person: shown to the route agent, and the formats that would not repeat one
+        c['covered'] = [{k: e.get(k) for k in ('format', 'date', 'title', 'angle')} for e in covered if e.get('qid') == c['qid']]
+        fmts = ['tribute'] if pp.died_recently(c['died'], now) else [f for f in formats.FORMATS if f != 'tribute']
+        c['formats'] = [f for f in fmts if not pp.repeat_block(c['qid'], f, covered, c['headlines'], now)]
+    kept = [c for c in kept if c['formats']]
     cands = sorted(kept, key=lambda c: -c['views'] * min(c['spike'] or 1, 10))[:10]
     if not cands: return 'missing', {'candidates': [], 'agentErrors': ['no trending person left after filters']}, 'no candidates'
     return 'next', {'candidates': cands}, f"{len(humans)} humans, {len(kept)} trending, {len(cands)} candidates"
@@ -150,6 +163,9 @@ def route(job, cfg, run, state):
     if pp.died_recently(person.get('died'), today()):
         note, fmt = ('' if fmt == 'tribute' else f'died {person["died"]}: format overridden to tribute'), 'tribute'
     elif fmt == 'tribute': return bad(f'{person["name"]} has no recent death (14 days); tribute is not possible')
+    covered = jread(Path(state) / 'trending-covered.json', [])
+    if not (job.get('want') or {}).get('person') and (why := pp.repeat_block(qid, fmt, covered, person.get('headlines') or [], today())):
+        return bad(f'{person["name"]} as {fmt} would repeat a published Short ({why}): pick a format in their `formats` or someone else')
     if fmt == 'casefile':
         doms = [h['domain'] for h in person.get('headlines', [])] + [outlets.domain(a['url']) for a in pick.get('articles', []) if a.get('url')]
         if len(outlets.distinct(doms)) < 2:
@@ -198,10 +214,14 @@ def mediaplan(job, cfg, run, state):
         return dead(why)   # UK contempt of court: checked on the article text, before any storyboard
     archived = {l.split()[-1] for l in (Path(state) / 'archive.txt').read_text().splitlines() if l.strip()} if (Path(state) / 'archive.txt').exists() else set()
     excluded = archived | set(job.get('rejectedSources', []))
+    # each query in turn, most viewed first: one query's viral clips must not crowd out what the other queries asked for
+    lists = [sorted((e for e in ytsrc.search(q, 20) if formats.usable(e, fmt, sur, excluded)), key=lambda e: -(e.get('view_count') or 0))
+             for q in pick.get('queries', [])[:6]]
     found = {}
-    for q in pick.get('queries', [])[:6]:
-        for e in ytsrc.search(q, 20): found.setdefault(e['id'], e)
-    cand = sorted((e for e in found.values() if formats.usable(e, fmt, sur, excluded)), key=lambda e: -(e.get('view_count') or 0))[:rule['k']]
+    for row in itertools.zip_longest(*lists):
+        for e in row:
+            if e: found.setdefault(e['id'], e)
+    cand = list(found.values())[:rule['k']]
     cap_dir = run / 'captions'; cap_dir.mkdir(parents=True, exist_ok=True)
     kw = [sur] + [w for w in formats.fold(f"{pick.get('angle', '')} {pick.get('theme', '')}").split() if len(w) >= 5]
     pool, blocks = [], []

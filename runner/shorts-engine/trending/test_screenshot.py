@@ -29,4 +29,22 @@ with tempfile.TemporaryDirectory() as d:
     # 'Coolest 23+ Gifts' ad box): refused, so assets tries the next screenshot
     assert screenshot.article(page.as_uri(), str(d / 'h.png'), 'words that are not there') is None
     assert screenshot.article(page.as_uri(), str(d / 'g.png'), 'quick brown fox') == str(d / 'g.png')
+    # an ad that loads after the highlight is marked pushes the text down: the shot is measured again just before it is taken
+    # (live 2026-11-10: an NBC shot showed a 'TV box' ad, the highlighted quote below the frame)
+    late = d / 'late.html'
+    late.write_text('<html><body><h1>Headline</h1>' + '<p>filler text</p>' * 40 + '<div id="ad"></div><p>the quick brown fox jumps</p>'
+                    + '<p>more</p>' * 80 + '<script>new MutationObserver((m, o) => { if (document.querySelector("mark")) { o.disconnect(); setTimeout(() => { document.getElementById("ad").style.height = "2000px" }, 100) } }).observe(document.body, {childList: true, subtree: true})</script></body></html>')
+    from PIL import Image
+    import numpy as np
+    assert screenshot.article(late.as_uri(), str(d / 'late.png'), 'quick brown fox') == str(d / 'late.png')
+    px = np.asarray(Image.open(d / 'late.png').convert('RGB')).astype(int)
+    assert (np.abs(px - [255, 225, 77]).sum(axis=2) < 40).sum() > 500, 'the highlight is not in the shot'
+# a highlight missed once is tried again: page loads and consent pop-ups vary (live 2026-11-10: a CBS highlight missed in the
+# run, found on 2 of 2 later tries, and the missing screenshot rejected the person)
+_calls, _real = [], screenshot._run
+screenshot._run = lambda *a, **k: _calls.append(a) or {'path': a[2], 'found_highlight': len(_calls) > 1}
+assert screenshot.article('https://x/a', '/tmp/x.png', 'some words') == '/tmp/x.png' and len(_calls) == 2
+_calls.clear(); screenshot._run = lambda *a, **k: _calls.append(a) or None
+assert screenshot.article('https://x/a', '/tmp/x.png', 'some words') is None and len(_calls) == 2   # at most 2 tries
+screenshot._run = _real
 print('ok')

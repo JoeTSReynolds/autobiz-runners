@@ -163,9 +163,11 @@ def place(analysis, target_drop_time, video_duration):
     off = max(off, -target_drop_time)   # cannot start before 0 s of the video
     return dict(music_offset=round(off, 3), fade_in=0.4 if off >= 0 else 0.8, fade_out=min(1.5, video_duration / 4))
 
-def mix(voice_audio, music_path, music_offset, out, music_gain_db=-8, duck_db=10, video_duration=None, boost_after=None, attack_ms=10, release_ms=250):
+def mix(voice_audio, music_path, music_offset, out, music_gain_db=-8, duck_db=10, video_duration=None, boost_after=None, attack_ms=10, release_ms=250,
+        swell=(), swell_s=2.0):
     """Mix speech/clip audio with music: ducked via sidechaincompress, optional +4 dB from boost_after (s), alimiter, AAC 192k.
-    duck_db is approximate: ratio = 1 + duck_db/2 (10 -> 6); attack_ms/release_ms shape the duck. Negative music_offset delays the music instead of trimming."""
+    duck_db is approximate: ratio = 1 + duck_db/2 (10 -> 6); attack_ms/release_ms shape the duck. Negative music_offset delays the music instead of trimming.
+    swell: speech pauses [(a, b)] where the music goes unducked, crossfading from the ducked music over swell_s before a and after b."""
     d = video_duration or float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', voice_audio], capture_output=True, text=True).stdout)
     pre = ['-ss', f'{music_offset:.3f}'] if music_offset > 0 else []
     delay = f',adelay={int(-music_offset * 1000)}:all=1' if music_offset < 0 else ''
@@ -176,6 +178,11 @@ def mix(voice_audio, music_path, music_offset, out, music_gain_db=-8, duck_db=10
           f'[1:a]aresample=44100{delay},{vol},afade=t=in:d=0.4,atrim=0:{d},afade=t=out:st={d - fo:.3f}:d={fo:.3f}[m];'
           f'[m][v1]sidechaincompress=threshold=0.03:ratio={1 + duck_db / 2:g}:attack={attack_ms}:release={release_ms}[md];'
           f'[md][v2]amix=inputs=2:duration=first:dropout_transition=0,volume=2,alimiter=limit=0.95[o]')
+    if swell:   # w(t) 0..1: the share of the unducked music, ramping over swell_s either side of each pause
+        r = swell_s
+        w = 'min(1,' + '+'.join(f'min(1,max(0,(t-{a - r:.3f})/{r}))*min(1,max(0,({b + r:.3f}-t)/{r}))' for a, b in swell) + ')'
+        fc = fc.replace('[m][v1]sidechaincompress', '[m]asplit=2[m1][m2];[m1][v1]sidechaincompress').replace(
+            '[md][v2]amix', f"[md]volume='1-{w}':eval=frame[mdw];[m2]volume='{w}':eval=frame[mw];[mdw][mw]amix=inputs=2:normalize=0[mm];[mm][v2]amix")
     r = run(['ffmpeg', '-y', '-v', 'error', '-i', voice_audio, *pre, '-i', music_path, '-filter_complex', fc,
              '-map', '[o]', '-t', f'{d}', '-c:a', 'aac', '-b:a', '192k', out], capture_output=True, text=True)
     if r.returncode: raise RuntimeError(r.stderr[-600:])

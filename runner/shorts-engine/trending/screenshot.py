@@ -16,8 +16,11 @@ def _run(*args, timeout=120):
 def article(url, out_png, highlight=None):
     """Mobile screenshot of a news article, scrolled to the highlighted phrase (or the headline). None when a highlight was
     asked for and is not on the page: the shot is then an ad, a paywall or a consent wall, not the article."""
-    res = _run('article', url, str(out_png), *([highlight] if highlight else []))
-    return res['path'] if res and (not highlight or res.get('found_highlight')) else None
+    for _ in range(2):   # page loads and consent pop-ups vary: a miss is tried once more
+        res = _run('article', url, str(out_png), *([highlight] if highlight else []))
+        if res and (not highlight or res.get('found_highlight')):
+            return res['path']
+    return None
 
 
 def card(spec, out_png):

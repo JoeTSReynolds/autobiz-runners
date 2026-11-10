@@ -54,13 +54,17 @@ net.get_text = lambda url, timeout=30: (FX / 'gnews.xml').read_text()
 
 with tempfile.TemporaryDirectory() as d:
     d = Path(d); state = d / 'state'; state.mkdir()
-    (state / 'trending-covered.json').write_text(json.dumps([{'qid': 'Q4', 'date': '2026-10-20'}, {'qid': 'Q6', 'date': '2026-08-01'}]))
+    (state / 'trending-covered.json').write_text(json.dumps([{'qid': 'Q4', 'date': '2026-11-04'}, {'qid': 'Q6', 'date': '2026-08-01'},
+                                                             {'qid': 'Q1', 'format': 'edit', 'date': '2026-10-26', 'title': 'Old edit', 'angle': 'a story'}]))
     port, out, log = stages.people({'rejectedPeople': ['Q5']}, {}, d, state)
     cands = out['candidates']
     assert port == 'next' and [c['qid'] for c in cands] == ['Q1', 'Q2'], (port, cands)  # human only; Carl is a village; Dan covered; Eve rejected; Fred has no spike
     a, b = cands
     assert a['spike'] == 9.0 and a['age'] == 46 and a['image'] == 'Alice_Smith.jpg' and a['views'] == 9000 and a['born'] == '1980-03-02', a
     assert b['died'] == '2026-10-28' and b['spike'] < 3  # kept for the recent death alone
+    # a published Short does not hide the person: the route agent sees it and the formats still open (no second edit this month)
+    assert a['covered'] == [{'format': 'edit', 'date': '2026-10-26', 'title': 'Old edit', 'angle': 'a story'}] and 'edit' not in a['formats'], a
+    assert 'topn' in a['formats'] and b['formats'] == ['tribute'] and b['covered'] == [], b
     assert [h['domain'] for h in a['headlines']] == ['bbc.co.uk', 'theguardian.com', 'dailymail.co.uk'] and a['headlines'][0]['outlet'] == 'BBC News'
     assert not any(t in u for u in calls for t in ('Carl_Thing', 'Dan_Covered', 'Eve_Rejected', 'Main_Page', 'Special:')), 'skipped titles must cost nothing'
     port, out, log = stages.people({'rejectedPeople': ['Q1', 'Q2', 'Q5', 'Q6']}, {}, d, state)
@@ -116,6 +120,13 @@ port, out, _ = route({'qid': 'Q1', 'format': 'casefile', 'queries': ['q'], 'arti
 assert port == 'next', out  # BBC headline + FT article = 2 allowlisted outlets
 port, out, _ = route({'qid': 'Q1', 'format': 'nonsense'})
 assert port == 'invalid'
+# a format that would repeat a published Short is refused at route too (the agent may ignore `formats`); a chosen person is not
+with tempfile.TemporaryDirectory() as d:
+    (Path(d) / 'trending-covered.json').write_text(json.dumps([{'qid': 'Q1', 'format': 'edit', 'date': (stages.today() - dt.timedelta(days=7)).isoformat()}]))
+    port, out, _ = stages.route({'pick': {'qid': 'Q1', 'format': 'edit', 'queries': ['q']}, 'candidates': [ALICE, b]}, {}, Path('.'), Path(d))
+    assert port == 'invalid' and 'repeat' in out['agentErrors'][0], out
+    assert stages.route({'pick': {'qid': 'Q1', 'format': 'topn', 'queries': ['q']}, 'candidates': [ALICE, b]}, {}, Path('.'), Path(d))[0] == 'next'
+    assert stages.route({'pick': {'qid': 'Q1', 'format': 'edit', 'queries': ['q']}, 'candidates': [ALICE, b], 'want': {'person': 'Q1'}}, {}, Path('.'), Path(d))[0] == 'next'
 
 # ---- mediaplan
 SEARCH = load('ytsearch.json')
@@ -154,6 +165,12 @@ assert port == 'missing' and out['rejectedPeople'][-1] == 'Q1'  # archive.txt so
 ytsrc.search = lambda q, n=15: [dict(e, duration=0) for e in SEARCH]
 d, (port, out, log) = plan('tribute')
 assert port == 'missing'  # no duration, nothing passes the range
+# each query gets a turn: the pool takes the best-viewed of every query before the second of any, so viral chat-show clips
+# under one query cannot crowd out the speeches another query asked for (live 2026-11-10: Patrick Stewart tribute)
+VIRAL = [dict(SEARCH[0], id=f'big{i}', title=f'Alice Smith viral {i}', view_count=10**9 - i) for i in range(6)]
+ytsrc.search = lambda q, n=15: [dict(e) for e in (VIRAL if 'interview' in q else [dict(SEARCH[0], id='speech', title='Alice Smith acceptance speech', view_count=5)])]
+d, (port, out, log) = plan('tribute', rejected_sources=())
+assert port == 'next' and 'speech' in [p['id'] for p in out['pool']] and [p['id'] for p in out['pool']][:2] == ['big0', 'speech'], out['pool']
 ytsrc.search = lambda q, n=15: [dict(e) for e in SEARCH]
 cpick = dict(pick, articles=[{'url': 'https://www.bbc.co.uk/n/1', 'outlet': 'BBC'}, {'url': 'https://www.theguardian.com/n/2', 'outlet': 'Guardian'}, {'url': 'https://dailymail.co.uk/n/3', 'outlet': 'Mail'}])
 d, (port, out, log) = plan('casefile', cpick)
@@ -221,4 +238,40 @@ def flaky_json(url, timeout=30):
     return {'items': []}
 net.get_json = flaky_json; slept.clear()
 assert stages._get('u') == {'items': []} and 3 in slept
+# a death in the news before Wikidata has it (live 2026-11-10: "Tommy Walsh, co-presenter of BBC's Ground Force, dies aged
+# 68" while Wikidata had no date of death, so no tribute was possible)
+H = lambda t, d='Mon, 09 Nov 2026 18:24:55 GMT': {'title': t, 'outlet': 'BBC', 'domain': 'bbc.co.uk', 'date': d}
+assert people.death_in_headlines('Tommy Walsh', [H("Tommy Walsh, co-presenter of BBC's Ground Force, dies aged 68 - BBC")]) == '2026-11-09'
+assert people.death_in_headlines('Tommy Walsh', [H('Tributes paid as Tommy Walsh has died')]) == '2026-11-09'
+assert people.death_in_headlines('Tommy Walsh', [H('Tommy Walsh says he nearly died on set')]) is None   # not a death
+assert people.death_in_headlines('Tommy Walsh', [H('Gardener dies aged 90')]) is None                  # someone else
+assert people.death_in_headlines('Tommy Walsh', []) is None
+# a name in a headline can be a namesake: the person's own Wikipedia lead must also speak of them in the past tense (live
+# 2026-11-10: a search for Tommy Walsh found a 23-year-old Gaelic footballer, and the Ground Force headlines marked him dead)
+assert people.lead_says_dead('Tommy Walsh was an English television personality, presenter and builder best known for Ground Force')
+assert not people.lead_says_dead('Tommy Walsh is an Irish Gaelic footballer. At club level he plays with Kanturk')
+assert not people.lead_says_dead('')
+DEATH_H = [H("Tommy Walsh, co-presenter of BBC's Ground Force, dies aged 68")]
+_gt, _gj, _pr = net.get_text, net.get_json, stages.pp.parse_rss
+net.get_text = lambda url, timeout=30: ''
+stages.pp.parse_rss = lambda x: DEATH_H
+for title, lead, want in (('Tommy_Walsh_(builder)', 'Tommy Walsh was an English television personality.', '2026-11-09'),
+                          ('Tommy_Walsh_(Cork_Gaelic_footballer)', 'Tommy Walsh is an Irish Gaelic footballer.', None)):
+    net.get_json = lambda url, timeout=30, lead=lead: {'extract': lead}
+    assert stages._headlines({'name': 'Tommy Walsh', 'title': title, 'died': None})['died'] == want, title
+net.get_text, net.get_json, stages.pp.parse_rss = _gt, _gj, _pr
+# repeats: one tribute ever; nobody twice in 2 days; the same format again within 30 days only for a case file with news
+# since the last one (owner, 2026-11-10: a sentencing after the verdict is a new video, a second edit next week is not)
+T = dt.date(2026, 11, 10)
+C = lambda fmt, d, q='Q1': {'qid': q, 'format': fmt, 'date': d}
+rb = lambda fmt, cov, heads=(): people.repeat_block('Q1', fmt, cov, list(heads), T)
+assert rb('edit', []) is None and rb('tribute', [C('edit', '2026-11-09')]) is None          # a tribute is never blocked by other formats
+assert 'tribute' in rb('tribute', [C('tribute', '2025-01-01')])                              # one tribute, ever
+assert '2 days' in rb('topn', [C('edit', '2026-11-09')])                                     # not the same person two days running
+assert rb('topn', [C('edit', '2026-11-07')]) is None                                         # another format after 2 days
+assert 'edit' in rb('edit', [C('edit', '2026-10-20')]) and rb('edit', [C('edit', '2026-10-01')]) is None   # one edit a month
+assert rb('edit', [C('edit', '2026-11-01', 'Q2')]) is None                                   # someone else's
+assert 'no news' in rb('casefile', [C('casefile', '2026-11-05')], [H('Brand verdict', 'Wed, 04 Nov 2026 10:00:00 GMT')])
+assert rb('casefile', [C('casefile', '2026-11-05')], [H('Brand sentenced', 'Mon, 09 Nov 2026 10:00:00 GMT')]) is None   # new reporting
+assert 'casefile' in rb('casefile', [{'qid': 'Q1', 'date': '2026-11-01'}])                   # an old entry without a format counts as every format
 print('ok')

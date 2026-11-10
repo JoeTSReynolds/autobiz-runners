@@ -84,7 +84,7 @@ def check_story(out):  # invariant: story.clips[i] is built from plan.clips[i]
 # ---------------- verify: tribute
 TRIB = {'name': 'Callum Turner',
         'spine': [{'source': 'vid1', 'quote': sq(10)}, {'source': 'vid2', 'quote': sq(11)}],
-        'moments': [{'source': 'vid1', 'start': 100 + 10 * i, 'end': 104.5 + 10 * i} for i in range(6)],
+        'moments': [{'source': ('vid1', 'vid2')[i % 2], 'start': 100 + 10 * i, 'end': 104.5 + 10 * i} for i in range(6)],
         'closingLine': 'A life on the stage, and a voice for those who had nowhere else.'}
 port, out, log = verify(job('tribute', TRIB))
 assert port == 'next', (port, out, log)
@@ -117,15 +117,24 @@ t2 = copy.deepcopy(TRIB); t2['moments'] = t2['moments'][:4]
 invalid(job('tribute', t2), 'predicted duration')  # 4 x 4.5 s is too short
 t2 = copy.deepcopy(TRIB); t2['spine'][0]['source'] = 'nope'
 invalid(job('tribute', t2), 'spine[0]', 'nope')
+# silent moments all from one video look like one clip (live 2026-11-10: Patrick Stewart, all six from one panel answer)
+t2 = copy.deepcopy(TRIB)
+for m in t2['moments']: m['source'] = 'vid1'
+invalid(job('tribute', t2), 'moments', 'one video')
 
 # ---------------- verify: topn
 def moment(i, label='I dont know'):
-    return {'source': 'vid1', 'fromQuote': sq(i, 0, 3), 'toQuote': sq(i, -3, None), 'label': label}
+    return {'source': ('vid1', 'vid2')[i % 2], 'fromQuote': sq(i, 0, 3), 'toQuote': sq(i, -3, None), 'label': label}
 TOPN = {'title': 'Top 6 times Callum Turner dodged the Bond question', 'theme': 'dodging',
         'moments': [moment(10 + i) for i in range(6)],
         'closer': {'headline': 'Turner stuns Bond fans', 'line1': 'THIS WEEK', 'line2': 'STILL DODGING?'}}
 port, out, log = verify(job('topn', TOPN))
 assert port == 'next', (port, out, log)
+# a Top N is separate times: moments all from one video are one exchange cut in five (live 2026-11-10: Stephen Miller's
+# 'Top 5' was a single Jim Acosta briefing)
+t1 = copy.deepcopy(TOPN)
+for m in t1['moments']: m['source'] = 'vid1'
+invalid(job('topn', t1), 'moments', '2 different')
 p = out['plan']
 assert p['n'] == 5 and p['title'].startswith('Top 5 times') and len(p['moments']) == 5
 assert [m['rank'] for m in p['moments']] == [5, 4, 3, 2, 1] and [m['clip'] for m in p['moments']] == ['t0', 't1', 't2', 't3', 't4']
@@ -289,6 +298,9 @@ assert abs(_p['predictedDuration'] - _p['words'] / 2.3) < 0.01, _p['predictedDur
 c = cf_sb(); c['script'][0]['text'] = ' '.join(['word'] * 130) + '.'
 invalid(job('casefile', c), '57')
 missing(job('casefile', cf_sb(), articles=ARTICLES[:1]), 'outlets')
+# attribution reads naturally: never "both outlets report" on line after line (live 2026-11-10: said 5 times in one Brand script)
+c = cf_sb(); c['script'][7]['text'] = 'Colleagues describe weeks of missed payments, both outlets report.'
+invalid(job('casefile', c), 'script[7]', 'both outlets')
 
 
 # ---------------- music
@@ -302,7 +314,8 @@ assert sm._passes('edit', OLD()) and not sm._passes('edit', OLD(vocal_hint=0.12)
 assert sm._passes('edit', AN(vocal_hint=0.9)) and not sm._passes('edit', AN(vocal_hint=0.0, vocal_share=0.15)) and sm._passes('edit', AN(vocal_share=0.14))  # the measured share wins over the hint
 assert not sm._passes('edit', AN(vocal_share=0.5), labelled=True) and sm._passes('edit', OLD(vocal_hint=0.5), labelled=True)
 assert not sm._passes('documentary', AN(bpm=90, vocal_share=0.5), labelled=True)   # a measured vocal beats an 'instrumental' title
-assert sm._passes('sad', AN(bpm=80)) and not sm._passes('sad', AN(bpm=101)) and not sm._passes('sad', AN(bpm=80, intensity=[0.5] * 35))
+# slow piano reads at double time (live 2026-11-10: three vocal-free 'sad emotional piano' tracks at 120-136 bpm), so sad has no bpm cap
+assert sm._passes('sad', AN(bpm=80)) and sm._passes('sad', AN(bpm=130)) and not sm._passes('sad', AN(bpm=80, intensity=[0.5] * 35))
 assert not sm._passes('sad', OLD(bpm=80, vocal_hint=0.14))   # a slowed vocal funk track is not a tribute bed (live 2026-11-07)
 assert sm._passes('documentary', OLD(bpm=90, vocal_hint=0.09, drops=[{'time': 5, 'score': 2.0}])) and not sm._passes('documentary', AN(bpm=90))
 assert not sm._passes('documentary', OLD(bpm=90, vocal_hint=0.1, drops=[]) ) and not sm._passes('documentary', AN(bpm=120, drops=[]))
@@ -355,6 +368,10 @@ sm._fetch_track, sm._analyse = fetch, lambda p, m=None: AN()
 st = mstate(tracks={})
 port, out, _ = mrun(st)
 assert calls == ['C'] and out['track']['id'] == 'C' and json.loads((st / 'sounds' / 'tracks' / 'C.json').read_text())['bpm'] == 128.0
+# the cloud seed ships analyses without the audio: a passing analysis whose .m4a is missing fetches the audio again
+st = mstate(tracks={'C': AN()}); (st / 'sounds' / 'tracks' / 'C.m4a').unlink(); calls.clear()
+port, out, _ = mrun(st)
+assert port == 'next' and out['track']['id'] == 'C' and calls == ['C'] and (st / 'sounds' / 'tracks' / 'C.m4a').exists(), (port, calls)
 assert mrun(st)[1]['track']['id'] == 'C' and calls == ['C']                      # second run reads the saved analysis
 # fallback: nothing in the history, an analysed track of the right set that was not used in 3 days
 sm._analyse = lambda p, m=None: AN()
@@ -364,8 +381,13 @@ assert mrun(mstate(hist=False, tracks={'Z1': AN(vocal_share=0.5)}))[0] == 'missi
 # per-set candidates: a momentum report for the set restricts them; sad places the swell on the last clip
 SAD = AN(bpm=80)
 TP = {'format': 'tribute', 'predictedDuration': 50.0, 'clips': [{'key': 'm0', 'start': 0, 'end': 4}, {'key': 'spine0', 'start': 0, 'end': 10}, {'key': 'm1', 'start': 0, 'end': 4}]}
-port, out, _ = mrun(mstate(tracks={k: SAD for k in 'ABCDE'}, momentum=('sad', ['D', 'E'])), plan=TP, fmt='tribute')
-assert out['track']['id'] == 'D' and out['plan']['musicOffset'] == 30 - (4 / 0.8 + 10), out['plan']['musicOffset']
+# a tribute never takes a trending sound or a cached track: the sad tags trend pop songs (live 2026-11-10: "SugarCrash Slowed")
+sm._search = lambda q: []
+assert mrun(mstate(tracks={k: SAD for k in 'ABCDE'}, momentum=('sad', ['D', 'E'])), plan=TP, fmt='tribute')[0] == 'missing'
+sm._search = lambda q: [{'id': 'P0', 'title': 'Emotional Piano Instrumental', 'duration': 200, 'view_count': 9}]
+port, out, _ = mrun(mstate(tracks={k: SAD for k in 'ABCDE'} | {'P0': SAD}, momentum=('sad', ['D', 'E'])), plan=TP, fmt='tribute')
+assert out['track']['id'] == 'P0' and out['plan']['musicOffset'] == 30 - (4 / 0.8 + 10), (port, out)
+sm._search = lambda q: []
 # documentary: no placement
 DOC = AN(bpm=90, vocal_hint=0.05, drops=[{'time': 5, 'score': 2.0}])
 port, out, _ = mrun(mstate(tracks={'A': DOC}), plan=dict(MP, format='casefile'), fmt='casefile')
@@ -512,16 +534,21 @@ port, out, _, _ = prb(tplan(), {'m0': 'other', 'm1': 'other', 'm5': 'other'})
 assert port == 'invalid' and any('at least 4' in e for e in out['agentErrors']) and any('m5' in e for e in out['agentErrors']), out
 port, out, _, _ = prb(tplan(), {'spine1': 'other'})
 assert port == 'invalid' and any('spine1' in e for e in out['agentErrors']), out
-# edit: 3 probe points (first, middle, last); 2 of 3 is enough, 1 of 3 means the speaker is wrong
+# edit: every line is probed; it is his talk when he is on camera in at least 2 lines. A line showing someone else keeps
+# its audio and gets a cutaway picture (cover), as the reference edit cuts away while the person talks (owner, 2026-11-09)
 eplan = {'format': 'edit', 'person': {'name': 'Callum Turner'}, 'clips': [clip(f'l{i}', 'vid1', 100 + 10 * i, 106 + 10 * i) for i in range(6)], 'lines': []}
 port, out, _, _ = prb(eplan, {'l5': 'other'})
-assert port == 'next' and len(DL) == 1 and len(DL[0][1]) == 9 and out['plan']['clips'] == eplan['clips'] and 'l5' in out['agentErrors'][0]
-# a point where no face can be found (a wide stage shot: his face is ~12 px at 240p) is not evidence of someone else; the
-# speech is one continuous talk (live 2026-11-08: Alex Honnold's TED talk was rejected on 2 wide-shot points)
-port, out, _, _ = prb(eplan, {'l0': 'wide', 'l5': 'wide'})
-assert port == 'next', out['agentErrors']
-port, out, _, _ = prb(eplan, {'l0': 'other', 'l5': 'other'})
-assert port == 'missing' and out['rejectedPeople'] == ['Q0', 'Q1'] and len(out['agentErrors']) == 1 and 'probe' in out['agentErrors'][0], out
+assert port == 'next' and len(DL) == 1 and len(DL[0][1]) == 18 and out['agentErrors'] == [], out
+assert [c.get('cover', False) for c in out['plan']['clips']] == [False] * 5 + [True]
+port, out, _, _ = prb(eplan, {'l0': 'other', 'l1': 'other', 'l5': 'other'})   # live 2026-11-09: Magnus Midtbø on camera with Honnold
+assert port == 'next' and [c.get('cover', False) for c in out['plan']['clips']] == [True, True, False, False, False, True]
+assert prb(eplan, {'l0': 'wide', 'l5': 'wide'})[0] == 'next'                  # a wide stage shot is not someone else, and no cover
+assert prb(eplan, {f'l{i}': 'other' for i in range(1, 6)})[0] == 'invalid'    # on camera in 1 line only: not his talk
+# no line shows him (live 2026-11-09: a REEL ROCK behind-the-scenes video, climbing shots and a cameraman talking): back to
+# the storyboard for another source; the person is kept
+port, out, _, _ = prb(eplan, {'l0': 'wide', 'l1': 'other', 'l2': 'wide', 'l3': 'other', 'l4': 'wide', 'l5': 'wide'})
+assert port == 'invalid' and 'rejectedPeople' not in out and 'another source' in out['agentErrors'][-1], out
+assert prb(eplan, {f'l{i}': 'wide' for i in range(6)})[0] == 'invalid'
 # topn: a failed moment shrinks N and renumbers the ranks
 tn = {'format': 'topn', 'person': {'name': 'Callum Turner'}, 'title': 'Top 5 times he dodged', 'n': 5, 'closer': {},
       'clips': [clip(f't{i}', 'vid1', 100 + 10 * i, 106 + 10 * i) for i in range(5)],
@@ -632,7 +659,7 @@ cp = {'format': 'casefile', 'script': [{'visual': v} for v in [
     {'kind': 'photo', 'query': 'p2', 'candidates': []}, sh('https://a/bad3'), {'kind': 'photo', 'query': 'p3', 'candidates': [img('g3')]}]]}
 port, out, _, r = asr(cp)
 a = out['assets']
-assert port == 'next' and a['screenshots'] == {'https://a/1': 'assets/shots/0.png', 'https://a/2': 'assets/shots/1.png'}, out
+assert port == 'next' and a['screenshots'] == {'https://a/1#a b c d': 'assets/shots/0.png', 'https://a/2#a b c d': 'assets/shots/1.png'}, out
 assert a['photos'][0] == {'query': 'p1', 'file': 'assets/photos/0.png', 'credit': 'A', 'licence': 'CC BY 4.0', 'page': 'https://c/g1'}, a['photos'][0]
 assert [p['page'] for p in a['photos']] == ['https://c/g1', 'https://c/found', 'https://c/g3'] and (r / 'assets' / 'shots' / '1.png').read_bytes() == b'png'
 cp['script'][2]['visual']['url'] = 'https://a/bad2'                              # 2 of 3 screenshots failed: below the 2 needed
@@ -643,6 +670,11 @@ cp['script'][4]['visual']['candidates'] = []; cp['script'][6]['visual']['candida
 port, out, _, _ = asr(cp)
 assert port == 'missing' and 'photo' in out['agentErrors'][0], out
 
+# two highlights in one article are two screenshots (live 2026-11-10: the second CBS highlight showed the first one's image)
+cp1 = {'format': 'casefile', 'script': [{'visual': v} for v in [sh('https://a/1'), dict(sh('https://a/1'), highlight='e f g h'),
+       {'kind': 'photo', 'query': 'p1', 'candidates': [img('g1')]}, {'kind': 'photo', 'query': 'p3', 'candidates': [img('g3')]}]]}
+port, out, _, r = asr(cp1)
+assert port == 'next' and out['assets']['screenshots'] == {'https://a/1#a b c d': 'assets/shots/0.png', 'https://a/1#e f g h': 'assets/shots/1.png'}, out
 # case-file photos: every clearly visible face must be the person (live 2026-11-07: a red-carpet photo of Brand beside a young
 # woman ran under "the jury convicted him of grabbing a woman's breasts"; complainants have lifelong anonymity in the UK)
 FACES = {'https://x/stranger.PNG': [(0.9, 0.2), (0.1, 0.2)], 'https://x/alone.PNG': [(0.8, 0.2)], 'https://x/building.PNG': []}
@@ -663,6 +695,8 @@ sm._photo_faces = real_pf
 # photos never repeat a picture, and leftover candidates top the pool up to POOL_PHOTOS distinct photos (live 2026-11-07: two
 # "Russell Brand" visuals both downloaded the same top result and the case file showed 2 pictures in 10 shots)
 sm._photo_faces = lambda path, ref, models: []
+_real_pp = sm._person_photos
+sm._person_photos = lambda job, run, state, base: [{'file': f'assets/person/{i}.jpg', 'kind': 'image', 'credit': 'C', 'licence': 'CC BY 4.0', 'page': f'https://c/person{i}'} for i in range(4)]
 cp3 = {'format': 'casefile', 'script': [{'visual': v} for v in [sh('https://a/1'), sh('https://a/2'),
        {'kind': 'photo', 'query': 'Brand', 'candidates': [img('b1'), img('b2'), img('b3')]},
        {'kind': 'photo', 'query': 'Brand', 'candidates': [img('b1'), img('b2'), img('b3')]},
@@ -671,7 +705,10 @@ r = Path(tempfile.mkdtemp()); GOT.clear()
 port, out, _ = sm.assets(pj(cp3), {}, r, Path(tempfile.mkdtemp()))
 pages = [p['page'] for p in out['assets']['photos']]
 assert port == 'next' and pages[:3] == ['https://c/b1', 'https://c/b2', 'https://c/c1'], pages     # one per visual, no repeat
-assert len(pages) == sm.POOL_PHOTOS and len(set(pages)) == len(pages), pages                        # topped up, all distinct
+# the top-up takes at most 2 a query, then face-checked photos of the person (live 2026-11-10: 3 New Scotland Yard photos
+# of 6, the court shown 3 times and Brand twice)
+assert pages == ['https://c/b1', 'https://c/b2', 'https://c/c1', 'https://c/c2', 'https://c/person0', 'https://c/person1'], pages
+sm._person_photos = _real_pp
 # a photo's file name must carry most of its query's key words (live 2026-11-07: "Southwark Crown Court" returned the Shard
 # and HMS Belfast skyline, which ran under "found guilty of rape and sexual assault in")
 cm = lambda name: {'provider': 'commons', 'url': f'https://x/{name}.jpg', 'kind': 'image', 'credit': 'A', 'licence': 'CC BY 4.0',

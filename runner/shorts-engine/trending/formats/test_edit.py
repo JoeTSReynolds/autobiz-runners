@@ -185,4 +185,25 @@ from trending import captions as _C
 import numpy as _np
 assert _np.array_equal(_np.asarray(_C.StatSlams([])._img("Raped")), _np.asarray(_C.StatSlams([])._img("R*ped")))
 assert _np.array_equal(_np.asarray(_C.PopupCards([])._img("A murder")), _np.asarray(_C.PopupCards([])._img("A m*rder")))
+# a line marked cover (someone else on camera) shows no speaker shot: its audio stays, the picture is a cutaway
+sh = [dict(t0=0, t1=1, kind="S"), dict(t0=1, t1=2, kind="B"), dict(t0=2, t1=3.5, kind="S"), dict(t0=3.5, t1=4, kind="S")]
+edit.cover(sh, [(0, 1.5), (1.5, 3.2), (3.2, 4)], [False, True, False])
+assert [x["kind"] for x in sh] == ["S", "B", "B", "S"], sh
+# stock clips that fade in or out of black: shots use only the picture between (live 2026-11-09: a Pexels clip black for its
+# first 1.2 s left a black tail shot and the gate failed)
+_bp = Path(tempfile.mkdtemp()) / "fade.mp4"
+subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "color=black:s=160x284:r=30:d=1.2", "-f", "lavfi", "-i", "testsrc=s=160x284:r=30:d=3",
+                "-f", "lavfi", "-i", "color=black:s=160x284:r=30:d=0.8", "-filter_complex", "[0][1][2]concat=n=3:v=1", "-pix_fmt", "yuv420p", str(_bp)], check=True)
+a_, b_ = edit.picture_span(str(_bp))
+assert abs(a_ - 1.2) < 0.1 and abs(b_ - 4.2) < 0.1, (a_, b_)
+subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "color=black:s=160x284:r=30:d=3", "-f", "lavfi", "-i", "testsrc=s=160x284:r=30:d=0.6",
+                "-filter_complex", "[0][1]concat=n=2:v=1", "-pix_fmt", "yuv420p", str(_bp)], check=True)
+assert edit.picture_span(str(_bp)) is None   # 0.6 s of picture: not usable
+# lines that run on in the source play as one stretch: the next line's start is the join, neither side is moved to a quiet
+# point and there is no fade (live 2026-11-09: "building" and "notified" played twice where the snapped edges overlapped)
+src_ = lambda a, b, sid="v1": {"start": a, "end": b, "source": {"id": sid}}
+assert edit.runs_on(src_(456.78, 457.99), src_(457.839, 460.0))          # overlap
+assert edit.runs_on(src_(456.0, 457.0), src_(457.2, 460.0))              # a short gap
+assert not edit.runs_on(src_(456.0, 457.0), src_(458.0, 460.0))          # a skipped sentence
+assert not edit.runs_on(src_(456.0, 457.0), src_(457.0, 460.0, "v2"))    # another video
 print("ok")

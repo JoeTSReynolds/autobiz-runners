@@ -49,13 +49,25 @@ async function article(url, outPng, highlight, width = 430, scale = 2.5, maxHeig
     // no scrolling (some sites lock it): clip a full-page screenshot at the wanted document offset
     let top = await page.evaluate(() => { const e = document.querySelector('h1'); return e ? e.getBoundingClientRect().top + scrollY - 24 : 0 })
     let found = false
-    if (highlight) {
-      found = Boolean(await page.evaluate(MARK, highlight))
-      if (found) top = (await page.evaluate(() => document.getElementById('__hl').getBoundingClientRect().top + scrollY)) - 0.35 * h
-    }
+    if (highlight) found = Boolean(await page.evaluate(MARK, highlight))
     await page.waitForTimeout(600)
-    const total = await page.evaluate(() => document.documentElement.scrollHeight)
-    await page.screenshot({ path: outPng, fullPage: true, clip: { x: 0, y: Math.max(0, Math.min(top, total - h)), width, height: h } })
+    // measured after the wait: an ad loading late pushes the text down (live 2026-11-10: NBC showed an ad, the quote below)
+    if (found) top = (await page.evaluate(() => document.getElementById('__hl').getBoundingClientRect().top + scrollY)) - 0.35 * h
+    // scroll there and shoot the viewport: a full-page capture re-lays the page out and lazy ads shift it (live 2026-11-10:
+    // NBC's quote at 3571 px came out as two ads); sites that lock scrolling keep the clipped full-page capture
+    const hlTop = () => page.evaluate(() => { const e = document.getElementById('__hl'); return e ? e.getBoundingClientRect().top : null })
+    if (found) for (let i = 0; i < 2; i++) {   // twice: what loads on the way can move it again
+      await page.evaluate(() => document.getElementById('__hl').scrollIntoView({ block: 'center' })); await page.waitForTimeout(400)
+    }
+    const v = found ? await hlTop() : null
+    if (found && v !== null && v > 0 && v < h) {
+      await page.evaluate((d) => window.scrollBy(0, d), v - 0.35 * h); await page.waitForTimeout(300)
+      await page.evaluate(NUKE_FIXED)   // players and banners that pinned themselves on the way down
+      await page.screenshot({ path: outPng })
+    } else {
+      const total = await page.evaluate(() => document.documentElement.scrollHeight)
+      await page.screenshot({ path: outPng, fullPage: true, clip: { x: 0, y: Math.max(0, Math.min(top, total - h)), width, height: h } })
+    }
     return { path: outPng, found_highlight: found, title: await page.title() }
   } finally { await browser.close() }
 }

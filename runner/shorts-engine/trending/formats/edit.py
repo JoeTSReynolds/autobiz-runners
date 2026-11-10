@@ -9,7 +9,7 @@ Reads job["plan"] (lines[{clip, words}], dropLine, slams, popups, musicOffset), 
 time - offset), job["assets"] ({broll[{line, file, kind}], tail[{file, kind}]}), job["track"] ({file, analysis}). Paths are relative to `run`;
 intermediates go to run/cut/, the video to run/short.mp4.
 """
-import math, subprocess
+import math, re, subprocess
 from pathlib import Path
 import cv2
 import numpy as np
@@ -39,6 +39,7 @@ RAMP_FAST, RAMP_SLOW, RAMP_IN, RAMP_OUT = 2.5, 0.4, 0.5, 0.4
 SPEED_BLUR = 0.06     # radial blur span at full RAMP_FAST speed (on top of MOVE_BLUR * k)
 FACE_MAX = 0.48       # the speaker's face is at most this share of the frame width
 RMS_HOP, IN_WIN, OUT_WIN, FADE = 0.02, (-0.35, 0.1), (-0.25, 0.35), 0.015   # audio cut search (s): quietest frame near the planned point; join fade
+JOIN_GAP = 0.3                         # lines closer than this in the source play on with no cut
 GRADE = "eq=contrast=1.12:saturation=1.12:brightness=-0.02,unsharp=5:5:0.7"
 
 
@@ -293,6 +294,29 @@ class _Reader:
         self.p.stdout.close(); self.p.kill(); self.p.wait()
 
 
+def picture_span(path):
+    """(start, end) source seconds of the longest stretch of a clip without black (stock clips fade in and out, night shots
+    dip to black), or None when no stretch is 1 s long."""
+    fd = probe(path)[2]
+    r = subprocess.run(["ffmpeg", "-v", "info", "-i", path, "-vf", "scale=160:-2,blackdetect=d=0.1:pix_th=0.1", "-an", "-f", "null", "-"],
+                       capture_output=True, text=True).stderr
+    edges = [0.0] + [float(x) for p in re.findall(r"black_start:([\d.]+) black_end:([\d.]+)", r) for x in p] + [fd]
+    a, b = max(zip(edges[::2], edges[1::2]), key=lambda x: x[1] - x[0])
+    return (a, b) if b - a >= 1.0 else None
+
+
+def runs_on(c, c2):
+    """Line c2 carries straight on from line c in the same video (overlapping, or under JOIN_GAP after it)."""
+    return c["source"]["id"] == c2["source"]["id"] and c["start"] - 0.05 <= c2["start"] <= c["end"] + JOIN_GAP
+
+
+def cover(shots, vs, covered):
+    """Speaker shots over a covered line (someone else on camera) become cutaways; the line's audio is untouched."""
+    for s in shots:
+        if s["kind"] == "S" and any(c and a < s["t1"] and b > s["t0"] for (a, b), c in zip(vs, covered)):
+            s["kind"] = "B"
+
+
 def _split_person(tl, shots):
     """Speech and hold entries cut at the shots inside them: only speaker shots ("S") are person shots, a b-roll cutaway is not."""
     out = []
@@ -414,12 +438,20 @@ def render(job, cfg, run):
 
     # speaker: one face-crop render per line (with its audio), concatenated
     ld, ref, cuts, lost, t0s, ezs, rms = [], facecrop.load_ref(run), [], [], [], [], {}
+    jin = [False] * len(lines)   # line i runs on from line i - 1
     for i, (l, c, f) in enumerate(lines):
         src, a, b = str(run / f["file"]), c["start"] - f.get("offset", 0), c["end"] - f.get("offset", 0)
         # safety net: a line's in and out points go to the quietest frame near the plan, so no line starts or ends mid-word
         W_, H_, fd = probe(src)
         r = rms.setdefault(src, _rms(src))
-        a2, b2 = quiet_point(r, a, *IN_WIN), quiet_point(r, b, *OUT_WIN)
+        # a line that runs on from the one before (or into the one after) keeps that edge at the next line's start: one stretch
+        jin[i] = i > 0 and i != dl + 1 and runs_on(lines[i - 1][1], c)   # the stat slams pause after the drop line: a real cut there
+        jout = i + 1 < len(lines) and i != dl and runs_on(c, lines[i + 1][1])
+        if jout:
+            b = lines[i + 1][1]["start"] - f.get("offset", 0)
+        if jin[i]:
+            a = c["start"] - f.get("offset", 0)
+        a2, b2 = a if jin[i] else quiet_point(r, a, *IN_WIN), b if jout else quiet_point(r, b, *OUT_WIN)
         a2, b2 = max(a2, 0.0), min(b2, fd)
         if b2 - a2 > 0.5 * (b - a):
             a, b = a2, b2
@@ -450,6 +482,7 @@ def render(job, cfg, run):
         off += sum(lost[:dl])
     S = schedule(ld, dl, len(slams), grid(an, off, 90.0), td, music_len=(an.get("duration") or 0) - off or None)
     D, shots, vs = S["D"], S["shots"], S["lines"]
+    cover(shots, vs, [bool(c.get("cover")) for _, c, _ in lines])
     total = round(D * FPS)
 
     # visuals: speaker shots seek into spk.mp4 (the slam gap is not in it), b-roll and tail shots pick files
@@ -458,6 +491,9 @@ def render(job, cfg, run):
     broll, tails, persons = assets.get("broll") or [], list(assets.get("tail") or []), list(assets.get("person") or [])
     slots = tail_slots(sum(x["kind"] == "T" for x in shots), bool(persons))
     img = lambda it: it.get("kind") == "image" or str(it["file"]).lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+    spans = {x["file"]: picture_span(str(run / x["file"])) for x in broll + tails if not img(x)}
+    usable = lambda xs: [x for x in xs if spans.get(x["file"], 1)] or xs   # drop clips with no usable picture, unless none is left
+    broll, tails = usable(broll), usable(tails)
     for s in shots:
         s.update(ss=0.0, z0=1.0, z1=1.1, ox=0.5, oy=0.5)
         if s["kind"] == "S":
@@ -481,8 +517,8 @@ def render(job, cfg, run):
         prev = it["file"]
         im = img(it) and avail is None
         if not im and avail is None:   # a reused clip may start past its end: restart it, and ramp within what is left
-            fd = probe(str(run / it["file"]))[2]
-            ss = ss if ss + 1.0 < fd else 0.0
+            a0, fd = spans.get(it["file"]) or (0.0, probe(str(run / it["file"]))[2])
+            ss = max(ss, a0) if max(ss, a0) + 1.0 < fd else a0
             avail = fd - ss
         s.update(file=str(run / it["file"]), image=im, ss=0.0 if im else ss, avail=avail, z0=1.0 + 0.04 * (nt % 3), z1=1.16 + 0.05 * (nt % 4), ox=0.5, oy=0.5)
     lead, pulses = vs[-1][0], [(x["t0"], PULSE_W.get(x["trans"], 0.3)) for x in shots if x["t0"] >= vs[-1][0] and x["trans"]]
@@ -492,12 +528,13 @@ def render(job, cfg, run):
     ins, fc, labs = [], [], []
     for i in range(len(lines)):
         ins += ["-i", cut / f"spk{i}.mp4"]
-        fc.append(f"[{i}:a]loudnorm=I={TARGET_LUFS}:TP=-1.5:LRA=7,aresample=44100,afade=t=in:d={FADE},afade=t=out:st={ld[i] - FADE:.3f}:d={FADE},adelay={int(vs[i][0] * 1000)}:all=1[a{i}]")
+        fc.append(f"[{i}:a]loudnorm=I={TARGET_LUFS}:TP=-1.5:LRA=7,aresample=44100,{"" if jin[i] else f"afade=t=in:d={FADE},"}{"" if i + 1 < len(lines) and jin[i + 1] else f"afade=t=out:st={ld[i] - FADE:.3f}:d={FADE},"}adelay={int(vs[i][0] * 1000)}:all=1[a{i}]")
         labs.append(f"[a{i}]")
     fc.append("".join(labs) + f"amix=inputs={len(labs)}:duration=longest:normalize=0,apad=whole_dur={D + 2}[o]")
     _ff(*ins, "-filter_complex", ";".join(fc), "-map", "[o]", "-ac", 2, cut / "voice.wav")
     # the mix is made 1.5 s longer so its end fade falls outside the video: the tail keeps full intensity and stops on the hit
-    music.mix(str(cut / "voice.wav"), mp, off, str(cut / "mix.m4a"), music_gain_db=GAIN_DB, duck_db=DUCK_DB, video_duration=D + 1.5, boost_after=td)
+    music.mix(str(cut / "voice.wav"), mp, off, str(cut / "mix.m4a"), music_gain_db=GAIN_DB, duck_db=DUCK_DB, video_duration=D + 1.5, boost_after=td,
+              swell=[(S["tdend"], S["tdend"] + S["gap"])])   # the slam pause: the music swells in and out over 2 s, no jump
     fix = TARGET_LUFS - _lufs(cut / "mix.m4a", 0, D)
     _ff("-i", cut / "mix.m4a", "-af", f"volume={fix:.2f}dB,alimiter=limit=0.89,afade=t=out:st={D - 0.04:.3f}:d=0.04", "-t", f"{D:.3f}",
         "-c:a", "aac", "-b:a", "192k", cut / "final.m4a")
