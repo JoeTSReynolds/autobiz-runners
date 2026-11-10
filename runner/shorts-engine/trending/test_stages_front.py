@@ -67,8 +67,21 @@ with tempfile.TemporaryDirectory() as d:
     assert 'topn' in a['formats'] and b['formats'] == ['tribute'] and b['covered'] == [], b
     assert [h['domain'] for h in a['headlines']] == ['bbc.co.uk', 'theguardian.com', 'dailymail.co.uk'] and a['headlines'][0]['outlet'] == 'BBC News'
     assert not any(t in u for u in calls for t in ('Carl_Thing', 'Dan_Covered', 'Eve_Rejected', 'Main_Page', 'Special:')), 'skipped titles must cost nothing'
+    # a retry in the same run reuses the trending list: no Wikimedia calls again (live 2026-11-10: 103 s, 35 s, 23 s re-fetching)
+    calls.clear()
+    port, out, log = stages.people({'rejectedPeople': ['Q5', 'Q1']}, {}, d, state)
+    assert port == 'next' and [c['qid'] for c in out['candidates']] == ['Q2'] and not any('wikimedia' in u or 'wikidata' in u for u in calls), calls
     port, out, log = stages.people({'rejectedPeople': ['Q1', 'Q2', 'Q5', 'Q6']}, {}, d, state)
     assert port == 'missing' and out['candidates'] == [] and len(out['agentErrors']) == 1, out
+    # the next run the same day skips people rejected today (the cloud would retry them 3x a day); yesterday's are back
+    run2 = d / 'run2'; run2.mkdir()
+    port, out, log = stages.people({}, {}, run2, state)
+    assert port == 'missing', out
+    rej = json.loads((state / 'trending-rejected.json').read_text())
+    (state / 'trending-rejected.json').write_text(json.dumps({q: (stages.today() - dt.timedelta(days=1)).isoformat() for q in rej}))
+    run3 = d / 'run3'; run3.mkdir()
+    port, out, log = stages.people({}, {}, run3, state)
+    assert port == 'next' and [c['qid'] for c in out['candidates']] == ['Q1', 'Q2'], out
 
 # ---- a chosen person (run input want: {person: name or Qid, format}): one candidate, no spike or covered filter
 calls.clear()

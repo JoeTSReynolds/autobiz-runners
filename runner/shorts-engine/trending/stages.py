@@ -1,6 +1,7 @@
 """Front stages of the NoWayClips trending graph: refresh, people, route, mediaplan.
 Each is (job, cfg, run, state) -> (port, output, log). No stage here downloads video or audio."""
 import datetime as dt, itertools, json, os, re, statistics, time, urllib.error, urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from . import legal, sourcerules as formats, net, outlets, people as pp, soundmomentum as sm, transcripts, ytsrc
 
@@ -109,34 +110,49 @@ def _wanted(job, now):
     return 'missing', {'candidates': [], 'agentErrors': [why]}, why
 
 
-def people(job, cfg, run, state):
-    now = today()
-    if (job.get('want') or {}).get('person'):
-        return _wanted(job, now)
-    day, rows = _top(now)
-    rows = rows[:200]
+def _trending(rows, day, skip):
+    """[candidate] of the top rows that are people with a spike (or a recent death), headlines not yet fetched."""
     humans = {}
     for i in range(0, len(rows), 50):
         titles = '|'.join(t.replace('_', ' ') for t, _ in rows[i:i + 50])
         humans.update(pp.humans(_get('https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&sites=enwiki&languages=en'
                                              f'&props=claims|descriptions|labels|sitelinks&titles={urllib.parse.quote(titles)}')))
-    covered = jread(Path(state) / 'trending-covered.json', [])
-    skip = set(job.get('rejectedPeople', [])) | {c['qid'] for c in covered   # a Short in the last 2 days: skipped before any lookup
-                                                  if (now - dt.date.fromisoformat(c['date'])).days < pp.GAP_DAYS}
-    kept = []
-    for title, views in rows:
-        h = humans.get(title.replace('_', ' '))
-        if not h or h['qid'] in skip or len(kept) >= 40: continue
+    elig = [(t, v, h) for t, v in rows if (h := humans.get(t.replace('_', ' '))) and h['qid'] not in skip]
+
+    def spike(title):
         try:
-            daily = _get(f"{WIKI}/per-article/en.wikipedia/all-access/user/{urllib.parse.quote(title, safe='')}/daily/"
-                                 f"{day - dt.timedelta(days=29):%Y%m%d}/{day:%Y%m%d}")
-            sp = pp.spike([x['views'] for x in daily['items']])
-        except Exception: sp = None
-        died = pp.died_recently(h['died'], now)
-        if died or (sp or 0) >= 3:
+            return pp.spike([x['views'] for x in _get(f"{WIKI}/per-article/en.wikipedia/all-access/user/{urllib.parse.quote(title, safe='')}/daily/"
+                                                      f"{day - dt.timedelta(days=29):%Y%m%d}/{day:%Y%m%d}")['items']])
+        except Exception: return None
+    with ThreadPoolExecutor(4) as ex:   # one at a time took 243 s in the cloud (live 2026-11-10); _get still paces each worker
+        spikes = list(ex.map(lambda e: spike(e[0]), elig))
+    kept, now = [], today()
+    for (title, views, h), sp in zip(elig, spikes):
+        if len(kept) < 40 and (pp.died_recently(h['died'], now) or (sp or 0) >= 3):
             kept.append(dict(h, title=title, views=views, spike=sp, age=pp.age(h['born'], h['died'], now), headlines=[]))
+    return kept
+
+
+def people(job, cfg, run, state):
+    now = today()
+    if (job.get('want') or {}).get('person'):
+        return _wanted(job, now)
+    # people rejected today stay out of later runs today: the cloud runs 3x a day and would fail on them again
+    rf = Path(state) / 'trending-rejected.json'
+    rejected = {**{q: d for q, d in jread(rf, {}).items() if d == now.isoformat()}, **{q: now.isoformat() for q in job.get('rejectedPeople', [])}}
+    rf.write_text(json.dumps(rejected))
+    covered = jread(Path(state) / 'trending-covered.json', [])
+    skip = set(rejected) | {c['qid'] for c in covered   # a Short in the last 2 days: skipped before any lookup
+                            if (now - dt.date.fromisoformat(c['date'])).days < pp.GAP_DAYS}
+    cache = Path(run) / 'people-trending.json'   # a retry in this run reuses the list instead of fetching it again
+    if cache.exists():
+        kept = [c for c in jread(cache, []) if c['qid'] not in skip]
+    else:
+        day, rows = _top(now)
+        kept = _trending(rows[:200], day, skip)
     for c in sorted(kept, key=lambda c: -c['views'])[:12]:
-        _headlines(c)
+        if not c.get('headlines'): _headlines(c)
+    cache.write_text(json.dumps(kept))
     for c in kept:   # earlier Shorts of the person: shown to the route agent, and the formats that would not repeat one
         c['covered'] = [{k: e.get(k) for k in ('format', 'date', 'title', 'angle')} for e in covered if e.get('qid') == c['qid']]
         fmts = ['tribute'] if pp.died_recently(c['died'], now) else [f for f in formats.FORMATS if f != 'tribute']
@@ -144,7 +160,7 @@ def people(job, cfg, run, state):
     kept = [c for c in kept if c['formats']]
     cands = sorted(kept, key=lambda c: -c['views'] * min(c['spike'] or 1, 10))[:10]
     if not cands: return 'missing', {'candidates': [], 'agentErrors': ['no trending person left after filters']}, 'no candidates'
-    return 'next', {'candidates': cands}, f"{len(humans)} humans, {len(kept)} trending, {len(cands)} candidates"
+    return 'next', {'candidates': cands}, f"{len(kept)} trending, {len(cands)} candidates"
 
 
 # ---------- route ----------

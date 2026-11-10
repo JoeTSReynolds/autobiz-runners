@@ -1029,15 +1029,18 @@ def assets(job, cfg, run, state):
     if plan['format'] != 'casefile':
         return 'next', {'assets': {}, 'agentErrors': [], **({'plan': plan} if plan['format'] in ROWS else {})}, 'no assets for this format'
     visuals = [s['visual'] for s in plan['script']]
-    shots = {}
-    for v in visuals:   # one per highlight: two quotes from one article are two screenshots
-        if v['kind'] == 'screenshot' and shot_key(v) not in shots:
-            png = _screenshot(v['url'], base / 'shots' / f'{len(shots)}.png', v.get('highlight'))
-            shots[shot_key(v)] = f'assets/shots/{len(shots)}.png' if png else None
+    keys = list(dict.fromkeys(shot_key(v) for v in visuals if v['kind'] == 'screenshot'))   # one per highlight
+    by_key = {shot_key(v): v for v in visuals if v['kind'] == 'screenshot'}
+    need, shots = min(2, len(keys)), {}
+    for k in keys:
+        if sum(1 for f in shots.values() if not f) > len(keys) - need:
+            break   # the 2 needed can no longer be reached: the rest would only cost time (274 s in the cloud, live 2026-11-10)
+        v = by_key[k]
+        png = _screenshot(v['url'], base / 'shots' / f'{len(shots)}.png', v.get('highlight'))
+        shots[k] = f'assets/shots/{len(shots)}.png' if png else None
     done = {u: f for u, f in shots.items() if f}
-    need = min(2, len(shots))
     if len(done) < need:
-        return _missing(job, 'assets', f'only {len(done)} of {len(shots)} article screenshots could be taken ({need} needed)')
+        return _missing(job, 'assets', f'only {len(done)} of {len(keys)} article screenshots could be taken ({need} needed)')
     # every face a viewer would notice must be the person: an unrelated face under a line about a case can read as naming
     # someone (complainants in UK sexual offence cases have lifelong anonymity); without a reference only faceless photos pass
     idf = (job.get('identity') or {}).get('file')

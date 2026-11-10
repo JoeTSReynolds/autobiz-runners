@@ -210,7 +210,7 @@
             "lane": "trending",
             "voice": "elevenlabs",
             "timeoutMs": 3600000,
-            "elevenVoice": "onwK4e9ZLuTAKqWW03F9,Xb7hH8MSUJpSbSDYk0k2"
+            "elevenVoice": "Xb7hH8MSUJpSbSDYk0k2"
           }
         },
         {
@@ -642,7 +642,7 @@
       ]
     },
     "createdAt": "2026-11-07T17:43:13.811Z",
-    "updatedAt": "2026-11-10T14:10:01.870Z"
+    "updatedAt": "2026-11-10T17:16:10.468Z"
   },
   "modules": [
     {

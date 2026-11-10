@@ -665,6 +665,12 @@ assert [p['page'] for p in a['photos']] == ['https://c/g1', 'https://c/found', '
 cp['script'][2]['visual']['url'] = 'https://a/bad2'                              # 2 of 3 screenshots failed: below the 2 needed
 port, out, _, _ = asr(cp)
 assert port == 'missing' and 'screenshot' in out['agentErrors'][0] and out['rejectedPeople'] == ['Q0', 'Q1'], out
+# once the 2 needed can no longer be reached, the rest are not tried (live 2026-11-10: 274 s on hopeless cloud screenshots)
+cp['script'][0]['visual']['url'] = 'https://a/bad1'; shot_calls = []
+sm._screenshot = lambda u, d, h=None: shot_calls.append(u) or stub_shot(u, d, h)
+port, out, _, _ = asr(cp)
+assert port == 'missing' and shot_calls == ['https://a/bad1', 'https://a/bad2'], shot_calls
+sm._screenshot = stub_shot; cp['script'][0]['visual']['url'] = 'https://a/1'
 cp['script'][2]['visual']['url'] = 'https://a/2'; sm._commons_images = lambda q: []
 cp['script'][4]['visual']['candidates'] = []; cp['script'][6]['visual']['candidates'] = [img('bad')]   # only 1 photo left
 port, out, _, _ = asr(cp)
