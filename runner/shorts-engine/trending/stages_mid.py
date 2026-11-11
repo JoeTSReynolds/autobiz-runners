@@ -447,7 +447,9 @@ def _v_casefile(cx, sb):
     words = sum(len(s.split()) for s in spoken)
     if words / WPS > 57:
         errs.append(f'script: {words} words is {words / WPS:.0f} s at {WPS} words/s, must be at most 57 s (about {int(57 * WPS)} words)')
-    den = [a for a in arts if any(surname in _fold(s).split() and DENIAL.search(s) for s in _sentences(a['text']))]
+    # the person (or their lawyers) must be the one denying: "Turner denies", "Turner's lawyers have denied", not "Trump denied this ... Turner"
+    theirs = re.compile(rf'\b{re.escape(surname)}s?\b(?: \w+){{0,4}} {DENIAL.pattern}', re.I)
+    den = [a for a in arts if any(theirs.search(_fold(s)) for s in _sentences(a['text']))]
     if den and not any(DENIAL.search(s) for s in spoken):
         errs.append(f'script: {", ".join(a["outlet"] for a in den)} report a denial or rejection by {job["person"]["name"]}, the script must say it')
     claims = _check_list(errs, 'claims', sb.get('claims'), 4, 8)

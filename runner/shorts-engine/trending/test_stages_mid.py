@@ -278,6 +278,14 @@ c = cf_sb(); c['claims'][2]['support'][0]['quote'] = 'the star was arrested on a
 invalid(job('casefile', c), 'claims[2]', 'the star was arrested on a yacht')
 c = cf_sb(); c['script'][5]['text'] = 'Turner says he has never refused to pay anyone.'; c['script'][6]['text'] = 'His lawyers are expected to say more.'
 invalid(job('casefile', c), 'denial')  # BBC and Guardian report a denial, the script has none
+# someone else's denial that merely names the person is not the person's denial (Trump denied this ... Huang would join him)
+a2 = copy.deepcopy(ARTICLES)
+for a in a2: a['text'] = a['text'].replace('Turner denies the allegations and', 'Turner').replace('he rejects the claims', 'the claims are')
+a2[0]['text'] += ' But the studio denied this, writing that Turner would return next year.'
+port, out, log = verify(job('casefile', c, articles=a2))
+assert port == 'next', (port, out, log)
+a2[0]['text'] += " Turner's lawyers have firmly denied wrongdoing."
+invalid(job('casefile', c, articles=a2), 'denial')
 c = cf_sb(); c['script'][3]['visual'] = dict(c['script'][3]['visual'], highlight='words that are not in the article')
 invalid(job('casefile', c), 'script[3]', 'highlight')
 c = cf_sb(); c['script'][1]['visual'] = dict(c['script'][0]['visual'])
