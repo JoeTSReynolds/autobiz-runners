@@ -102,7 +102,7 @@ TITLE_SOFT_MAX = 60   # characters; Shorts titles are cut off on phones well bef
 def _credit_lines(credits, pool):
     """One short line per kind, names only, no links (owner 2026-11-10: a URL per photo and clip looked messy)."""
     channel = {p['id']: p.get('channel') for p in pool}
-    kinds = {'Reporting': [], 'Clips': [], 'Photos (Wikimedia Commons)': [], 'Also': [], 'Music': []}
+    kinds = {'Reporting': [], 'Clips': [], 'Photos (Wikimedia Commons)': [], 'Photos': [], 'Also': [], 'Music': []}
     for c in credits:
         if c.startswith('Footage: '):
             m = re.search(r'v=([\w-]{11})', c)
@@ -111,6 +111,8 @@ def _credit_lines(credits, pool):
             kinds['Reporting'].append(re.sub(r'\s+https?://\S+$', '', c[8:]))
         elif m := re.match(r'Photo: (.*?) / (.*?) \(Wikimedia Commons\)', c):
             kinds['Photos (Wikimedia Commons)'].append(f'{m[1]} ({m[2]})')
+        elif c.startswith('Photo: '):   # not from Commons (Bing): the site it is on
+            kinds['Photos'].append(re.sub(r'\s*https?://\S+', '', c[7:]))
         elif c.startswith('Music: '):
             kinds['Music'].append(c[7:])
         else:

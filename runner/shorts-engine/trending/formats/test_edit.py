@@ -103,11 +103,16 @@ assert edit._pick(pool[:1], {}, 0, prev="a.jpg")[0]["file"] == "a.jpg"  # a pool
 
 # --- person photos: about 1 in 3 tail shots, never adjacent; without photos one or two speaker moments, spread
 for nT in range(3, 40):
-    sl = sorted(edit.tail_slots(nT, True))
+    sl = sorted(edit.tail_slots(nT, 99))
     assert sl and all(b - a >= 3 for a, b in zip(sl, sl[1:])) and abs(len(sl) - nT / 3) <= 1 and max(sl) < nT, (nT, sl)
-    sp = sorted(edit.tail_slots(nT, False))
+    sp = sorted(edit.tail_slots(nT, 0))
     assert 1 <= len(sp) <= 2 and all(b - a >= 2 for a, b in zip(sp, sp[1:])) and max(sp) < nT, (nT, sp)
-assert edit.tail_slots(0, True) == set() and edit.tail_slots(2, False) == set()
+    # each photo shows once: one photo in a long tail is one slot, not every third shot (live 2026-11-12: the one Hoffman
+    # photo 5 times in 16 s)
+    for k in (1, 2):
+        s1 = sorted(edit.tail_slots(nT, k))
+        assert len(s1) == min(k, len(range(1, nT, 3))) and set(s1) <= set(range(1, nT, 3)), (nT, k, s1)
+assert edit.tail_slots(0, 99) == set() and edit.tail_slots(2, 0) == set()
 fr0 = np.random.RandomState(1).randint(0, 255, (1920, 1080, 3)).astype(np.uint8)
 assert np.abs(edit._tail_fx(fr0.copy(), 0.0, 0.0, 0.0, 1.0).astype(int) - fr0).mean() > 1  # speed alone blurs, even before the tail
 
@@ -133,7 +138,7 @@ plan = {"format": "edit", "musicOffset": 17.0, "dropLine": 1, "slams": ["28 YEAR
         "lines": [{"clip": f"l{i}", "text": "They walked across the frozen sea for days", "words": words(s + 0.2, "They walked across um the frozen sea for days" if i == 0 else "They walked across the frozen sea for days")} for i, s in enumerate(starts)]}
 assets = {"broll": [{"line": i, "file": f"b{i}.mp4", "kind": "video"} for i in range(3)],
           "tail": [{"file": "p0.png", "kind": "image"}, {"file": "t0.mp4", "kind": "video"}, {"file": "t1.mp4", "kind": "video"}],
-          "person": [{"file": "p1.png", "kind": "image", "credit": "Photo: Sam Test / CC BY"}]}
+          "person": [{"file": "p1.png", "kind": "image", "credit": "Photo: Sam Test / CC BY", "licence": "CC BY"}]}
 an = {"bpm": BPM, "beats": [k * PER for k in range(180)], "drop": 20.0, "duration": 90.0}
 job = {"plan": plan, "clips": [{"role": "moment", "file": "speaker.mp4", "offset": 40.0, "duration": 14.0, "sourceId": "spk"}] * 3,
        "assets": assets, "track": {"file": "music.m4a", "title": "Fixture", "analysis": an}}

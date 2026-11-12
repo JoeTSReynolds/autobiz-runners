@@ -173,6 +173,14 @@ assert [w['w'] for w in words] == ['Hello', 'there', 'Alice', 'Smith', 'here.'],
 txt = (d / 'transcripts.txt').read_text()
 assert out['transcripts'] == {'file': 'transcripts.txt'} and '### vid1 | Alice Smith full interview | Chat Show | 1800 s | 20260101' in txt and '[0.0-1.0] Hello there' in txt
 assert out['articles'] == [] and out['articlesText'] == {'file': 'articles.txt'} and (d / 'articles.txt').read_text() == ''
+# YouTube blocking the runner: stop after 3 sources in a row give no info, say yt-dlp's reason, and do not reject the person
+# (live 2026-11-12: 3 people rejected for "0 usable sources" over 14 min, the reason thrown away, each banned for the day)
+ytsrc.info_and_words = lambda vid, out_dir: fetched.append(vid) or (_ for _ in ()).throw(
+    RuntimeError(f"info unavailable for {vid}: bot check\nERROR: [youtube] {vid}: Sign in to confirm you're not a bot"))
+d, (port, out, log) = plan('tribute')
+assert port == 'missing' and len(fetched) == 3 and slept == [], (fetched, slept)
+assert 'rejectedPeople' not in out and 'YouTube' in out['agentErrors'][0] and "Sign in to confirm you're not a bot" in out['agentErrors'][0], out
+ytsrc.info_and_words = fake_info
 d, (port, out, log) = plan('edit')
 assert port == 'next' and len(out['pool']) == 3 and len(set(fetched)) == 3  # edit: K = 3, minimum 1
 d, (port, out, log) = plan('tribute', archive='youtube vid1\nyoutube vid2\n')

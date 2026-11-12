@@ -8,7 +8,7 @@ import copy, datetime as dt, email.utils, json, os, re, urllib.parse, urllib.req
 import numpy as np
 from collections import Counter
 from pathlib import Path
-from . import align, ytsrc
+from . import align, net, ytsrc
 
 LEAD, TAIL, CAP = 0.08, 0.15, 0.6   # cut lead-in before a word start, tail after a word end, max end past the last word's start
 MOMENT_SPEED = 0.8                  # tribute silent moments are shown at 0.8x
@@ -163,16 +163,16 @@ def _pexels_videos(q):
         return _pexels_candidates(json.load(r))
 
 
-def _commons_images(q):
+def _commons_images(q, n=6):
     import commons
     return [{'provider': 'commons', 'url': r['thumb'], 'kind': 'image', 'w': r.get('width'), 'h': r.get('height'), 'credit': r.get('artist', ''),
              'licence': r.get('license', ''), 'title': r['title'], 'page': 'https://commons.wikimedia.org/wiki/' + urllib.parse.quote(r['title'].replace(' ', '_'))}
-            for r in commons.search(q, 6) if (r.get('width') or 0) >= 700 and r.get('thumb')]
+            for r in commons.search(q, n) if (r.get('width') or 0) >= 700 and r.get('thumb')]
 
 
-def _safe(fn, q):
+def _safe(fn, q, *a):
     try:
-        return fn(q)
+        return fn(q, *a)
     except Exception:  # one provider failing must not fail the stage
         return []
 
@@ -1000,12 +1000,31 @@ def _person_photos(job, run, state, base):
         fs = _photo_faces(path, ref, Path(state) / 'models')
         return bool(fs) and all(m >= MATCH_PHOTO for m, _ in fs) and any(w >= PERSON_FACE for _, w in fs)
     out = []
-    for c in (c for c in _safe(_commons_images, name) if _relevant(c, name)):
+    for c in [c for c in _safe(_commons_images, name, 30) if _relevant(c, name)] + [None] + _safe(_bing_images, name):
+        if c is None:   # Commons exhausted: Bing only tops up a thin set
+            if len(out) >= 3:
+                break
+            continue
         got = _fetch_first(base, f'person/{len(out)}', [c], theirs)
         if got:
             out.append(got)
         if len(out) == PERSON_PHOTOS:
             break
+    return out
+
+
+def _bing_images(q):
+    """Bing image results for q, large first: news and agency photos, NOT freely licensed (owner 2026-11-12: accepted as a
+    fallback for more photos of the person). Credited to the site the image is on."""
+    import html
+    page = net.get_text('https://www.bing.com/images/search?form=HDRSC2&qft=+filterui:imagesize-large&q=' + urllib.parse.quote(q))
+    out = []
+    for m in re.findall(r'\bm="(\{[^"]*\})"', page):
+        try: d = json.loads(html.unescape(m))
+        except ValueError: continue
+        if d.get('murl', '').startswith('http'):
+            out.append({'provider': 'bing', 'url': d['murl'], 'kind': 'image', 'credit': urllib.parse.urlparse(d.get('purl') or d['murl']).netloc.removeprefix('www.'),
+                        'licence': '', 'title': d.get('t', ''), 'page': d.get('purl') or d['murl']})
     return out
 
 

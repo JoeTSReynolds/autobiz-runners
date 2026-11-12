@@ -194,12 +194,14 @@ def route(job, cfg, run, state):
 # ---------- mediaplan ----------
 
 def _info(vid, out_dir):
+    """(info, words, error): error is yt-dlp's reason when it gave no info at all."""
     for attempt in (0, 1):
-        try: return ytsrc.info_and_words(vid, out_dir)
+        try: return (*ytsrc.info_and_words(vid, out_dir), None)
         except RuntimeError as e:
-            if '429' not in str(e): break
+            err = str(e)
+            if '429' not in err: break
             if attempt == 0: sleep(30)  # rate limited: wait once, then give up on this source
-    return None, []
+    return None, [], err
 
 
 def _articles(arts):
@@ -242,9 +244,13 @@ def mediaplan(job, cfg, run, state):
     cand = list(found.values())[:rule['k']]
     cap_dir = run / 'captions'; cap_dir.mkdir(parents=True, exist_ok=True)
     kw = [sur] + [w for w in formats.fold(f"{pick.get('angle', '')} {pick.get('theme', '')}").split() if len(w) >= 5]
-    pool, blocks = [], []
+    pool, blocks, failed = [], [], []
     for e in cand:
-        info, words = _info(e['id'], str(cap_dir / 'info'))
+        info, words, err = _info(e['id'], str(cap_dir / 'info'))
+        failed = failed + [err] if err else []
+        if len(failed) == 3 and not pool:   # YouTube is blocking the runner, not this person: keep them for the next run
+            why = f"YouTube gave no info for 3 sources in a row, yt-dlp says: {failed[-1].splitlines()[-1][:200]}"
+            return 'missing', {**out, 'agentErrors': [f"{person['name']} skipped at mediaplan: {why}"]}, why
         words = transcripts.clean(words)
         if not words: continue
         meta = dict(id=e['id'], title=e['title'], channel=e.get('channel', ''), duration=round(e['duration']), uploaded=e.get('upload_date') or (info or {}).get('upload_date', ''))

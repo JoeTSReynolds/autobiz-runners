@@ -304,7 +304,7 @@ def render(job, cfg, run):
     def photo_piece(a, b, p, sign, text=None):
         if p is None:
             return add(a, b, "quote", False, lambda: TextSeg("", text or "", "", a, b))
-        credits.append(f"Photo: {p['credit']} / {p['licence']} (Wikimedia Commons) {p.get('page') or ''}".strip())
+        credits.append((f"Photo: {p['credit']} / {p['licence']} (Wikimedia Commons) " if p.get('licence') else f"Photo: {p['credit']} ") + (p.get('page') or ''))
         add(a, b, "photo", False, lambda: PhotoSeg(run / p["file"], a, b, zin=sign > 0))
 
     ticks = [dict(label=t["label"], pos=i / max(len(plan["timeline"]) - 1, 1), at=1e9) for i, t in enumerate(plan.get("timeline") or [])]

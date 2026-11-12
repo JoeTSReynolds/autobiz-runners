@@ -146,10 +146,12 @@ def speed_curve(d, avail=None):
 
 
 def tail_slots(n, photos):
-    """Tail shot indices (of n) that show the person: with photos about one in three, never adjacent; without, one or two spread
-    moments from the speaker's own clips."""
+    """Tail shot indices (of n) that show the person: with `photos` photos about one in three, never adjacent, each photo once
+    (spread over the tail); without, one or two spread moments from the speaker's own clips."""
     if photos:
-        return set(range(1, n, 3))
+        every = list(range(1, n, 3))
+        k = min(photos, len(every))
+        return {every[i * len(every) // k] for i in range(k)}
     return set() if n < 3 else {n // 2} if n < 6 else {n // 3, 2 * n // 3}
 
 
@@ -489,7 +491,7 @@ def render(job, cfg, run):
     line_at = lambda t: max(i for i, (a, _) in enumerate(vs) if a <= t + 1e-6)
     uses, tuses, puses, nb, nt, ti, mom, prev = {}, {}, {}, 0, 0, 0, 0, None
     broll, tails, persons = assets.get("broll") or [], list(assets.get("tail") or []), list(assets.get("person") or [])
-    slots = tail_slots(sum(x["kind"] == "T" for x in shots), bool(persons))
+    slots = tail_slots(sum(x["kind"] == "T" for x in shots), len(persons))
     img = lambda it: it.get("kind") == "image" or str(it["file"]).lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
     spans = {x["file"]: picture_span(str(run / x["file"])) for x in broll + tails if not img(x)}
     usable = lambda xs: [x for x in xs if spans.get(x["file"], 1)] or xs   # drop clips with no usable picture, unless none is left
@@ -557,6 +559,6 @@ def render(job, cfg, run):
     tl.append({"start": S["tT"], "end": D, "kind": "tail", "person": False})
     tl = _split_person(tl, shots)
     urls = list(dict.fromkeys(c["source"]["url"] for c in plan["clips"]))
-    cr = [x["credit"] for x in broll + tails + persons if x.get("credit")]
+    cr = [("Photo: " if x in persons and not x.get("licence") else "") + x["credit"] for x in broll + tails + persons if x.get("credit")]   # Bing: no licence
     return {"short": {"file": "short.mp4", "duration": D}, "timeline": tl, "musicOffset": off,
             "credits": [f"Footage: {u}" for u in urls] + list(dict.fromkeys(cr)) + ([f"Music: {track['title']}"] if track.get("title") else [])}

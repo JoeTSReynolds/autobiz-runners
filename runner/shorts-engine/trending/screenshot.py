@@ -23,7 +23,7 @@ def article(url, out_png, highlight=None):
             return res['path']
     if os.environ.get('JINA_API_KEY'):   # rendered on Jina's servers: the top of the article (headline), no highlight
         try:
-            png = net.get_bytes(net.jina(url, 'screenshot').strip())
+            png = net.jina(url, 'screenshot')
         except Exception:
             return None
         if png.startswith(b'\x89PNG'):

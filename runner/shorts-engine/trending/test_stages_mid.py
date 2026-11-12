@@ -33,7 +33,8 @@ POOL = [{'id': 'vid1', 'url': 'https://www.youtube.com/watch?v=vid1', 'duration'
 ARTICLES = json.load(open(HERE / 'fixtures' / 'mid-articles.json'))
 CAND = {'provider': 'pexels', 'url': 'https://x/v.mp4', 'kind': 'video', 'w': 1080, 'h': 1920, 'duration': 8.0, 'credit': 'P', 'page': 'https://x'}
 sm._pexels_videos = lambda q: [] if q.startswith('empty') else [CAND]
-sm._commons_images = lambda q: []
+sm._commons_images = lambda q, n=6: []
+_real_bing, sm._bing_images = sm._bing_images, lambda q: []   # never the real Bing in tests
 
 
 def mkrun():
@@ -218,7 +219,7 @@ assert verify(job('edit', e))[0] == 'next'
 # verify writes run/broll.txt for the b-roll agent: every distinct query with its line text and numbered candidate descriptions
 _pv, _ci = sm._pexels_videos, sm._commons_images
 sm._pexels_videos = lambda q: [dict(CAND, page='https://www.pexels.com/video/a-man-climbing-on-rocks-8726216/'), dict(CAND, page='https://www.pexels.com/video/car-drifting-at-a-crowd-123/')]
-sm._commons_images = lambda q: [{'provider': 'commons', 'kind': 'image', 'title': 'File:Alex_Honnold_on_El_Capitan.jpg', 'url': 'u'}]
+sm._commons_images = lambda q, n=6: [{'provider': 'commons', 'kind': 'image', 'title': 'File:Alex_Honnold_on_El_Capitan.jpg', 'url': 'u'}]
 r = mkrun()
 port, out, _ = sm.verify(job('edit', EDIT), {}, r, Path(tempfile.mkdtemp()))
 assert port == 'next' and out['brollText'] == {'file': 'broll.txt'}, out
@@ -259,7 +260,7 @@ def cf_sb(**kw):
                      {'text': 'denial', 'support': sup('has never refused to pay', 'rejects the claims in full')}],
           'timeline': [{'label': 'AUG 2024', 'text': 'a'}, {'label': 'JAN 2025', 'text': 'b'}]}
     return dict(sb, **kw)
-sm._commons_images = lambda q: [] if 'empty' in q else [dict(CAND, provider='commons', kind='image')]
+sm._commons_images = lambda q, n=6: [] if 'empty' in q else [dict(CAND, provider='commons', kind='image')]
 port, out, log = verify(job('casefile', cf_sb()))
 assert port == 'next', (port, out, log)
 p = out['plan']
@@ -660,7 +661,7 @@ for i in (0, 3, 4): ep['broll'][i]['candidates'] = [vid(f'bad{i}')]            #
 port, out, log, _ = asr(ep)
 assert port == 'missing' and out['rejectedPeople'] == ['Q0', 'Q1'] and len(out['agentErrors']) == 1 and 'assets' in out['agentErrors'][0], out
 # casefile: screenshots keyed by url, photos with credits, empty candidates searched again
-sm._commons_images = lambda q: [img('found')]
+sm._commons_images = lambda q, n=6: [img('found')]
 sh = lambda u: {'kind': 'screenshot', 'outlet': 'BBC', 'url': u, 'highlight': 'a b c d'}
 cp = {'format': 'casefile', 'script': [{'visual': v} for v in [
     sh('https://a/1'), {'kind': 'photo', 'query': 'p1', 'candidates': [img('bad'), img('g1')]}, sh('https://a/2'), {'kind': 'timeline', 'label': 'X'},
@@ -679,7 +680,7 @@ sm._screenshot = lambda u, d, h=None: shot_calls.append(u) or stub_shot(u, d, h)
 port, out, _, _ = asr(cp)
 assert port == 'missing' and shot_calls == ['https://a/bad1', 'https://a/bad2'], shot_calls
 sm._screenshot = stub_shot; cp['script'][0]['visual']['url'] = 'https://a/1'
-cp['script'][2]['visual']['url'] = 'https://a/2'; sm._commons_images = lambda q: []
+cp['script'][2]['visual']['url'] = 'https://a/2'; sm._commons_images = lambda q, n=6: []
 cp['script'][4]['visual']['candidates'] = []; cp['script'][6]['visual']['candidates'] = [img('bad')]   # only 1 photo left
 port, out, _, _ = asr(cp)
 assert port == 'missing' and 'photo' in out['agentErrors'][0], out
@@ -694,7 +695,7 @@ assert port == 'next' and out['assets']['screenshots'] == {'https://a/1#a b c d'
 FACES = {'https://x/stranger.PNG': [(0.9, 0.2), (0.1, 0.2)], 'https://x/alone.PNG': [(0.8, 0.2)], 'https://x/building.PNG': []}
 real_pf = sm._photo_faces
 sm._photo_faces = lambda path, ref, models: [(m if ref is not None else 0.0, w) for m, w in FACES.get(GOT[-1], [(0.9, 0.2)])]   # as the real one
-sm._commons_images = lambda q: []
+sm._commons_images = lambda q, n=6: []
 cp2 = {'format': 'casefile', 'script': [{'visual': v} for v in [sh('https://a/1'), sh('https://a/2'),
        {'kind': 'photo', 'query': 'p1', 'candidates': [img('stranger'), img('alone')]},
        {'kind': 'photo', 'query': 'p2', 'candidates': [img('building')]}]]}
@@ -723,6 +724,30 @@ assert port == 'next' and pages[:3] == ['https://c/b1', 'https://c/b2', 'https:/
 # of 6, the court shown 3 times and Brand twice)
 assert pages == ['https://c/b1', 'https://c/b2', 'https://c/c1', 'https://c/c2', 'https://c/person0', 'https://c/person1'], pages
 sm._person_photos = _real_pp
+# person photos search 30 Commons results, not 6 (live 2026-11-12: 6 gave one Hoffman photo, 30 give 21 big enough), and when
+# fewer than 3 pass the face check Bing images top them up, behind the same check
+_ci, _bi, _pf, _ff = sm._commons_images, sm._bing_images, sm._photo_faces, sm._fetch_first
+asked, picked = [], []
+sm._commons_images = lambda q, n=6: asked.append(n) or [dict(img('Dustin_Hoffman_1968'), title='Dustin Hoffman 1968')]
+sm._bing_images = lambda q: [{'provider': 'bing', 'url': f'https://b/{i}.jpg', 'kind': 'image', 'credit': 'variety.com', 'licence': '',
+                              'title': 'x', 'page': f'https://variety.com/{i}'} for i in range(6)]
+sm._fetch_first = lambda base, stem, cands, ok=None: picked.append(cands[0]['url']) or {'file': f'assets/{stem}.jpg', 'page': cands[0]['page']}
+r = Path(tempfile.mkdtemp()); np.save(r / 'identity.npy', np.ones(3))
+got = sm._person_photos({'person': {'name': 'Dustin Hoffman'}, 'identity': {'file': 'identity.npy'}}, r, Path(tempfile.mkdtemp()), r / 'assets')
+assert asked == [30] and [g['page'] for g in got] == ['https://c/Dustin_Hoffman_1968', 'https://variety.com/0', 'https://variety.com/1',
+                                                    'https://variety.com/2'], got
+sm._commons_images, sm._bing_images, sm._fetch_first = _ci, _bi, _ff
+# Bing's results page carries each image as JSON in an m="..." attribute: full image (murl), its page (purl), title (t)
+BING = ('<a class="iusc" m="{&quot;murl&quot;:&quot;https://img.variety.com/a.jpg&quot;,&quot;purl&quot;:&quot;https://variety.com/2026/a/&quot;,'
+        '&quot;t&quot;:&quot;Dustin Hoffman at the Oscars&quot;}" href="#"></a><a class="iusc" m="{&quot;murl&quot;:&quot;https://x.org/b.png&quot;,'
+        '&quot;purl&quot;:&quot;https://x.org/p&quot;,&quot;t&quot;:&quot;B&quot;}"></a>')
+_gt = sm.net.get_text
+sm.net.get_text = lambda url, timeout=30: BING
+bi = _real_bing('Dustin Hoffman')
+sm.net.get_text = _gt
+assert bi == [{'provider': 'bing', 'url': 'https://img.variety.com/a.jpg', 'kind': 'image', 'credit': 'variety.com', 'licence': '',
+               'title': 'Dustin Hoffman at the Oscars', 'page': 'https://variety.com/2026/a/'},
+              {'provider': 'bing', 'url': 'https://x.org/b.png', 'kind': 'image', 'credit': 'x.org', 'licence': '', 'title': 'B', 'page': 'https://x.org/p'}], bi
 # a photo's file name must carry most of its query's key words (live 2026-11-07: "Southwark Crown Court" returned the Shard
 # and HMS Belfast skyline, which ran under "found guilty of rape and sexual assault in")
 cm = lambda name: {'provider': 'commons', 'url': f'https://x/{name}.jpg', 'kind': 'image', 'credit': 'A', 'licence': 'CC BY 4.0',
@@ -794,7 +819,7 @@ PF = {'https://x/Callum_Turner_crowd.PNG': [(0.9, 0.2), (0.1, 0.2)], 'https://x/
 sm._photo_faces = lambda path, ref, models: PF[GOT[-1]]
 QS = []
 cm2 = lambda n: {**img(n), 'title': f'File:{n}.jpg', 'page': f'https://commons.wikimedia.org/wiki/File:{n}.jpg', 'credit': f'by {n}'}
-sm._commons_images = lambda q: QS.append(q) or [cm2(n) for n in ('Callum_Turner_' + k for k in 'crowd tiny no a b c d e'.split())]
+sm._commons_images = lambda q, n=6: QS.append(q) or [cm2(n) for n in ('Callum_Turner_' + k for k in 'crowd tiny no a b c d e'.split())]
 PF.update({f'https://x/Callum_Turner_{k}.PNG': [(0.8, 0.2)] for k in 'abcde'})
 ep2 = {'format': 'edit', 'broll': [], 'tail': []}
 r = Path(tempfile.mkdtemp()); GOT.clear(); np.save(r / 'identity.npy', np.ones(3))
@@ -806,7 +831,7 @@ assert pp[0] == {'file': 'assets/person/0.png', 'kind': 'image', 'credit': 'by C
 # nothing passes (or no identity reference): an empty list, and the edit still goes on
 r = Path(tempfile.mkdtemp()); GOT.clear()
 assert sm.assets(pj(ep2), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['person'] == []
-sm._commons_images = lambda q: (_ for _ in ()).throw(OSError('offline'))
+sm._commons_images = lambda q, n=6: (_ for _ in ()).throw(OSError('offline'))
 assert sm.assets(pj(ep2), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['person'] == []
 sm._photo_faces, sm._commons_images = real_pf, lambda q: []
 

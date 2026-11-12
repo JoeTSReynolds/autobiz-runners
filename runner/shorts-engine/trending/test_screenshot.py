@@ -11,19 +11,20 @@ def png_size(p): return struct.unpack('>II', Path(p).read_bytes()[16:24])
 # servers; only with a key (anonymous access is refused for some outlets), and its shot has the headline, not the highlight
 import os
 from trending import net
-_run, _jina, _bytes = screenshot._run, getattr(net, 'jina', None), getattr(net, 'get_bytes', None)
+_run, _jina = screenshot._run, net.jina
 screenshot._run = lambda *a, **k: None
-net.jina = lambda url, fmt, timeout=90: 'https://img/shot.png'
-net.get_bytes = lambda url, timeout=60: b'\x89PNG\r\n\x1a\nfake'
+# Jina answers a screenshot request with the PNG itself, not a link to it (live 2026-11-12: the bytes were read as a URL and
+# every fallback shot failed, rejecting Huang, Brand and Hegseth)
+net.jina = lambda url, fmt, timeout=90: b'\x89PNG\r\n\x1a\nfake'
 with tempfile.TemporaryDirectory() as d0:
     os.environ.pop('JINA_API_KEY', None)
     assert screenshot.article('https://cnn.com/a', f'{d0}/j.png', 'quote') is None
     os.environ['JINA_API_KEY'] = 'k'
     assert screenshot.article('https://cnn.com/a', f'{d0}/j.png', 'quote') == f'{d0}/j.png' and Path(f'{d0}/j.png').read_bytes().startswith(b'\x89PNG')
-    net.get_bytes = lambda url, timeout=60: b'<html>error</html>'   # not an image: no shot
+    net.jina = lambda url, fmt, timeout=90: b'<html>error</html>'   # not an image: no shot
     assert screenshot.article('https://cnn.com/b', f'{d0}/k.png', 'quote') is None
     del os.environ['JINA_API_KEY']
-screenshot._run, net.jina, net.get_bytes = _run, _jina, _bytes
+screenshot._run, net.jina = _run, _jina
 
 with tempfile.TemporaryDirectory() as d:
     d = Path(d)

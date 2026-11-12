@@ -57,10 +57,11 @@ for t, want in [('He Confessed to Killing Natalee Holloway. Joran van der Sloot 
 # credits are one short line per kind, no links (owner 2026-11-10: a list of URLs looked messy); clips name their channels
 cr = ['Photo: SIryn / CC BY-SA 4.0 (Wikimedia Commons) https://commons.wikimedia.org/wiki/File%3AA.jpg', 'Source: NBC News https://www.nbcnews.com/x',
       'Footage: https://www.youtube.com/watch?v=abcdefghijk', 'Photo: Rinus de Graaff / CC0 (Wikimedia Commons) https://c/b', 'Source: CBS News https://cbs/y',
-      'Photo: SIryn / CC BY-SA 4.0 (Wikimedia Commons) https://c/c', 'Footage: https://www.youtube.com/watch?v=zzzzzzzzzzz', 'Jane Doe', 'Music: Song']
+      'Photo: SIryn / CC BY-SA 4.0 (Wikimedia Commons) https://c/c', 'Footage: https://www.youtube.com/watch?v=zzzzzzzzzzz', 'Jane Doe', 'Music: Song',
+      'Photo: gala.de https://gala.de/p']   # a Bing photo: the site it is on, not a Commons licence
 port, out, log = gate({**base, 'credits': cr, 'pool': [{'id': 'abcdefghijk', 'channel': 'BBC News'}]}, r)
 assert out['meta']['description'] == ('story\n\nReporting: NBC News, CBS News\nClips: BBC News, YouTube\n'
-                                      'Photos (Wikimedia Commons): SIryn (CC BY-SA 4.0), Rinus de Graaff (CC0)\nAlso: Jane Doe\nMusic: Song'), out['meta']['description']
+                                      'Photos (Wikimedia Commons): SIryn (CC BY-SA 4.0), Rinus de Graaff (CC0)\nPhotos: gala.de\nAlso: Jane Doe\nMusic: Song'), out['meta']['description']
 assert 'http' not in out['meta']['description']
 
 r = tmp(); clip(r / 'short.mp4', secs=12)
