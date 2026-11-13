@@ -160,6 +160,8 @@ def place(analysis, target_drop_time, video_duration):
     music_offset < 0 means start the music that many seconds into the video (drop is later in the video than the file allows)."""
     drop = analysis['drop'] if analysis.get('drop') is not None else 0.0
     off = drop - target_drop_time
+    if analysis.get('duration'):   # keep enough song for the whole video, even if the drop then lands earlier
+        off = min(off, analysis['duration'] - video_duration)
     off = max(off, -target_drop_time)   # cannot start before 0 s of the video
     return dict(music_offset=round(off, 3), fade_in=0.4 if off >= 0 else 0.8, fade_out=min(1.5, video_duration / 4))
 
@@ -175,7 +177,7 @@ def mix(voice_audio, music_path, music_offset, out, music_gain_db=-8, duck_db=10
     vol = f"volume='pow(10,({g}+4*min(1,max(0,(t-{boost_after})/0.3)))/20)':eval=frame" if boost_after is not None else f'volume={g}dB'
     fo = min(1.5, d / 4)
     fc = (f'[0:a]aresample=44100,apad,atrim=0:{d},asplit=2[v1][v2];'
-          f'[1:a]aresample=44100{delay},{vol},afade=t=in:d=0.4,atrim=0:{d},afade=t=out:st={d - fo:.3f}:d={fo:.3f}[m];'
+          f'[1:a]aresample=44100{delay},{vol},afade=t=in:d=0.4,apad,atrim=0:{d},afade=t=out:st={d - fo:.3f}:d={fo:.3f}[m];'   # apad: a song that ends early must not end the mix
           f'[m][v1]sidechaincompress=threshold=0.03:ratio={1 + duck_db / 2:g}:attack={attack_ms}:release={release_ms}[md];'
           f'[md][v2]amix=inputs=2:duration=first:dropout_transition=0,volume=2,alimiter=limit=0.95[o]')
     if swell:   # w(t) 0..1: the share of the unducked music, ramping over swell_s either side of each pause

@@ -20,7 +20,10 @@ a = music.analyse(p)
 print(a['bpm'], a['drop'], a['drops'])
 assert abs(a['bpm'] - 120) <= 2, a['bpm']
 assert abs(a['drop'] - 10) <= 0.5, a['drop']
-pl = music.place(a, 5, 20); assert abs(pl['music_offset'] - (a['drop'] - 5)) < 1e-2
+pl = music.place(a, 5, 15); assert abs(pl['music_offset'] - (a['drop'] - 5)) < 1e-2
+# a drop near the end of the song leaves the video without music: the offset keeps the song running to the end (live
+# 2026-11-12: a 121 s track at offset 92 s gave 29 s of music for a 39 s video, and the encode crashed)
+pl = music.place({**a, 'duration': 121.1, 'drop': 102.7}, 10.7, 39); assert pl['music_offset'] == round(121.1 - 39, 3), pl
 # vocal_share: YAMNet frames whose top classes include singing/speech/rapping; a sine + noise bed is not vocal
 bed = (0.3 * np.sin(2 * np.pi * 110 * t) + 0.05 * np.random.default_rng(0).standard_normal(len(t))) * (np.sin(2 * np.pi * 2 * t) > 0)
 pb = os.path.join(tempfile.mkdtemp(), 'bed.wav')
@@ -49,4 +52,8 @@ def _band(path, a, b):   # music level (dB) in [a, b]: the voice is a 1 kHz tone
 music.mix(_v, _m, 0, _o, music_gain_db=-6, duck_db=12, video_duration=14, swell=[(6, 8)])
 lo, ramp, full, back, lo2 = _band(_o, 1.5, 3), _band(_o, 4.9, 5.2), _band(_o, 6.4, 7.6), _band(_o, 8.8, 9.1), _band(_o, 10.5, 11.5)
 assert full > lo + 6 and lo + 2 < ramp < full - 1 and lo + 2 < back < full - 1 and abs(lo2 - lo) < 2, (lo, ramp, full, back, lo2)
+# music shorter than the voice: the mix is still as long as the voice (the music ends, the voice does not)
+music.mix(_v, _m, 10, _o, video_duration=14)
+_len = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', _o], capture_output=True, text=True).stdout)
+assert abs(_len - 14) < 0.1, _len
 print('ok')
