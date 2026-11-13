@@ -297,6 +297,13 @@ def render(job, cfg, run):
         return p
 
     pieces = []   # (start, end, kind, person, factory)
+    foot = list(assets.get("footage") or [])   # the person on camera in their own work: under a photo of them, or a sentence's second half
+    surname = ((plan.get("person") or {}).get("name") or "").split()[-1:]
+
+    def foot_piece(a, b):
+        x = foot.pop(0)
+        credits.append(x["credit"])
+        add(a, b, "clip", True, lambda a=a, b=b, f=run / x["file"]: ClipSeg(f, a, b))
 
     def add(a, b, kind, person, make):
         pieces.append((a, b, kind, person, make))
@@ -344,11 +351,16 @@ def render(job, cfg, run):
             end = a + L / 2 if L > SPLIT_AT else b
             add(a, end, "quote", False, lambda a=a, end=end, vis=vis: TextSeg("", vis["text"], vis.get("outlet"), a, end))
         else:  # photo, or a visual whose asset is missing
-            p = photo(vis.get("query") if kind == "photo" else None)
             end = a + L / 2 if L > SPLIT_AT else b
-            photo_piece(a, end, p, 1, s["spoken"])
+            if foot and kind == "photo" and surname and surname[0].lower() in vis.get("query", "").lower():
+                foot_piece(a, end)
+            else:
+                photo_piece(a, end, photo(vis.get("query") if kind == "photo" else None), 1, s["spoken"])
         if pieces[-1][1] < b - 1e-6:   # a long sentence changes picture halfway
-            photo_piece(pieces[-1][1], b, photo(), -1, s["spoken"])
+            if foot:
+                foot_piece(pieces[-1][1], b)
+            else:
+                photo_piece(pieces[-1][1], b, photo(), -1, s["spoken"])
     for k in range(1, len(pieces)):   # a screenshot that runs on into the next sentence pushes that picture's start back
         if pieces[k][0] < pieces[k - 1][1] < pieces[k][1]:
             pieces[k] = (pieces[k - 1][1], *pieces[k][1:])

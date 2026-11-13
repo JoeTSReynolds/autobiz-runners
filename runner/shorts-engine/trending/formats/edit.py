@@ -155,6 +155,13 @@ def tail_slots(n, photos):
     return set() if n < 3 else {n // 2} if n < 6 else {n // 3, 2 * n // 3}
 
 
+def speech_real(shots):
+    """Indices of the speech's b-roll shots that show the person (a photo or footage of their work) instead of stock: the drop
+    cutaway and every second b-roll shot; never a stat slam (its text sits on a calm stock shot) or a tail shot."""
+    bs = [i for i, x in enumerate(shots) if x["kind"] == "B" and "slam" not in x]
+    return [i for k, i in enumerate(bs) if shots[i]["trans"] == "drop" or k % 2 == 1]
+
+
 def zoom_cap(size, W, H, face_max=FACE_MAX):
     """Largest total zoom of a W x H source at which a face `size` px wide stays under face_max of the 9:16 frame width."""
     return face_max * min(H, W * 16 / 9) * 9 / 16 / size if size > 0 else 99.0
@@ -491,12 +498,16 @@ def render(job, cfg, run):
     line_at = lambda t: max(i for i, (a, _) in enumerate(vs) if a <= t + 1e-6)
     uses, tuses, puses, nb, nt, ti, mom, prev = {}, {}, {}, 0, 0, 0, 0, None
     broll, tails, persons = assets.get("broll") or [], list(assets.get("tail") or []), list(assets.get("person") or [])
-    slots = tail_slots(sum(x["kind"] == "T" for x in shots), len(persons))
+    footage = list(assets.get("footage") or [])
+    # the person's photos and footage, each shown once: half in the montage, the rest (footage first) cut into the speech
+    hf, hp = (len(footage) + 1) // 2, (len(persons) + 1) // 2
+    real_tail, real_speech = footage[:hf] + persons[:hp], footage[hf:] + persons[hp:]
+    slots, sreal = tail_slots(sum(x["kind"] == "T" for x in shots), len(real_tail)), set(speech_real(shots))
     img = lambda it: it.get("kind") == "image" or str(it["file"]).lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
-    spans = {x["file"]: picture_span(str(run / x["file"])) for x in broll + tails if not img(x)}
+    spans = {x["file"]: picture_span(str(run / x["file"])) for x in broll + tails + footage if not img(x)}
     usable = lambda xs: [x for x in xs if spans.get(x["file"], 1)] or xs   # drop clips with no usable picture, unless none is left
     broll, tails = usable(broll), usable(tails)
-    for s in shots:
+    for si, s in enumerate(shots):
         s.update(ss=0.0, z0=1.0, z1=1.1, ox=0.5, oy=0.5)
         if s["kind"] == "S":
             s["ss"] = s["t0"] - (S["gap"] if s["t0"] >= S["tdend"] else 0)
@@ -506,8 +517,10 @@ def render(job, cfg, run):
             prev = None
             continue
         isT, avail = s["kind"] == "T", None
-        if isT and ti in slots and persons:
-            it, ss = _pick(persons, puses, 0, prev=prev)
+        if isT and ti in slots and real_tail:
+            it, ss = _pick(real_tail, puses, 0, prev=prev)
+        elif si in sreal and real_speech:
+            it, ss = real_speech.pop(0), 0.0
         elif isT and ti in slots:   # no photos: a short slow-motion moment from the speaker's own clips
             j, mom = mom % len(lines), mom + 1
             c, f = lines[j][1], lines[j][2]
@@ -559,6 +572,6 @@ def render(job, cfg, run):
     tl.append({"start": S["tT"], "end": D, "kind": "tail", "person": False})
     tl = _split_person(tl, shots)
     urls = list(dict.fromkeys(c["source"]["url"] for c in plan["clips"]))
-    cr = [("Photo: " if x in persons and not x.get("licence") else "") + x["credit"] for x in broll + tails + persons if x.get("credit")]   # Bing: no licence
+    cr = [("Photo: " if x in persons and not x.get("licence") else "") + x["credit"] for x in broll + tails + persons + footage if x.get("credit")]   # Bing: no licence
     return {"short": {"file": "short.mp4", "duration": D}, "timeline": tl, "musicOffset": off,
             "credits": [f"Footage: {u}" for u in urls] + list(dict.fromkeys(cr)) + ([f"Music: {track['title']}"] if track.get("title") else [])}

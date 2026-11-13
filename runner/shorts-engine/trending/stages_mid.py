@@ -4,7 +4,7 @@ Spec: docs/plan/nowayclips-trending.plan.md, plan shape: docs/plan/briefs/plan-s
 job.pool = [{id, url?, duration}], run/captions/<id>.words.json = [{w, s, e}], job.articles = [{outlet, domain, url, text}].
 Every `missing` also appends person.qid to rejectedPeople and sets agentErrors to one line, so the route agent sees why.
 """
-import copy, datetime as dt, email.utils, json, os, re, urllib.parse, urllib.request
+import copy, datetime as dt, email.utils, json, os, re, subprocess, tempfile, time, urllib.parse, urllib.request
 import numpy as np
 from collections import Counter
 from pathlib import Path
@@ -554,6 +554,8 @@ def verify(job, cfg, run, state):
         return _invalid(cx.errs or ['storyboard could not be verified'])
     clips = body.pop('clips')
     plan = {'format': fmt, 'person': _plan_person(job['person']), **{k: v for k, v in body.items() if k != 'format'}, 'clips': clips}
+    if fmt in ('edit', 'casefile'):   # YouTube queries for real footage of the person's work (the assets stage fetches it)
+        plan['footage'] = [q.strip() for q in sb.get('footage') or [] if isinstance(q, str) and q.strip()][:4]
     (Path(run) / 'broll.txt').write_text(_broll_text(plan))   # the b-roll agent block needs its fileKeys to exist for every format
     return 'next', {'plan': plan, 'story': _story(job, clips), 'download': 'yes' if clips else 'no', 'predictedDuration': plan['predictedDuration'], 'agentErrors': [],
                     'brollText': {'file': 'broll.txt'}}, f'{fmt}: {len(clips)} clips, predicted {plan["predictedDuration"]} s'
@@ -1031,6 +1033,73 @@ def _bing_images(q):
     return out
 
 
+FOOTAGE_MAX, FOOTAGE_PER_VIDEO, FOOTAGE_S, FOOTAGE_BUDGET = 6, 2, 3.0, 240   # shots, shots a video, seconds a shot, seconds in all
+
+
+def _footage(job, run, state, base, strict=False):
+    """Shots of the person from YouTube footage of their work (plan.footage queries: film scenes, performances, speeches), 9:16
+    around their face -> [{file, kind, credit, page}]. Per query the first video with the surname in its title or channel that
+    gives a shot (2 tried at most); four FOOTAGE_S windows from each, kept when _shot_ok;
+    strict (case file): nobody else's face either. NOT freely licensed (owner 2026-11-13: accepted, a few shots a video)."""
+    idf = (job.get('identity') or {}).get('file')
+    ref = np.load(Path(run) / idf) if idf and (Path(run) / idf).is_file() else None
+    queries, models = (job['plan'].get('footage') or [])[:4], Path(state) / 'models'
+    if not queries or ref is None:
+        return []
+    surname = _fold((job.get('person') or {}).get('name') or '').split()[-1:]
+    out, seen, t0 = [], set(), time.time()
+    for q in queries:
+        tried = 0   # a video that gives no shot hands over to the next result, 2 videos a query at most
+        for e in [e for e in _safe(ytsrc.search, q, 8) if 30 <= (e.get('duration') or 0) <= 3 * 3600   # full specials and films count
+                  and e.get('live_status') not in ('is_live', 'is_upcoming')
+                  and surname and surname[0] in _fold(f"{e.get('title', '')} {e.get('channel', '')}").split()]:   # someone else's video otherwise
+            if tried == 2:
+                break
+            if e['id'] in seen:
+                continue
+            seen.add(e['id'])
+            tried += 1
+            url, d = f"https://www.youtube.com/watch?v={e['id']}", e['duration']
+            try:
+                files = ytsrc.probe_frames(e['id'], url, [(d * f, d * f + FOOTAGE_S) for f in (0.2, 0.4, 0.6, 0.8)], str(base / 'footage' / 'raw'), height=720)
+            except Exception:
+                continue
+            got = 0
+            for f in files:
+                if not f or got == FOOTAGE_PER_VIDEO or len(out) == FOOTAGE_MAX or not _shot_ok(f, ref, models, strict):
+                    continue
+                rel = f'footage/{len(out)}.mp4'
+                try:
+                    _vertical(f, base / rel, ref, models)
+                except Exception:
+                    continue
+                out.append({'file': f'assets/{rel}', 'kind': 'video', 'credit': f"Footage: {url} ({e.get('channel') or 'YouTube'})", 'page': url})
+                got += 1
+            if got:
+                break
+        if len(out) == FOOTAGE_MAX or time.time() - t0 > FOOTAGE_BUDGET:
+            break
+    return out
+
+
+def _shot_ok(path, ref, models, strict=False):
+    """The person's face, big enough to read, in a frame near each end of the shot (a scene cut inside it fails); strict: no other face."""
+    with tempfile.TemporaryDirectory() as d:
+        for k, t in enumerate((0.6, FOOTAGE_S - 0.6)):
+            png = Path(d) / f'{k}.png'
+            subprocess.run(['ffmpeg', '-y', '-v', 'error', '-ss', str(t), '-i', str(path), '-frames:v', '1', str(png)], capture_output=True)
+            fs = _photo_faces(png, ref, models) if png.exists() else []
+            if not any(m >= MATCH_PHOTO and w >= PERSON_FACE for m, w in fs) or (strict and any(m < MATCH_PHOTO for m, _ in fs)):
+                return False
+    return True
+
+
+def _vertical(src, dst, ref, models):
+    from . import facecrop
+    Path(dst).parent.mkdir(parents=True, exist_ok=True)
+    facecrop.render(str(src), str(dst), face_y=0.40, ref=ref, models=str(models))
+
+
 from .formats.casefile import shot_key
 
 
@@ -1049,7 +1118,8 @@ def assets(job, cfg, run, state):
         if have < 0.7 * len(wanted):
             return _missing(job, 'assets', f'only {have} of {len(wanted)} b-roll shots could be downloaded')
         out['person'] = _person_photos(job, run, state, base)
-        return 'next', {'assets': out, 'plan': plan, 'agentErrors': []}, f'{have} of {len(wanted)} b-roll shots, {len(out["person"])} photos of the person'
+        out['footage'] = _footage(job, run, state, base)
+        return 'next', {'assets': out, 'plan': plan, 'agentErrors': []}, f'{have} of {len(wanted)} b-roll shots, {len(out["person"])} photos and {len(out["footage"])} footage shots of the person'
     if plan['format'] != 'casefile':
         return 'next', {'assets': {}, 'agentErrors': [], **({'plan': plan} if plan['format'] in ROWS else {})}, 'no assets for this format'
     visuals = [s['visual'] for s in plan['script']]
@@ -1103,4 +1173,5 @@ def assets(job, cfg, run, state):
                    for p in _person_photos(job, run, state, base) if p['page'] not in seen][:POOL_PHOTOS - len(photos)]
     if len(photos) < 2:
         return _missing(job, 'assets', f'only {len(photos)} photos could be downloaded (2 needed)')
-    return 'next', {'assets': {'screenshots': done, 'photos': photos}, 'agentErrors': []}, f'{len(done)} screenshots, {len(photos)} photos'
+    footage = _footage(job, run, state, base, strict=True)
+    return 'next', {'assets': {'screenshots': done, 'photos': photos, 'footage': footage}, 'agentErrors': []}, f'{len(done)} screenshots, {len(photos)} photos, {len(footage)} footage shots'

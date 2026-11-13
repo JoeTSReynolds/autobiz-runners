@@ -210,6 +210,9 @@ assert p['slams'] == EDIT['slams'] and p['popups'] == EDIT['popups'] and len(p['
 assert p['broll'][0] == {'query': 'sea ice 0', 'line': 0, 'candidates': [CAND]} and p['tail'][0] == {'query': 'glacier 0', 'candidates': [CAND]}
 assert all(c['person'] for c in p['clips']) and 45 <= p['predictedDuration'] <= 58, p['predictedDuration']
 check_story(out)
+assert p['footage'] == []   # no footage queries: none
+# footage: up to 4 YouTube queries for real footage of the person's work; anything but text is ignored
+assert verify(job('edit', dict(EDIT, footage=['a scene', 3, ' b ', '', 'c', 'd', 'e'])))[1]['plan']['footage'] == ['a scene', 'b', 'c', 'd']
 invalid(job('edit', edit_sb([sq(20 + i) for i in range(12)])), 'speech', '38')  # 73 s of speech
 invalid(job('edit', edit_sb([sq(20 + i, 0, 4) for i in range(6)])), 'speech', '25')
 invalid(job('edit', edit_sb([sq(20 + i, 0, -1) for i in range(6)], dropLine=9)), 'dropLine')
@@ -842,6 +845,59 @@ assert sm.assets(pj(ep2), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['person'
 sm._commons_images = lambda q, n=6: (_ for _ in ()).throw(OSError('offline'))
 assert sm.assets(pj(ep2), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['person'] == []
 sm._photo_faces, sm._commons_images = real_pf, lambda q: []
+
+# ---------------- footage: real clips of the person's work from YouTube, face-checked, cropped 9:16 (owner 2026-11-13: the
+# Graduate edit had stock shots of a cinema and the Hollywood sign, nothing from the film; edit and case file)
+import subprocess
+_srch, _frames, _sok, _vert = sm.ytsrc.search, sm.ytsrc.probe_frames, sm._shot_ok, sm._vertical
+# a full special (2 h) is a good source; a title without the surname is someone else's video (live 2026-11-13: "women winning
+# 99.9% of all fights" came up for a Dane Cook stand-up search); a video that gives no shot hands over to the next result
+FS = {'graduate scene': [{'id': 'other1', 'title': 'Funny fails', 'channel': 'C', 'duration': 300}, {'id': 'huge1', 'title': 'Turner marathon', 'duration': 4 * 3600},
+                         {'id': 'g1', 'title': 'The Graduate - Callum Turner', 'channel': 'Movieclips', 'duration': 7200}],
+      'rain man scene': [{'id': 'live1', 'title': 'Turner live', 'duration': 200, 'live_status': 'is_live'}, {'id': 'none1', 'title': 'Turner far away', 'channel': 'R', 'duration': 120},
+                         {'id': 'r1', 'title': 'x', 'channel': 'Callum Turner', 'duration': 120}],
+      'tootsie scene': [{'id': 'g1', 'title': 'The Graduate - Callum Turner', 'channel': 'Movieclips', 'duration': 7200}]}   # g1 already used
+sm.ytsrc.search = lambda q, n=15: FS.get(q, [])
+WINS, OK = [], []
+def fake_frames(vid, url, wins, out_dir, height=240):
+    WINS.append((vid, wins, height)); Path(out_dir).mkdir(parents=True, exist_ok=True)
+    fs = [Path(out_dir) / f'{vid}_{i}.mp4' for i in range(len(wins))]
+    for f in fs: f.write_bytes(b'v')
+    return [str(f) for f in fs]
+sm.ytsrc.probe_frames = fake_frames
+sm._shot_ok = lambda path, ref, models, strict: OK.append(strict) or not path.endswith('_1.mp4') and 'none1' not in path   # window 2 misses them
+sm._vertical = lambda src, dst, ref, models: (Path(dst).parent.mkdir(parents=True, exist_ok=True), Path(dst).write_bytes(b'v'))
+FQ = ['graduate scene', 'rain man scene', 'tootsie scene']
+r = Path(tempfile.mkdtemp()); np.save(r / 'identity.npy', np.ones(3))
+fj = lambda fmt, q=FQ: pj({'format': fmt, 'footage': q}, identity={'file': 'identity.npy'})
+ft = sm._footage(fj('edit'), r, Path(tempfile.mkdtemp()), r / 'assets')
+assert [w[0] for w in WINS] == ['g1', 'none1', 'r1'] and all(h == 720 and len(ws) == 4 and abs(ws[0][1] - ws[0][0] - 3.0) < 1e-6 for _, ws, h in WINS), WINS
+assert len(ft) == 4 and ft[0] == {'file': 'assets/footage/0.mp4', 'kind': 'video', 'credit': 'Footage: https://www.youtube.com/watch?v=g1 (Movieclips)',
+                                  'page': 'https://www.youtube.com/watch?v=g1'} and (r / ft[3]['file']).exists() and OK and not any(OK), ft   # 2 a video
+OK.clear()
+assert len(sm._footage(fj('casefile'), r, Path(tempfile.mkdtemp()), r / 'assets', strict=True)) == 4 and OK and all(OK)   # every face must be them
+assert sm._footage(fj('edit', []), r, Path(tempfile.mkdtemp()), r / 'assets') == []                     # no queries
+assert sm._footage(fj('edit'), Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp()), r / 'assets') == []   # no identity reference
+# the assets stage hands the footage to both renders
+real_footage, sm._footage = sm._footage, lambda job, run, state, base, strict=False: [{'file': 'F', 'strict': strict}]
+sm._photo_faces = lambda path, ref, models: []
+assert sm.assets(pj({'format': 'edit', 'broll': [], 'tail': []}), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['footage'] == [{'file': 'F', 'strict': False}]
+r2 = Path(tempfile.mkdtemp()); GOT.clear(); np.save(r2 / 'identity.npy', np.ones(3))
+port, out, _ = sm.assets(pj(cp2, identity={'file': 'identity.npy'}), {}, r2, Path(tempfile.mkdtemp()))
+assert port == 'next' and out['assets']['footage'] == [{'file': 'F', 'strict': True}], out
+sm._photo_faces = real_pf
+sm.ytsrc.search, sm.ytsrc.probe_frames, sm._shot_ok, sm._vertical = _srch, _frames, _sok, _vert
+sm._footage = real_footage
+# _shot_ok: the person's face, big enough, in both sampled frames; a case file also refuses anyone else's face
+v = r / 'shot.mp4'
+subprocess.run(['ffmpeg', '-y', '-v', 'error', '-f', 'lavfi', '-i', 'testsrc=s=640x360:d=3', str(v)], check=True)
+def faces_seq(*frames):
+    it = iter(frames); sm._photo_faces = lambda path, ref, models: next(it)
+faces_seq([(0.5, 0.2), (0.1, 0.15)], [(0.6, 0.2)]); assert sm._shot_ok(str(v), np.ones(3), r, False)
+faces_seq([(0.5, 0.2), (0.1, 0.15)], [(0.6, 0.2)]); assert not sm._shot_ok(str(v), np.ones(3), r, True)   # a co-star's face
+faces_seq([(0.5, 0.2)], [(0.2, 0.3)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)               # gone by the second sample
+faces_seq([(0.5, 0.05)], [(0.6, 0.05)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)             # too small to read
+sm._photo_faces = real_pf
 
 # ---------------- brollpick
 def bp(picks=None, fmt='edit', n=6, **kw):

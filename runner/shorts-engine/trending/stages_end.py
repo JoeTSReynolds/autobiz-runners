@@ -105,8 +105,8 @@ def _credit_lines(credits, pool):
     kinds = {'Reporting': [], 'Clips': [], 'Photos (Wikimedia Commons)': [], 'Photos': [], 'Also': [], 'Music': []}
     for c in credits:
         if c.startswith('Footage: '):
-            m = re.search(r'v=([\w-]{11})', c)
-            kinds['Clips'].append(channel.get(m.group(1)) if m and channel.get(m.group(1)) else 'YouTube')
+            m, named = re.search(r'v=([\w-]{11})', c), re.search(r'\(([^()]+)\)\s*$', c)   # footage names its channel: "(Movieclips)"
+            kinds['Clips'].append(named[1] if named else channel.get(m.group(1)) if m and channel.get(m.group(1)) else 'YouTube')
         elif c.startswith('Source: '):
             kinds['Reporting'].append(re.sub(r'\s+https?://\S+$', '', c[8:]))
         elif m := re.match(r'Photo: (.*?) / (.*?) \(Wikimedia Commons\)', c):

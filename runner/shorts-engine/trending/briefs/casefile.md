@@ -10,5 +10,6 @@ A dramatic, informative explainer of what is reported about the person and why t
   - `{"kind": "timeline", "label": "<MON YYYY>"}` (lights up the next date on the timeline bar)
   - `{"kind": "quote", "text": "<short quote from an article>", "outlet": "<outlet>"}`
   Use at most 5 screenshots, and never two screenshots in a row. Use at least 4 photo visuals with **different** queries (the person at different times or events, the places, the buildings, the show or company involved), never the same query twice: photos of anyone else are left out, so vary them.
+- `footage`: 2 to 4 YouTube searches for real footage of the person in their own work or public appearances (a keynote, a stand-up set, a film scene, an interview): "Jensen Huang GTC keynote", "Russell Brand stand-up". Name the person. Shots where only their face shows play under their photo visuals and long sentences.
 - `claims`: every factual claim in the script, each with `support` from at least 2 different outlets: `{"outlet", "quote"}` where `quote` is copied exactly from that outlet's article.
 - `timeline`: 2 to 4 dated points `{"label": "DEC 2025", "text": "..."}` in order.

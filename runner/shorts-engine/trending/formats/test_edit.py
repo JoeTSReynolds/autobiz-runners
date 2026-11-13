@@ -26,6 +26,12 @@ for s in tail:
 assert 0.30 <= (S["D"] - S["tT"]) / S["D"] <= 0.40 and S["tT"] >= S["lines"][-1][1], S
 assert {"whip", "punch", "flash", "shake"} <= {s["trans"] for s in tail}
 
+# --- photos and footage of the person also cut in during the speech (owner 2026-11-13): the drop cutaway and every second
+# b-roll shot, never a stat slam (its text sits on a calm stock shot) or a tail shot
+sr = edit.speech_real(S["shots"])
+bs = [i for i, x in enumerate(S["shots"]) if x["kind"] == "B" and "slam" not in x]
+assert sr and set(sr) <= set(bs) and any(S["shots"][i]["trans"] == "drop" for i in sr) and len(sr) < len(bs), (sr, bs)
+
 # --- speech picture cuts: no sliver or one-frame flash, and a speaker-to-speaker cut at a line boundary is covered (flash or whip)
 for ld in ([3.0] * 4, [3.04, 3.0, 3.0, 3.0], [3.17, 2.9, 3.31, 3.0], [3.43, 2.37, 3.31, 3.0]):
     SW = edit.schedule(ld, 1, 2, g, ld[0])
@@ -126,6 +132,7 @@ clip("speaker", 640, 360, 14, 1000)
 for i in range(3):
     clip(f"b{i}", 360, 640, 4)
     clip(f"t{i}", 640, 360, 4)
+clip("f0", 1080, 1920, 3); clip("f1", 1080, 1920, 3)   # footage shots, already cropped 9:16 by the assets stage
 for i in range(2):
     ff("-f", "lavfi", "-i", f"testsrc=s=800x600:d=1", "-frames:v", "1", f"{run}/p{i}.png")
 ff("-f", "lavfi", "-i", "anoisesrc=d=90:c=pink:a=1.0", "-c:a", "aac", f"{run}/music.m4a")
@@ -138,7 +145,8 @@ plan = {"format": "edit", "musicOffset": 17.0, "dropLine": 1, "slams": ["28 YEAR
         "lines": [{"clip": f"l{i}", "text": "They walked across the frozen sea for days", "words": words(s + 0.2, "They walked across um the frozen sea for days" if i == 0 else "They walked across the frozen sea for days")} for i, s in enumerate(starts)]}
 assets = {"broll": [{"line": i, "file": f"b{i}.mp4", "kind": "video"} for i in range(3)],
           "tail": [{"file": "p0.png", "kind": "image"}, {"file": "t0.mp4", "kind": "video"}, {"file": "t1.mp4", "kind": "video"}],
-          "person": [{"file": "p1.png", "kind": "image", "credit": "Photo: Sam Test / CC BY", "licence": "CC BY"}]}
+          "person": [{"file": "p1.png", "kind": "image", "credit": "Photo: Sam Test / CC BY", "licence": "CC BY"}],
+          "footage": [{"file": f"f{i}.mp4", "kind": "video", "credit": f"Footage: https://www.youtube.com/watch?v=f{i} (Movieclips)", "page": "u"} for i in range(2)]}
 an = {"bpm": BPM, "beats": [k * PER for k in range(180)], "drop": 20.0, "duration": 90.0}
 job = {"plan": plan, "clips": [{"role": "moment", "file": "speaker.mp4", "offset": 40.0, "duration": 14.0, "sourceId": "spk"}] * 3,
        "assets": assets, "track": {"file": "music.m4a", "title": "Fixture", "analysis": an}}
@@ -147,8 +155,14 @@ import numpy as np
 np.save(f"{run}/identity.npy", np.ones(128, np.float32))
 seen, _track = [], edit.facecrop.track
 edit.facecrop.track = lambda *a, **k: (seen.append(k), _track(*a, **{**k, "ref": None}))[1]
+used, _asm = [], edit._assemble
+edit._assemble = lambda shots, *a, **k: (used.extend((x["kind"], Path(x.get("file") or "").name) for x in shots), _asm(shots, *a, **k))[1]
 out = edit.render(job, {"models": "/nonexistent"}, run)
-edit.facecrop.track = _track
+edit.facecrop.track, edit._assemble = _track, _asm
+# the footage and the photo each show once, between the speech and the montage
+real = [(k, f) for k, f in used if f in ("f0.mp4", "f1.mp4", "p1.png")]
+assert sorted(f for _, f in real) == ["f0.mp4", "f1.mp4", "p1.png"] and {k for k, _ in real} == {"B", "T"}, used
+assert "Footage: https://www.youtube.com/watch?v=f0 (Movieclips)" in out["credits"]
 assert seen and all(k.get("ref") is not None and k.get("models") == "/nonexistent" for k in seen), seen  # ref and models reach every track call
 print("render s", round(__import__("time").time() - t0, 1))
 f = Path(run) / out["short"]["file"]

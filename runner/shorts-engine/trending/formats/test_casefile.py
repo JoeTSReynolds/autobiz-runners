@@ -60,6 +60,14 @@ assert tl[0]["start"] == 0 and all(abs(a["end"] - b["start"]) < 1e-6 for a, b in
 shots = [e for e in tl if e["kind"] == "screenshot"]
 assert shots and all(3.0 - 1e-6 <= e["end"] - e["start"] <= 4.0 + 1e-6 for e in shots), shots  # 3-4 s each (the sentences here are 4 s)
 assert sum(e["end"] - e["start"] for e in shots) <= 0.4 * tl[-1]["end"], shots
+# footage of the person (face-checked, 9:16) fills the second half of long sentences, the person on camera; credited by channel
+ff("-f", "lavfi", "-i", "testsrc2=s=1080x1920:r=30:d=3", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(run / "f0.mp4"))
+plan2 = dict(plan, person={"name": "Sam Test"}, script=[dict(s, visual={"kind": "photo", "query": "Sam Test portrait"}) if s["visual"].get("query") == "q1" else s for s in plan["script"]])
+job2 = dict(job, plan=plan2, assets=dict(job["assets"], footage=[{"file": "f0.mp4", "kind": "video", "credit": "Footage: https://www.youtube.com/watch?v=f0 (Movieclips)", "page": "u"}]))
+out2 = casefile.render(job2, {}, run)
+clips2 = [e for e in out2["timeline"] if e["kind"] == "clip"]
+assert len(clips2) == len([e for e in tl if e["kind"] == "clip"]) + 1 and all(e["person"] for e in clips2), out2["timeline"]
+assert "Footage: https://www.youtube.com/watch?v=f0 (Movieclips)" in out2["credits"], out2["credits"]
 # the card finishes moving within ~1 s, then holds still for the last 2 s of the shot (frame difference on the real CardSeg)
 for e in shots:
     seg = casefile.CardSeg(run / "assets/shots/0.png", "BBC", e["start"], e["end"])
