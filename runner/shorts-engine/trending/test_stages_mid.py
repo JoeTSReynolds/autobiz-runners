@@ -185,6 +185,14 @@ assert verify(job('topn', t2))[0] == 'next'  # per-source words files
 missing(job('tribute', {'error': 'insufficient_source_material', 'reason': 'No transcript has the person speaking on camera.'}),
         'Callum Turner rejected at verify', 'speaking on camera')
 
+# a line keeps exactly the caption words it matched, even when YouTube's times overlap (live 2026-11-12: "fighting" ran to
+# 2161.4 s, past the line's end, and was dropped from the on-screen captions; "mistake." ran long and pulled in "Yes. Yes. And")
+RW = [{'w': 'experience.', 's': 2157.074, 'e': 2157.994}, {'w': 'I', 's': 2157.994, 'e': 2158.114}, {'w': 'was', 's': 2158.114, 'e': 2158.354},
+      {'w': 'fighting', 's': 2158.354, 'e': 2161.394}, {'w': 'acne.', 's': 2158.794, 'e': 2159.634}, {'w': 'I', 's': 2159.634, 'e': 2159.754}]
+assert [w['w'] for w in sm._resolve(RW, 'I was fighting acne.')[2]] == ['I', 'was', 'fighting', 'acne.']
+RW2 = [{'w': 'a', 's': 0.0, 'e': 0.3}, {'w': 'mistake.', 's': 0.3, 'e': 3.0}, {'w': 'Yes.', 's': 0.9, 'e': 1.2}, {'w': 'And', 's': 1.2, 'e': 1.4}]
+assert [w['w'] for w in sm._resolve(RW2, 'a mistake.')[2]] == ['a', 'mistake.']
+
 # ---------------- verify: edit
 def edit_sb(lines, **kw):
     sb = {'source': 'vid1', 'lines': lines, 'dropLine': 2, 'slams': ['28 YEARS', '31,000 MILES ON FOOT'],

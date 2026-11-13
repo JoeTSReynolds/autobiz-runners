@@ -97,7 +97,10 @@ def _resolve(words, quote):
     """(start, end, words) of a quote in a cleaned word list, end capped at last word start + CAP; None if not found."""
     q = _clean_quote(quote)
     r = ytsrc.find_phrase(words, q) if q else None
-    seg = [w for w in words if r and r[0] - 1e-6 <= w['s'] and w['e'] <= r[1] + 1e-6]
+    # the matched run by position, not by time: YouTube's word times overlap (a word ending after the next one starts)
+    i = next((k for k, w in enumerate(words) if r and w['s'] == r[0]), None)
+    j = next((k for k in range(i, len(words)) if words[k]['e'] == r[1]), None) if i is not None else None
+    seg = words[i:j + 1] if j is not None else []
     return (r[0], min(r[1], seg[-1]['s'] + CAP), seg) if seg else None
 
 
