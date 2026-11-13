@@ -188,7 +188,7 @@ def route(job, cfg, run, state):
             return bad(f'casefile needs 2 distinct allowlisted outlets for {person["name"]}; found {sorted(outlets.distinct(doms))}')
     b = HERE / 'briefs'
     ctx = {'brief': (b / f'{fmt}.md').read_text(), 'schema': (b / f'{fmt}.schema.json').read_text()}
-    return 'next', {'verifyTries': 0, 'person': person, 'format': fmt, 'formatContext': ctx, 'agentErrors': []}, note or f'{person["name"]} as {fmt}'
+    return 'next', {'verifyTries': 0, 'storyTries': 0, 'person': person, 'format': fmt, 'formatContext': ctx, 'agentErrors': []}, note or f'{person["name"]} as {fmt}'
 
 
 # ---------- mediaplan ----------

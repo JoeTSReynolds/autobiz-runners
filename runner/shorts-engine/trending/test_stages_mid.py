@@ -193,6 +193,14 @@ assert [w['w'] for w in sm._resolve(RW, 'I was fighting acne.')[2]] == ['I', 'wa
 RW2 = [{'w': 'a', 's': 0.0, 'e': 0.3}, {'w': 'mistake.', 's': 0.3, 'e': 3.0}, {'w': 'Yes.', 's': 0.9, 'e': 1.2}, {'w': 'And', 's': 1.2, 'e': 1.4}]
 assert [w['w'] for w in sm._resolve(RW2, 'a mistake.')[2]] == ['a', 'mistake.']
 
+# a person whose storyboard fails 3 times is dropped and the run moves on to the next person (live 2026-11-11: the run ended
+# on Jensen Huang instead); the count is per person (route resets it), so the next person gets their own tries
+_bad = {'source': 'nope'}
+p1 = verify(job('edit', _bad))
+assert p1[0] == 'invalid' and p1[1]['storyTries'] == 1, p1
+assert verify(job('edit', _bad, storyTries=1))[1]['storyTries'] == 2
+missing(job('edit', _bad, storyTries=2), 'no valid storyboard after 3 tries', 'not in the pool')
+
 # ---------------- verify: edit
 def edit_sb(lines, **kw):
     sb = {'source': 'vid1', 'lines': lines, 'dropLine': 2, 'slams': ['28 YEARS', '31,000 MILES ON FOOT'],

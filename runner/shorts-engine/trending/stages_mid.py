@@ -56,6 +56,9 @@ def _missing(job, stage, why):
     return 'missing', {'rejectedPeople': rej, 'agentErrors': [f"{p.get('name', 'person')} rejected at {stage}: {why}"]}, why
 
 
+STORY_TRIES = 3   # storyboards a person gets before verify drops them; route resets the count for each new person
+
+
 def _invalid(errs):
     return 'invalid', {'agentErrors': errs}, f'{len(errs)} errors: ' + '; '.join(errs)[:200]
 
@@ -551,7 +554,10 @@ def verify(job, cfg, run, state):
             return _missing(job, 'verify', str(e))
         return 'invalid', {'agentErrors': [str(e) + ' Fix these moments or choose others from the transcripts.'], 'verifyTries': tries}, str(e)
     if body is None:
-        return _invalid(cx.errs or ['storyboard could not be verified'])
+        errs, tries = cx.errs or ['storyboard could not be verified'], job.get('storyTries', 0) + 1
+        if tries >= STORY_TRIES:   # this person's material does not make a story: the next person (live 2026-11-11: the run ended instead)
+            return _missing(job, 'verify', f'no valid storyboard after {tries} tries: {errs[0]}')
+        return 'invalid', {'agentErrors': errs, 'storyTries': tries}, f'{len(errs)} errors: ' + '; '.join(errs)[:200]
     clips = body.pop('clips')
     plan = {'format': fmt, 'person': _plan_person(job['person']), **{k: v for k, v in body.items() if k != 'format'}, 'clips': clips}
     if fmt in ('edit', 'casefile'):   # YouTube queries for real footage of the person's work (the assets stage fetches it)

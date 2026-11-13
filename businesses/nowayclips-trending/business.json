@@ -628,7 +628,7 @@
             "x": 1549,
             "y": 40
           },
-          "maxRetries": 2
+          "maxRetries": 8
         },
         {
           "id": "retry-meta",
@@ -642,7 +642,7 @@
       ]
     },
     "createdAt": "2026-11-07T17:43:13.811Z",
-    "updatedAt": "2026-11-10T18:04:49.084Z"
+    "updatedAt": "2026-11-13T03:40:26.215Z"
   },
   "modules": [
     {

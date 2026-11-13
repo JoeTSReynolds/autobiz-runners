@@ -141,6 +141,8 @@ with tempfile.TemporaryDirectory() as d:
     port, out, _ = stages.route({'pick': {'qid': 'Q1', 'format': 'edit', 'queries': ['q']}, 'candidates': [ALICE, b]}, {}, Path('.'), Path(d))
     assert port == 'invalid' and 'repeat' in out['agentErrors'][0], out
     assert stages.route({'pick': {'qid': 'Q1', 'format': 'topn', 'queries': ['q']}, 'candidates': [ALICE, b]}, {}, Path('.'), Path(d))[0] == 'next'
+    # a new person starts with fresh storyboard tries (verify drops a person after 3)
+    assert stages.route({'pick': {'qid': 'Q1', 'format': 'topn', 'queries': ['q']}, 'candidates': [ALICE, b], 'storyTries': 2}, {}, Path('.'), Path(d))[1]['storyTries'] == 0
     assert stages.route({'pick': {'qid': 'Q1', 'format': 'edit', 'queries': ['q']}, 'candidates': [ALICE, b], 'want': {'person': 'Q1'}}, {}, Path('.'), Path(d))[0] == 'next'
 
 # ---- mediaplan
