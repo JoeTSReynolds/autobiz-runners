@@ -124,8 +124,10 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: data/state
-          key: state-nowayclips-trending-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: state-nowayclips-trending-
+          key: state/nowayclips-trending/${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            state/nowayclips-trending/
+            state-nowayclips-trending-4
       - name: Restore business assets
         run: mkdir -p data/state/businesses/e2267863-974e-44fb-8e9b-4cfd754064a5 && cp -Rn businesses/nowayclips-trending/seed/. data/state/businesses/e2267863-974e-44fb-8e9b-4cfd754064a5/
       - name: Write credentials for NoWayClipsHQ
@@ -172,7 +174,7 @@ jobs:
         if: always()
         with:
           path: data/state
-          key: state-nowayclips-trending-${{ github.run_id }}-${{ github.run_attempt }}
+          key: state/nowayclips-trending/${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,0 +1,92 @@
+# One-off (2026-11-14): rebuild NoWayClips's download archive after its runs restored NoWayClips Trending's cache. Delete after use.
+name: "Repair NoWayClips state"
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-42757750939-1
+          fail-on-cache-miss: true
+      - name: Keep the last good state aside
+        run: |
+          wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt
+          mkdir -p "$RUNNER_TEMP/m" && cp data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt "$RUNNER_TEMP/m/base.txt" && mv data/state "$RUNNER_TEMP/base-state"
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-42929611093-1
+          fail-on-cache-miss: true
+      - name: Take the archive of run 42929611093
+        run: |
+          if [ -f data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt ]; then wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt; cat data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt >> "$RUNNER_TEMP/m/extra.txt"; else echo "run 42929611093: no archive"; fi
+          rm -rf data/state
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-43091095103-1
+          fail-on-cache-miss: true
+      - name: Take the archive of run 43091095103
+        run: |
+          if [ -f data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt ]; then wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt; cat data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt >> "$RUNNER_TEMP/m/extra.txt"; else echo "run 43091095103: no archive"; fi
+          rm -rf data/state
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-43136050505-1
+          fail-on-cache-miss: true
+      - name: Take the archive of run 43136050505
+        run: |
+          if [ -f data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt ]; then wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt; cat data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt >> "$RUNNER_TEMP/m/extra.txt"; else echo "run 43136050505: no archive"; fi
+          rm -rf data/state
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-43300003908-1
+          fail-on-cache-miss: true
+      - name: Take the archive of run 43300003908
+        run: |
+          if [ -f data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt ]; then wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt; cat data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt >> "$RUNNER_TEMP/m/extra.txt"; else echo "run 43300003908: no archive"; fi
+          rm -rf data/state
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-43338934894-1
+          fail-on-cache-miss: true
+      - name: Take the archive of run 43338934894
+        run: |
+          if [ -f data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt ]; then wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt; cat data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt >> "$RUNNER_TEMP/m/extra.txt"; else echo "run 43338934894: no archive"; fi
+          rm -rf data/state
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-43497397467-1
+          fail-on-cache-miss: true
+      - name: Take the archive of run 43497397467
+        run: |
+          if [ -f data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt ]; then wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt; cat data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt >> "$RUNNER_TEMP/m/extra.txt"; else echo "run 43497397467: no archive"; fi
+          rm -rf data/state
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/state
+          key: state-nowayclips-43534314097-1
+          fail-on-cache-miss: true
+      - name: Take the archive of run 43534314097
+        run: |
+          if [ -f data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt ]; then wc -l data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt; cat data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt >> "$RUNNER_TEMP/m/extra.txt"; else echo "run 43534314097: no archive"; fi
+          rm -rf data/state
+      - name: Merge
+        run: |
+          mv "$RUNNER_TEMP/base-state" data/state
+          sort -u "$RUNNER_TEMP/m/base.txt" "$RUNNER_TEMP/m/extra.txt" > "$RUNNER_TEMP/m/merged.txt"
+          echo "base $(wc -l < "$RUNNER_TEMP/m/base.txt"), added runs $(wc -l < "$RUNNER_TEMP/m/extra.txt"), merged $(wc -l < "$RUNNER_TEMP/m/merged.txt")"
+          cp "$RUNNER_TEMP/m/merged.txt" data/state/businesses/b9cb6158-3145-4fb3-8f75-0265659bb79b/archive.txt
+      - uses: actions/cache/save@v4
+        with:
+          path: data/state
+          key: state/nowayclips/repair-${{ github.run_id }}

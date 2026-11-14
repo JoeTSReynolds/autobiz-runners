@@ -109,8 +109,10 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: data/state
-          key: state-newsroom-tech-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: state-newsroom-tech-
+          key: state/newsroom-tech/${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            state/newsroom-tech/
+            state-newsroom-tech-4
       - name: Restore business assets
         run: mkdir -p data/state/businesses/802d0e71-892d-4838-a1a3-97bb2fb4748a && cp -Rn businesses/newsroom-tech/seed/. data/state/businesses/802d0e71-892d-4838-a1a3-97bb2fb4748a/
       - name: Write credentials for JTSRTech
@@ -135,6 +137,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEWSROOM_SITE_CLOUDFLARE_PROJECT: ${{ secrets.NEWSROOM_SITE_CLOUDFLARE_PROJECT }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         run: node runner/runner.mjs businesses/newsroom-tech/business.json --data data
       - name: Forget credentials and browser caches before saving state
         if: always()
@@ -145,7 +148,7 @@ jobs:
         if: always()
         with:
           path: data/state
-          key: state-newsroom-tech-${{ github.run_id }}-${{ github.run_attempt }}
+          key: state/newsroom-tech/${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
