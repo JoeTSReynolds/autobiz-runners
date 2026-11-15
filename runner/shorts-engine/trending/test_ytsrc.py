@@ -39,7 +39,7 @@ def fake(cmd, **kw):
     out.write_bytes(b'x')
     class R: returncode = 0; stderr = ''
     return R()
-ytsrc.run = fake
+ytsrc.ytdlp.run = fake
 with tempfile.TemporaryDirectory() as d:
     got = ytsrc.probe_frames('abc', 'https://www.youtube.com/watch?v=abc', [(10, 12), (50, 52)], d)
 assert len(calls) == 1 and calls[0].count('--download-sections') == 2, calls
@@ -47,7 +47,7 @@ assert '*10.00-12.00' in calls[0] and '*50.00-52.00' in calls[0] and '--no-downl
 assert got[0].endswith('abc_10.0.mp4') and got[1] is None, got
 
 # search keeps the keys it is given and drops nulls
-ytsrc.run = lambda cmd, **kw: type('R', (), {'stdout': '{"id":"a","title":"T","channel":"C","duration":30,"view_count":5,"live_status":null,"timestamp":1}\n\n'})()
+ytsrc.ytdlp.run = lambda cmd, **kw: type('R', (), {'stdout': '{"id":"a","title":"T","channel":"C","duration":30,"view_count":5,"live_status":null,"timestamp":1}\n\n'})()
 assert ytsrc.search('q', 3) == [{'id': 'a', 'title': 'T', 'channel': 'C', 'duration': 30, 'view_count': 5, 'timestamp': 1}]
 
 # manual captions: one segment holds a whole line ("GORDON: BACON, EGGS…\n…") with no word timing. Split into words spread

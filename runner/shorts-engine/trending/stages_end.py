@@ -4,6 +4,7 @@ Spec: docs/plan/nowayclips-trending.plan.md (cut, gate, record), plan shape: doc
 """
 import datetime as dt, importlib, json, re, subprocess
 from pathlib import Path
+from shared import media  # engine folder is on sys.path
 from .sensitive import caption_text
 
 FORMATS = ('tribute', 'topn', 'edit', 'casefile')
@@ -46,11 +47,6 @@ def cut(job, cfg, run, state):
 def _ff(*args):
     r = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', *map(str, args)], capture_output=True, text=True)
     return r.stderr
-
-
-def _duration(path):
-    out = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(path)], capture_output=True, text=True).stdout
-    return float(out.strip())
 
 
 def _loudness(path):
@@ -126,7 +122,7 @@ def gate(job, cfg, run, state):
     video = run / (job.get('short') or {}).get('file', 'short.mp4')
     if not video.is_file():
         return _invalid(f'gate: {video.name} was not rendered')
-    d = _duration(video)
+    d = media.duration(video)
     if not MIN_S <= d <= MAX_S:
         return _invalid(f'gate: duration {d:.1f} s is outside {MIN_S}-{MAX_S} s')
     lu = _loudness(video)

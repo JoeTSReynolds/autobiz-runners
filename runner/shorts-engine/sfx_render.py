@@ -17,6 +17,7 @@ import zlib
 sys.dont_write_bytecode = True  # the engine folder stays clean (no __pycache__ in the repo or the runner checkout)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from shared import media  # noqa: E402
 from sfx import synth  # noqa: E402
 from sfx.mix import Mix  # noqa: E402
 from sfx.synth import SR  # noqa: E402
@@ -63,11 +64,6 @@ def decode(path, channels, extra=(), tail=()):
     return out.tolist()
 
 
-def track_seconds(path):
-    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], capture_output=True, text=True, check=True)
-    return float(out.stdout)
-
-
 def limit(samples, ratio=0.45):
     """Soft-limit a cue to 45% of its own peak (tanh knee), so a sharp transient can't jump far above its body."""
     peak = max((abs(v) for v in samples), default=0.0)
@@ -103,7 +99,7 @@ def render(project):
     if tracks:
         music = rng.choice(tracks)
         path = os.path.join(SOUNDS_DIR, "music", lane, music)
-        offset = rng.uniform(0, max(0, track_seconds(path) - dur))  # past the end it loops, so a short track still fills the video
+        offset = rng.uniform(0, max(0, media.duration(path) - dur))  # past the end it loops, so a short track still fills the video
         pcm = decode(path, 2, extra=["-stream_loop", "-1", "-ss", f"{offset:.3f}"], tail=["-t", f"{dur:.3f}"])
         n = min(len(pcm) // 2, mix.n)
         env = [fade(k / SR) * duck(k / SR) * MUSIC_GAIN for k in range(n)]

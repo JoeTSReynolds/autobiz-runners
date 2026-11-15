@@ -6,6 +6,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).parent))
 import reddit  # noqa: E402
+real_ytdlp = reddit.ytdlp
 
 BODY = "<p>" + ("I was a kid and it was the strangest day. " * 20) + "</p> <p>Then &amp; it ended &#39;fine&#39;.</p>"
 
@@ -287,23 +288,17 @@ with tempfile.TemporaryDirectory() as d:
     except SystemExit:
         pass
     assert len(calls) == 45, len(calls)
-# a blocked address gets a new one: after 5 failures in a row the network reset command runs (at most twice), then it stops
-with tempfile.TemporaryDirectory() as d:
-    d = Path(d); calls, resets = [], []
-    os.environ["AUTOBIZ_NETWORK_RESET_COMMAND"] = "true"
-    real_sh = reddit.sh
-    reddit.sh = lambda *cmd, timeout=1500: (resets.append(cmd), (0, ""))[1] if cmd[:2] == ("bash", "-c") else real_sh(*cmd, timeout=timeout)
-    reddit.ytdlp = lambda *a: (calls.append(a), (1, "ERROR: [youtube] abc: Sign in to confirm you're not a bot"))[1]
-    real_fill, reddit.pexels_fill = reddit.pexels_fill, lambda *a, **k: None
-    try:
-        reddit.top_up(d / "lib", 91, d, d, ["@x/shorts"])
-    except SystemExit:
-        pass
-    finally:
-        reddit.sh, reddit.pexels_fill = real_sh, real_fill
-        del os.environ["AUTOBIZ_NETWORK_RESET_COMMAND"]
-    assert len(resets) == 2 and resets[0] == ("bash", "-c", "true"), resets
-    assert len(calls) == 15, len(calls)
+# every yt-dlp call goes through ytdlp.run, which adds the cookies and takes a fresh address when YouTube blocks this one
+class _R:
+    returncode, stdout, stderr = 1, "out ", "ERROR: HTTP Error 429"
+seen = []
+real_run, reddit.yt.run = reddit.yt.run, lambda cmd, **kw: (seen.append((cmd, kw)), _R())[1]
+try:
+    code, out = real_ytdlp("--flat-playlist", "src")
+finally:
+    reddit.yt.run = real_run
+assert seen[0][0] == ["--flat-playlist", "src"] and seen[0][1]["timeout"] == 900, seen
+assert (code, out) == (1, "out ERROR: HTTP Error 429"), (code, out)
 
 # when YouTube can't fill the library, licensed Pexels clips top it up (no watermarks, no bot checks); each clip is used once
 real_get_json, real_fetch = reddit.get_json, reddit.fetch_file

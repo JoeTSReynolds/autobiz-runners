@@ -16,6 +16,8 @@ sys.path.insert(0, str(here))
 import factcheck  # noqa: E402
 import newsroom_site  # noqa: E402
 import reddit  # noqa: E402
+from shared.files import jread  # noqa: E402
+from shared.proc import sh  # noqa: E402
 
 HOOKS = ["masked-number", "countdown-three", "stakes-first", "contradiction", "hidden-thing"]
 VOICES = {"tech": {"elevenlabs": "TX3LPaxmHKxFdv7VOQHJ", "kokoro": "am_michael"}, "space": {"elevenlabs": "JBFqnCBsd6RMkjVDRZzb", "kokoro": "bm_george"}}
@@ -23,16 +25,6 @@ VOICES = {"tech": {"elevenlabs": "TX3LPaxmHKxFdv7VOQHJ", "kokoro": "am_michael"}
 SITE = os.environ.get("NEWSROOM_SITE_URL", "https://jtsr-newsroom.pages.dev").rstrip("/")
 CHANNELS = {"tech": {"lane": "technology", "url": "https://www.youtube.com/@JTSRTech", "name": "JTSR Tech"},
             "space": {"lane": "science-space", "url": "https://www.youtube.com/@JTSRScience", "name": "JTSR Science"}}
-
-
-def sh(*cmd, cwd=None, timeout=1500):
-    r = subprocess.run([str(c) for c in cmd], capture_output=True, text=True, cwd=cwd, timeout=timeout)
-    return r.returncode, (r.stdout + r.stderr).strip()
-
-
-def jread(p, default=None):
-    p = Path(p)
-    return json.loads(p.read_text()) if p.exists() else default
 
 
 def lane_of(job):

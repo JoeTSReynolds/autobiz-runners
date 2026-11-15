@@ -3,7 +3,7 @@ CLI: python -m trending.music trending TAG... | fetch ID MUSIC_DIR | analyse FIL
 import collections, hashlib, json, os, subprocess, sys, time, urllib.request
 from pathlib import Path
 import numpy as np
-from .util import run
+from shared import media, ytdlp  # engine folder is on sys.path
 from .sound import sound
 
 SR, N, HOP = 22050, 2048, 512          # hop = 23.2 ms
@@ -13,7 +13,7 @@ def trending(hashtags, per_tag=30, sleep=0.3):
     """Rank sounds (title, source) used by recent Shorts under the hashtags. Skips 'Original Sound'."""
     tally, ex = collections.Counter(), collections.defaultdict(list)
     for tag in hashtags:
-        out = run(['yt-dlp', '--flat-playlist', '-I', f'1:{per_tag}', '--print', '%(id)s %(view_count)s',
+        out = ytdlp.run(['--flat-playlist', '-I', f'1:{per_tag}', '--print', '%(id)s %(view_count)s',
                    f'https://www.youtube.com/hashtag/{tag}/shorts'], capture_output=True, text=True).stdout
         for line in out.split('\n'):
             if not line.strip(): continue
@@ -31,7 +31,7 @@ def fetch(source_id, music_dir):
     os.makedirs(music_dir, exist_ok=True)
     path = os.path.join(music_dir, f'{source_id}.m4a')
     if os.path.exists(path) and os.path.exists(path + '.json'): return path
-    r = run(['yt-dlp', '-f', 'ba', '-x', '--audio-format', 'm4a', '--no-simulate', '--no-playlist',
+    r = ytdlp.run(['-f', 'ba', '-x', '--audio-format', 'm4a', '--no-simulate', '--no-playlist',
              '--print', '%(.{title,uploader,duration,webpage_url})j', '-o', os.path.join(music_dir, '%(id)s.%(ext)s'),
              f'https://www.youtube.com/watch?v={source_id}'], capture_output=True, text=True)
     if not os.path.exists(path): raise RuntimeError('fetch failed: ' + r.stderr[-400:])
@@ -40,7 +40,7 @@ def fetch(source_id, music_dir):
     return path
 
 def _decode(path):
-    raw = run(['ffmpeg', '-v', 'error', '-i', path, '-ac', '1', '-ar', str(SR), '-f', 'f32le', '-'], capture_output=True).stdout
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', path, '-ac', '1', '-ar', str(SR), '-f', 'f32le', '-'], capture_output=True).stdout
     return np.frombuffer(raw, np.float32)
 
 def _spec(x):
@@ -105,7 +105,7 @@ def _share(scores):
 
 def vocal_share(path, models_dir):
     import onnxruntime
-    raw = run(['ffmpeg', '-v', 'error', '-i', path, '-t', str(MAX_VOCAL_S), '-ac', '1', '-ar', '16000', '-f', 'f32le', '-'], capture_output=True).stdout
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', path, '-t', str(MAX_VOCAL_S), '-ac', '1', '-ar', '16000', '-f', 'f32le', '-'], capture_output=True).stdout
     sess = onnxruntime.InferenceSession(yamnet_path(models_dir), providers=['CPUExecutionProvider'])
     return _share(sess.run(None, {'waveform': np.frombuffer(raw, np.float32)})[0])
 
@@ -170,7 +170,7 @@ def mix(voice_audio, music_path, music_offset, out, music_gain_db=-8, duck_db=10
     """Mix speech/clip audio with music: ducked via sidechaincompress, optional +4 dB from boost_after (s), alimiter, AAC 192k.
     duck_db is approximate: ratio = 1 + duck_db/2 (10 -> 6); attack_ms/release_ms shape the duck. Negative music_offset delays the music instead of trimming.
     swell: speech pauses [(a, b)] where the music goes unducked, crossfading from the ducked music over swell_s before a and after b."""
-    d = video_duration or float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', voice_audio], capture_output=True, text=True).stdout)
+    d = video_duration or media.duration(voice_audio)
     pre = ['-ss', f'{music_offset:.3f}'] if music_offset > 0 else []
     delay = f',adelay={int(-music_offset * 1000)}:all=1' if music_offset < 0 else ''
     g = music_gain_db
@@ -185,7 +185,7 @@ def mix(voice_audio, music_path, music_offset, out, music_gain_db=-8, duck_db=10
         w = 'min(1,' + '+'.join(f'min(1,max(0,(t-{a - r:.3f})/{r}))*min(1,max(0,({b + r:.3f}-t)/{r}))' for a, b in swell) + ')'
         fc = fc.replace('[m][v1]sidechaincompress', '[m]asplit=2[m1][m2];[m1][v1]sidechaincompress').replace(
             '[md][v2]amix', f"[md]volume='1-{w}':eval=frame[mdw];[m2]volume='{w}':eval=frame[mw];[mdw][mw]amix=inputs=2:normalize=0[mm];[mm][v2]amix")
-    r = run(['ffmpeg', '-y', '-v', 'error', '-i', voice_audio, *pre, '-i', music_path, '-filter_complex', fc,
+    r = subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', voice_audio, *pre, '-i', music_path, '-filter_complex', fc,
              '-map', '[o]', '-t', f'{d}', '-c:a', 'aac', '-b:a', '192k', out], capture_output=True, text=True)
     if r.returncode: raise RuntimeError(r.stderr[-600:])
     return out

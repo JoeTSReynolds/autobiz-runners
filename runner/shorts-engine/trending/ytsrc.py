@@ -1,12 +1,12 @@
 """YouTube sources through yt-dlp: search, info + English word timings, phrase finding, low-res frame probes."""
 import json, os, re, string
 from . import align
-from .util import run
+from shared import ytdlp  # engine folder is on sys.path
 
 
 def search(query, n=15):
     """Flat ytsearch -> [{id, title, channel, duration, view_count, live_status, timestamp, upload_date}] (keys with no value left out)."""
-    out = run(['yt-dlp', '--flat-playlist', '--print', '%(.{id,title,channel,duration,view_count,live_status,timestamp,upload_date})j',
+    out = ytdlp.run(['--flat-playlist', '--print', '%(.{id,title,channel,duration,view_count,live_status,timestamp,upload_date})j',
                f'ytsearch{n}:{query}'], capture_output=True, text=True).stdout
     return [{k: v for k, v in json.loads(l).items() if v is not None} for l in out.split('\n') if l.strip()]
 
@@ -53,7 +53,7 @@ def info_and_words(video_id, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     info_f = os.path.join(out_dir, f'{video_id}.info.json')
     if not os.path.exists(info_f):
-        r = run(['yt-dlp', '--skip-download', '--write-info-json', '--write-subs', '--write-auto-subs', '--sub-langs', 'en,en-orig,en-GB,en-US,en-CA,en-AU',
+        r = ytdlp.run(['--skip-download', '--write-info-json', '--write-subs', '--write-auto-subs', '--sub-langs', 'en,en-orig,en-GB,en-US,en-CA,en-AU',
                  '--sub-format', 'json3', '--no-playlist', '-o', os.path.join(out_dir, '%(id)s.%(ext)s'),
                  f'https://www.youtube.com/watch?v={video_id}'], capture_output=True, text=True)
         if not os.path.exists(info_f):
@@ -101,10 +101,10 @@ def find_phrase(ws, phrase):
 def probe_frames(video_id, url, windows, out_dir, height=240):
     """Download tiny video-only clips for [(start, end)] windows in ONE yt-dlp call -> list of file paths, None where a window failed."""
     os.makedirs(out_dir, exist_ok=True)
-    cmd = ['yt-dlp', '-f', f'bv[height<={height}]/bv*[height<={height}]/worst[vcodec!=none]', '--no-playlist', '--no-download-archive',
+    cmd = ['-f', f'bv[height<={height}]/bv*[height<={height}]/worst[vcodec!=none]', '--no-playlist', '--no-download-archive',
            '--force-keyframes-at-cuts', '-o', os.path.join(out_dir, f'{video_id}_%(section_start)s.%(ext)s')]
     for s, e in windows: cmd += ['--download-sections', f'*{s:.2f}-{e:.2f}']
-    run(cmd + [url], capture_output=True, text=True)
+    ytdlp.run(cmd + [url], capture_output=True, text=True)
     found = {}
     for name in os.listdir(out_dir):
         m = re.fullmatch(re.escape(video_id) + r'_(\d+(?:\.\d+)?)\.\w+', name)

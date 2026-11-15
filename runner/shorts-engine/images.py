@@ -8,10 +8,11 @@
 # Licence rule (allowed()): public domain, CC0, CC BY, CC BY-SA, Pexels, Pixabay. Never NC / ND.
 # PEXELS_API_KEY / PIXABAY_API_KEY enable those providers. Keys go only in request URL/headers; the cache
 # stores normalised results (no keys) and failed providers are recorded in last_errors.
-import hashlib, json, os, re, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
+import hashlib, json, os, re, subprocess, sys, time, urllib.parse
 from pathlib import Path
 
 import commons
+from shared import web
 
 UA = {"User-Agent": "newsroom-media/1.0"}  # Pixabay 403s the default Python UA
 CACHE = Path("~/.cache/autobiz-images").expanduser()
@@ -27,14 +28,7 @@ def allowed(lic):
 
 def fetch(url, headers=None, timeout=30):
     h = {**(commons.UA if "wikimedia" in url else UA), **(headers or {})}
-    for attempt in range(4):  # back off on 429 like commons.py
-        try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=timeout) as r:
-                return r.read()
-        except urllib.error.HTTPError as e:
-            if e.code != 429 or attempt == 3:
-                raise
-            time.sleep(int(e.headers.get("Retry-After") or 5 * (attempt + 1)))
+    return web.fetch(url, h, timeout)
 
 
 def jget(url, headers=None):

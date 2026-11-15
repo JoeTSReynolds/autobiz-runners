@@ -2,8 +2,9 @@
 #   python3 commons.py search "<query>" [n]           -> JSON list of usable files
 #   python3 commons.py get <project> "<File:Title>" <name.jpg>  -> downloads to <project>/assets/<name.jpg>,
 #                                                                appends the credit to <project>/credits.json
-import json, re, sys, time, urllib.error, urllib.parse, urllib.request
+import json, re, sys, urllib.parse
 from pathlib import Path
+from shared import web
 
 API = "https://commons.wikimedia.org/w/api.php"
 UA = {"User-Agent": "autobiz-newsroom/0.1 (non-commercial prototype; python-urllib)"}
@@ -11,14 +12,7 @@ OK = ("public domain", "pd", "cc0", "cc by", "cc-by", "no restrictions")  # cc b
 
 
 def fetch(url, timeout=30):
-    for attempt in range(4):  # Commons rate-limits bursts (429): wait as asked, then retry
-        try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
-                return r.read()
-        except urllib.error.HTTPError as e:
-            if e.code != 429 or attempt == 3:
-                raise
-            time.sleep(int(e.headers.get("Retry-After") or 5 * (attempt + 1)))
+    return web.fetch(url, UA, timeout)  # Commons rate-limits bursts (429): fetch waits and retries
 
 
 def api(**q):

@@ -1,10 +1,14 @@
 # The Reddit stories lane, called from stage.py (modes posts, story, and record for lane reddit).
 # posts: fetch top posts per subreddit (RSS, archive fallback). story: validate the agent's retelling, voice it,
 # cut sped-up b-roll, build the one-word captions + hook card and render short.mp4. No PIL here: the card is a prebuilt png.
-import collections, html, json, math, os, random, re, subprocess, sys, time, urllib.parse, urllib.request
+import collections, html, json, math, os, random, re, sys, time, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
+
+from shared import ytdlp as yt  # reddit.ytdlp below wraps it
+from shared.files import jread
+from shared.proc import sh
 
 here = Path(__file__).parent.resolve()
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
@@ -16,15 +20,6 @@ NUMBER_WORD = {2: "two", 3: "three"}
 
 def lane_cfg():
     return json.loads((here / "lanes" / "reddit" / "lane.json").read_text())
-
-
-def jread(p, default):
-    return json.loads(p.read_text()) if p.exists() else default
-
-
-def sh(*cmd, timeout=1500):
-    r = subprocess.run([str(c) for c in cmd], capture_output=True, text=True, timeout=timeout)
-    return r.returncode, (r.stdout + r.stderr).strip()
 
 
 # ---------- posts ----------
@@ -366,9 +361,8 @@ def pick_segments(names, n, seed):
 
 
 def ytdlp(*args):
-    cookies = os.environ.get("YTDLP_COOKIES_FILE")
-    exe = [__import__("shutil").which("yt-dlp") or "yt-dlp"]
-    return sh(*exe, *(["--cookies", cookies] if cookies else []), *args, timeout=900)
+    r = yt.run([*map(str, args)], capture_output=True, text=True, timeout=900)  # cookies and blocked-address reset
+    return r.returncode, (r.stdout + r.stderr).strip()
 
 
 def source_ids(state, sources):
@@ -513,16 +507,12 @@ def top_up(lib, need, state, run, sources):
     done = set(archive.read_text().split()) if archive.exists() else set()
     pool = [i for i in source_ids(state, sources) if i not in done]
     random.shuffle(pool)
-    error, fails, resets = "", 0, 0
-    reset = os.environ.get("AUTOBIZ_NETWORK_RESET_COMMAND")
+    error, fails = "", 0
     for vid in pool[:max(12, need // 2)]:  # a video gives at most 4 shots, about 2 after the text filter
         if len(list(lib.glob("seg_*.mp4"))) >= need:
             break
-        if fails >= 5:  # 5 failures in a row: this address is blocked; take a new one (twice at most), else stop burning sources
-            if not reset or resets >= 2:
-                break
-            sh("bash", "-c", reset, timeout=120)
-            resets, fails = resets + 1, 0
+        if fails >= 5:  # 5 failures in a row even after ytdlp's own address resets: stop burning sources
+            break
         code, out = ytdlp("-f", "bv*[height<=1280][height>=640]/bv*", "--no-playlist", "-o", str(run / f"src_{vid}.%(ext)s"), f"https://www.youtube.com/shorts/{vid}")
         fails = fails + 1 if code else 0
         if code:

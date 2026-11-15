@@ -8,6 +8,7 @@ shorts-engine/tts.py. Responses are cached by request hash in run/cut/tts-cache/
 """
 import base64, hashlib, json, os, re, subprocess, urllib.request, wave, zlib
 from pathlib import Path
+from shared import media  # engine folder is on sys.path
 from .sensitive import cap_words, spoken_map
 
 VOICE, MODEL, KOKORO_VOICE, KOKORO_SPEED, SR, GAP = "JBFqnCBsd6RMkjVDRZzb", "eleven_v4_turbo", "bm_george", 1.12, 24000, 0.12
@@ -18,10 +19,6 @@ def _post(url, body, key):
     req = urllib.request.Request(url, data=body, headers={"xi-api-key": key, "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=300) as r:
         return r.read()
-
-
-def _dur(path):
-    return float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)], text=True))
 
 
 def _eleven(texts, voice, model, run):
@@ -41,7 +38,7 @@ def _eleven(texts, voice, model, run):
         (d / name).write_bytes(raw)
     mp3 = Path(run) / "cut" / "voice.mp3"
     mp3.write_bytes(base64.b64decode(resp["audio_base64"]))
-    dur = _dur(mp3)
+    dur = media.duration(mp3)
     st, en, words, offset = al["character_start_times_seconds"], al["character_end_times_seconds"], [], 0
     for t in texts:
         ws = []

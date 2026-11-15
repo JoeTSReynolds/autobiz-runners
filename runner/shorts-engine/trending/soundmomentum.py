@@ -22,7 +22,7 @@ Usage: python -m trending.soundmomentum --dir SDIR --set edit|sad|all [--top 40 
 """
 import urllib.parse, argparse, collections, datetime as dt, hashlib, json, math, os, re, statistics, sys, time, urllib.error, urllib.request
 from .sound import find, reel_body, sound_from
-from .util import run
+from shared import ytdlp  # engine folder is on sys.path
 
 CTX = reel_body('x')['context']
 PIVOT = 'RkVzZnZfYXVkaW9fcGl2b3Q'  # base64 of FEsfv_audio_pivot
@@ -133,7 +133,7 @@ def score(shorts, dates, more, today):
 
 def ytdlp_ids(url, n, sdir):
     def go():
-        out = run(['yt-dlp', '--flat-playlist', '-I', f'1:{n}', '--print', '%(id)s %(view_count)s', url], capture_output=True, text=True).stdout
+        out = ytdlp.run(['--flat-playlist', '-I', f'1:{n}', '--print', '%(id)s %(view_count)s', url], capture_output=True, text=True).stdout
         return [l.split() for l in out.split('\n') if l.strip()]
     return _cached(sdir, 'ids' + url + str(n), go, ttl=6 * 3600)
 

@@ -83,7 +83,7 @@ r2 = Path(_t.mkdtemp()); long = r2 / "long.wav"
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=f=220:d=60", "-ar", "24000", str(long)], check=True)
 tts._kokoro = lambda spoken, voice, speed, out: {"file": str(long), "duration": 60.0, "words": [{"w": "end", "s": 59.0, "e": 59.5}], "spans": [(0, 60.0)]}
 v = tts.narrate(texts, ["a"], {}, r2)
-assert abs(v["duration"] - tts.MAX_VOICE) < 0.15 and abs(tts._dur(v["file"]) - tts.MAX_VOICE) < 0.15, v["duration"]
+assert abs(v["duration"] - tts.MAX_VOICE) < 0.15 and abs(tts.media.duration(v["file"]) - tts.MAX_VOICE) < 0.15, v["duration"]
 assert abs(v["words"][0]["s"] - 59.0 * tts.MAX_VOICE / 60) < 0.01 and abs(v["spans"][0][1] - v["duration"]) < 0.01, v
 # Kokoro returns words per sentence: the speed-up must scale them too (it crashed on the nested lists before)
 tts._kokoro = lambda spoken, voice, speed, out: {"file": str(long), "duration": 60.0, "words": [[{"w": "a", "s": 1.0, "e": 1.5}], [{"w": "end", "s": 59.0, "e": 59.5}]], "spans": [(0, 30.0), (30.0, 60.0)]}
