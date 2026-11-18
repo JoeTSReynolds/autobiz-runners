@@ -377,9 +377,6 @@ def _v_edit(cx, sb):
     for i, s in enumerate(_check_list(errs, 'slams', sb.get('slams'), 2, 3)):
         if len(s.split()) > 5:
             errs.append(f'slams[{i}]: "{s}" has {len(s.split())} words, at most 5')
-    for i, p in enumerate(_check_list(errs, 'popups', sb.get('popups'), 2, 3)):
-        if len(p.get('text', '').split()) > 8 or not isinstance(p.get('line'), int) or not 0 <= p['line'] < len(lines):
-            errs.append(f'popups[{i}]: text at most 8 words and line must be a line index')
     broll = _check_list(errs, 'broll', sb.get('broll'), 6, 12)
     for i, b in enumerate(broll):
         if not b.get('query') or not isinstance(b.get('line'), int) or not 0 <= b['line'] < len(lines):
@@ -404,7 +401,7 @@ def _v_edit(cx, sb):
         return None
     clips = [_clip(f'l{i}', src, *_cut(r[1], r[2], src['duration'])) for i, (_, r) in enumerate(spans)]
     return {'format': 'edit', 'source': src, 'lines': [{'clip': f'l{i}', 'text': q, 'words': r[3]} for i, (q, r) in enumerate(spans)],
-            'dropLine': drop, 'slams': sb['slams'], 'popups': sb['popups'],
+            'dropLine': drop, 'slams': sb['slams'],
             'broll': [{'query': b['query'], 'line': b['line'], 'candidates': cache[b['query']]} for b in broll],
             'tail': [{'query': q, 'candidates': cache[q]} for q in tail], 'clips': clips, 'predictedDuration': round(pred, 2)}
 

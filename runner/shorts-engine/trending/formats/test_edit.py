@@ -198,6 +198,8 @@ seen, _track = [], edit.facecrop.track
 edit.facecrop.track = lambda *a, **k: (seen.append(k), _track(*a, **{**k, "ref": None}))[1]
 used, _asm = [], edit._assemble
 edit._assemble = lambda shots, *a, **k: (used.extend((x["kind"], Path(x.get("file") or "").name) for x in shots), _asm(shots, *a, **k))[1]
+specs, _comp = [], edit.CP.compose
+edit.CP.compose = lambda base, spec, *a, **k: (specs.append(spec), _comp(base, spec, *a, **k))[1]
 import hashlib
 _fx_ = edit.editfx
 _orig = (_fx_.subject, _fx_.transition, _fx_.fry, edit._tail_fx, _fx_.look)
@@ -222,7 +224,8 @@ _fx_.subject, _fx_.transition, _fx_.fry, edit._tail_fx, _fx_.look = _subj, _tr, 
 _asm2 = edit._assemble
 edit._assemble = lambda shots, spk, dst, total, *a, **k: (tot.append(total), _asm2(shots, spk, dst, total, *a, **k))[1]
 out = edit.render(job, {"models": "/nonexistent"}, run)
-edit.facecrop.track, edit._assemble = _track, _asm
+edit.facecrop.track, edit._assemble, edit.CP.compose = _track, _asm, _comp
+assert specs and specs[0]["popups"] == [], specs[0]["popups"]   # owner 2026-11-18: no pop-ups, even when an old plan has them
 _fx_.subject, _fx_.transition, _fx_.fry, edit._tail_fx, _fx_.look = _orig
 # real-first: every tail shot is the person's footage or photo, and the speech cuts away to it too
 real = ("f0.mp4", "f1.mp4", "p1.png")

@@ -204,7 +204,6 @@ missing(job('edit', _bad, storyTries=2), 'no valid storyboard after 3 tries', 'n
 # ---------------- verify: edit
 def edit_sb(lines, **kw):
     sb = {'source': 'vid1', 'lines': lines, 'dropLine': 2, 'slams': ['28 YEARS', '31,000 MILES ON FOOT'],
-          'popups': [{'text': 'HE DID IT. 14 DAYS.', 'line': 1}, {'text': 'NO ONE BELIEVED HIM', 'line': 3}],
           'broll': [{'query': f'sea ice {i}', 'line': i % 6} for i in range(7)], 'tail': [f'glacier {i}' for i in range(6)]}
     return dict(sb, **kw)
 EDIT = edit_sb([sq(20 + i, 0, -1) for i in range(6)])  # 33.8 s of speech
@@ -214,7 +213,7 @@ port, out, log = verify(job('edit', EDIT))
 assert port == 'next', (port, out, log)
 p = out['plan']
 assert p['source'] == POOL[0] and [l['clip'] for l in p['lines']] == [f'l{i}' for i in range(6)] and p['dropLine'] == 2
-assert p['slams'] == EDIT['slams'] and p['popups'] == EDIT['popups'] and len(p['broll']) == 7 and len(p['tail']) == 6
+assert p['slams'] == EDIT['slams'] and 'popups' not in p and len(p['broll']) == 7 and len(p['tail']) == 6
 assert p['broll'][0] == {'query': 'sea ice 0', 'line': 0, 'candidates': [CAND]} and p['tail'][0] == {'query': 'glacier 0', 'candidates': [CAND]}
 assert all(c['person'] for c in p['clips']) and 45 <= p['predictedDuration'] <= 58, p['predictedDuration']
 check_story(out)

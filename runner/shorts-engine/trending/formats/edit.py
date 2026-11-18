@@ -5,7 +5,7 @@ Look generalised from prototypes/trending/person-edit/build.py + engine.py.
 
     from trending.formats import edit; edit.render(job, cfg, run_dir) -> {short, timeline, credits}
 
-Reads job["plan"] (lines[{clip, words}], dropLine, slams, popups, musicOffset), job["clips"] (`plan.clips[i]` <-> `job.clips[i]`; file time = source
+Reads job["plan"] (lines[{clip, words}], dropLine, slams, musicOffset), job["clips"] (`plan.clips[i]` <-> `job.clips[i]`; file time = source
 time - offset), job["assets"] ({broll[{line, file, kind}], tail[{file, kind}]}), job["track"] ({file, analysis}). Paths are relative to `run`;
 intermediates go to run/cut/, the video to run/short.mp4.
 """
@@ -675,8 +675,7 @@ def render(job, cfg, run):
     caps = []
     for i, (l, c, f) in enumerate(lines):
         caps += C.group_words(_words(l, c, vs[i][0], cuts[i], t0s[i]), max_words=2, max_chars=14)
-    pops = [dict(text=p["text"], start=vs[p["line"]][0] + 0.4, end=min(vs[p["line"]][0] + 2.0, vs[p["line"]][1] - 0.1)) for p in plan.get("popups", [])]
-    spec = dict(captions=caps, popups=pops, caption_scale=0.8,
+    spec = dict(captions=caps, popups=[], caption_scale=0.8,   # owner 2026-11-18: no pop-ups
                 slams=[dict(text=t, start=a, end=b) for t, (a, b) in zip(slams, S["slams"])],
                 flashes=[dict(at=s["t0"], dur=0.18 if s["trans"] == "drop" else 0.12) for s in shots if s["trans"] in ("flash", "drop", "slam", "hit")],
                 shakes=[dict(at=s["t0"], dur=0.3, amp=26 if s["trans"] in ("drop", "hit") else 16) for s in shots if s["trans"] in ("shake", "drop", "slam", "hit")])
