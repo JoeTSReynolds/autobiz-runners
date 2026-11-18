@@ -689,14 +689,15 @@ a = out['assets']
 assert port == 'next' and a['screenshots'] == {'https://a/1#a b c d': 'assets/shots/0.png', 'https://a/2#a b c d': 'assets/shots/1.png'}, out
 assert a['photos'][0] == {'query': 'p1', 'file': 'assets/photos/0.png', 'credit': 'A', 'licence': 'CC BY 4.0', 'page': 'https://c/g1'}, a['photos'][0]
 assert [p['page'] for p in a['photos']] == ['https://c/g1', 'https://c/found', 'https://c/g3'] and (r / 'assets' / 'shots' / '1.png').read_bytes() == b'png'
-cp['script'][2]['visual']['url'] = 'https://a/bad2'                              # 2 of 3 screenshots failed: below the 2 needed
-port, out, _, _ = asr(cp)
-assert port == 'missing' and 'screenshot' in out['agentErrors'][0] and out['rejectedPeople'] == ['Q0', 'Q1'], out
-# once the 2 needed can no longer be reached, the rest are not tried (live 2026-11-10: 274 s on hopeless cloud screenshots)
+cp['script'][2]['visual']['url'] = 'https://a/bad2'                              # 2 of 3 screenshots failed: 1 is enough
+port, out, _, _ = asr(cp)                                                        # (live 2026-11-18: a missed CNN highlight rejected a good story)
+assert port == 'next' and out['assets']['screenshots'] == {'https://a/1#a b c d': 'assets/shots/0.png'}, out
+# every article is tried before rejecting; none working rejects the person
 cp['script'][0]['visual']['url'] = 'https://a/bad1'; shot_calls = []
 sm._screenshot = lambda u, d, h=None: shot_calls.append(u) or stub_shot(u, d, h)
 port, out, _, _ = asr(cp)
-assert port == 'missing' and shot_calls == ['https://a/bad1', 'https://a/bad2'], shot_calls
+assert port == 'missing' and 'screenshot' in out['agentErrors'][0] and out['rejectedPeople'] == ['Q0', 'Q1'], out
+assert shot_calls == ['https://a/bad1', 'https://a/bad2', 'https://a/bad3'], shot_calls
 sm._screenshot = stub_shot; cp['script'][0]['visual']['url'] = 'https://a/1'
 cp['script'][2]['visual']['url'] = 'https://a/2'; sm._commons_images = lambda q, n=6: []
 cp['script'][4]['visual']['candidates'] = []; cp['script'][6]['visual']['candidates'] = [img('bad')]   # only 1 photo left

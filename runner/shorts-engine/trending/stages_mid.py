@@ -1169,10 +1169,8 @@ def assets(job, cfg, run, state):
     visuals = [s['visual'] for s in plan['script']]
     keys = list(dict.fromkeys(shot_key(v) for v in visuals if v['kind'] == 'screenshot'))   # one per highlight
     by_key = {shot_key(v): v for v in visuals if v['kind'] == 'screenshot'}
-    need, shots = min(2, len(keys)), {}
+    need, shots = min(1, len(keys)), {}   # a line whose shot failed shows a photo (casefile.render); one shot is enough
     for k in keys:
-        if sum(1 for f in shots.values() if not f) > len(keys) - need:
-            break   # the 2 needed can no longer be reached: the rest would only cost time (274 s in the cloud, live 2026-11-10)
         v = by_key[k]
         png = _screenshot(v['url'], base / 'shots' / f'{len(shots)}.png', v.get('highlight'))
         shots[k] = f'assets/shots/{len(shots)}.png' if png else None
