@@ -33,4 +33,8 @@ calls, naps = fake([err(404)])
 try: web.fetch('http://x')
 except urllib.error.HTTPError as e: assert e.code == 404 and len(calls) == 1 and not naps
 else: raise AssertionError('non-429 must raise at once')
+calls, naps = fake([err(429, '120'), b'never'])
+try: web.fetch('http://x')
+except urllib.error.HTTPError as e: assert e.code == 429 and len(calls) == 1 and not naps, (len(calls), naps)
+else: raise AssertionError('a long Retry-After (Commons thumbnails: 120 s) must raise at once, not stall the stage')
 print('ok')
