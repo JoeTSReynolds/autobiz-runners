@@ -1,6 +1,6 @@
 """Person-edit renderer: the person's own story over an edit track that builds, drops on `plan.dropLine`, then takes over completely.
 Cut rate speeds up after the drop (3 beats per shot before, 1-2 after), stat slams follow the drop line, captions at 0.8 scale,
-and after the last line speech stops: the last ~35 % is a pure edit (`assets.tail`) cut on the beat grid, building to a hard cut on a hit.
+and after the last line speech stops: the last TAIL_S s is a pure edit (the person's footage, stock `assets.tail` only as a fallback) cut on the beat grid (2-beat shots, then 1-beat, the last beat stuttering in quarters) and a hard cut on a hit.
 Look generalised from prototypes/trending/person-edit/build.py + engine.py.
 
     from trending.formats import edit; edit.render(job, cfg, run_dir) -> {short, timeline, credits}
@@ -9,23 +9,28 @@ Reads job["plan"] (lines[{clip, words}], dropLine, slams, popups, musicOffset), 
 time - offset), job["assets"] ({broll[{line, file, kind}], tail[{file, kind}]}), job["track"] ({file, analysis}). Paths are relative to `run`;
 intermediates go to run/cut/, the video to run/short.mp4.
 """
-import math, re, subprocess
+import bisect, json, math, re, subprocess
 from pathlib import Path
 import cv2
 import numpy as np
-from .. import captions as C, compose as CP, facecrop, music
+from .. import captions as C, compose as CP, editfx, facecrop, music
 from ..facecrop import probe, FPS
 from .tribute import _ff, _lufs
 
 W, H = 1080, 1920
 GAIN_DB, DUCK_DB, TARGET_LUFS = -6, 12, -14
-TAIL_SHARE, PRE_BEATS, LAST_S, HOLD_MIN = 0.35, 3, 5.0, 0.15
-TAIL_FX = ["whip", "punch", "flash", "shake"]   # one per downbeat, in turn
+TAIL_S, PRE_BEATS, HOLD_MIN = 8.0, 3, 0.15
+TAIL_ACC = 2.0                                  # tail: 2-beat shots for the first TAIL_ACC s, 1-beat after; only the final beat stutters (4 quarter shots)
+TAIL_BIG = ["matte", "flashblur", "frame", "spin"]   # downbeat cuts, in turn
+TAIL_SMALL = ["whip", "punch"]                       # other cuts, alternating
+FRY = True                                      # enhance look on every frame
+TR_FRAMES = {"whip": 4, "punch": 4, "stutter": 3}  # transition length in frames; the rest take 8
+BEAT_PULSE = 0.2                                # montage looks flare on each beat and settle over this many s
 XFADE = 0.03                                    # audio fade at each filler cut
 # Tail effects. k rises K0 -> 1 over the pure-edit tail (and 0 -> K0 over the last speech line), eased by K_POW; every shot change
 # adds a short pulse (PULSE_DUR s, weight by transition) on top. Tune these; nothing else needs to change.
 TAIL_K0, K_POW, PULSE_DUR = 0.15, 1.6, 0.25
-PULSE_W = {"whip": 1.0, "punch": 1.0, "flash": 1.0, "shake": 1.0, "hit": 1.0, "blur": 0.45}   # downbeats strongest
+PULSE_W = {"whip": 0.6, "punch": 0.6, "flash": 1.0, "shake": 1.0, "hit": 1.0, "blur": 0.45, "stutter": 0.5, **dict.fromkeys(TAIL_BIG, 1.0)}   # downbeats strongest
 WHIP_GAIN = 1.0       # whip/zoom transition blur: x (1 + gain * k)
 MOVE_BLUR = 14.0      # radial blur span = zoom change per frame * this * k (camera moves)
 PULSE_BLUR = 0.07     # extra radial span at a full pulse
@@ -38,7 +43,7 @@ MIN_SHOT = 0.3                         # no speech shot shorter than this (a sli
 RAMP_FAST, RAMP_SLOW, RAMP_IN, RAMP_OUT = 2.5, 0.4, 0.5, 0.4
 SPEED_BLUR = 0.06     # radial blur span at full RAMP_FAST speed (on top of MOVE_BLUR * k)
 FACE_MAX = 0.48       # the speaker's face is at most this share of the frame width
-RMS_HOP, IN_WIN, OUT_WIN, FADE = 0.02, (-0.35, 0.1), (-0.25, 0.35), 0.015   # audio cut search (s): quietest frame near the planned point; join fade
+RMS_HOP, IN_WIN, OUT_WIN, FADE = 0.02, (-0.35, 0.1), (-0.05, 0.35), 0.015   # audio cut search (s): quietest frame near the planned point; join fade. OUT_WIN starts at -0.05: an earlier out point clipped word endings ("obsessed")
 JOIN_GAP = 0.3                         # lines closer than this in the source play on with no cut
 GRADE = "eq=contrast=1.12:saturation=1.12:brightness=-0.02,unsharp=5:5:0.7"
 
@@ -53,11 +58,37 @@ def grid(an, off, hi):
     return pre + bs + post
 
 
+def _onsets(path, off, dur, hop=0.01, sr=11025):
+    """Kick onset strength of the music on the video timeline (index 0 = video t 0, `hop` s per step): positive diff of log low-band energy."""
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(max(off, 0)), "-t", str(dur), "-i", str(path), "-ac", "1", "-ar", str(sr),
+                          "-af", "lowpass=f=150", "-f", "f32le", "-"], capture_output=True, check=True).stdout
+    x = np.frombuffer(raw, np.float32)
+    h = int(sr * hop)
+    e = np.log1p(1e3 * (x[:len(x) // h * h].reshape(-1, h) ** 2).sum(1))
+    env = np.maximum(np.diff(e, prepend=e[:1]), 0)
+    return np.concatenate([np.zeros(int(round(-off / hop))), env]) if off < 0 else env
+
+
+def snap(times, env, hop, win=0.12, gap=0.1):
+    """Move each time to the strongest onset within +-win if it clearly beats the local median; times stay `gap` apart and increasing."""
+    out, w = [], int(round(win / hop))
+    for t in times:
+        k = int(round(t / hop))
+        seg = env[max(k - w, 0):k + w + 1]
+        if len(seg) and seg.max() > 1.5 * np.median(seg) + 1e-9:
+            c = (max(k - w, 0) + int(seg.argmax())) * hop
+            if not out or c - out[-1] >= gap:
+                out.append(c)
+                continue
+        out.append(t if not out or t - out[-1] >= gap else out[-1] + gap)
+    return out
+
+
 def _first(g, t, lo=0):
     return next(i for i in range(lo, len(g)) if g[i] >= t - 1e-6)
 
 
-def schedule(ld, dl, ns, g, td, share=TAIL_SHARE, music_len=None):
+def schedule(ld, dl, ns, g, td, music_len=None):
     """Shots on the beat grid g. ld: line durations; dl: drop line; ns: slams; td: video time the drop line starts (= sum(ld[:dl])).
     Returns {shots[{t0,t1,kind S|B|T,trans,slam?}], lines[(start,end)], slams[(start,end)], tdend, gap, tT (tail start), D}."""
     d0 = min(range(len(g)), key=lambda i: abs(g[i] - td))
@@ -72,12 +103,8 @@ def schedule(ld, dl, ns, g, td, share=TAIL_SHARE, music_len=None):
         t += d
     kT = _first(g, lines[-1][1] + HOLD_MIN)
     kT += (kT - d0) % 2                   # 2-beat tail shots then land on downbeats
-    kE = min(range(kT + 2, len(g)), key=lambda i: abs(g[i] - g[kT] / (1 - share)))
-    while 1 - g[kT] / g[kE] < share - 0.04 and kE + 1 < len(g):
-        kE += 1
-    while 1 - g[kT] / g[kE] > share + 0.04 and kE - 1 > kT + 1:
-        kE -= 1
-    while music_len and g[kE] > music_len and kE - 1 > kT + 1:
+    kE = min(range(kT + 6, len(g)), key=lambda i: abs(g[i] - g[kT] - TAIL_S))
+    while music_len and g[kE] > music_len and kE - 1 > kT + 5:
         kE -= 1
     sh = []
     add = lambda a, b, kind, trans="blur", **kw: sh.append(dict(t0=g[a], t1=g[b], kind=kind, trans=trans, **kw))
@@ -96,18 +123,28 @@ def schedule(ld, dl, ns, g, td, share=TAIL_SHARE, music_len=None):
         j = min(i + (2 if n % 2 == 0 else 1), kT)
         add(i, j, "SB"[n % 2], "blur")
         i, n = j, n + 1
-    sh[-1]["kind"] = "S"                   # the payoff line is always on the speaker
-    i, nd = kT, 0
-    while i < kE:
-        j = min(i + (1 if g[i] >= g[kE] - LAST_S - 1e-6 else 2), kE)
-        down = i == kT or (i - d0) % 4 == 0
-        tr = "blur"
-        if j == kE:
-            tr = "hit"
-        elif down:
-            tr, nd = TAIL_FX[nd % 4], nd + 1
-        add(i, j, "T", tr)
+    last = max(i for i, x in enumerate(sh) if x["t0"] < lines[-1][1] - 1e-6)
+    sh[last]["kind"] = "S"                 # the payoff line is always on the speaker
+    for x in sh[last + 1:]:
+        x["kind"] = "B"                    # after the last line the speaker video has ended: the hold cuts away
+    tail, i = [], kT                     # (t0, t1, on-grid index or None, stutter); 2 beats, then 1 beat, the last beat in 4 quarters
+    while i < kE - 1:
+        j = min(i + (2 if g[i] < g[kT] + TAIL_ACC - 1e-6 else 1), kE - 1)
+        tail.append((g[i], g[j], i, False))
         i = j
+    q = [g[kE - 1] + (g[kE] - g[kE - 1]) * k / 4 for k in range(5)]
+    tail += [(q[k], q[k + 1], kE - 1 if k == 0 else None, True) for k in range(4)]
+    nb = ns_ = 0
+    for n, (a, b, gi, stt) in enumerate(tail):
+        if n == len(tail) - 1:
+            tr = "hit"
+        elif stt and n > len(tail) - 4:
+            tr = "stutter"
+        elif gi is not None and (gi == kT or (gi - d0) % 4 == 0):
+            tr, nb = TAIL_BIG[nb % 4], nb + 1
+        else:
+            tr, ns_ = TAIL_SMALL[ns_ % 2], ns_ + 1
+        sh.append(dict(t0=a, t1=b, kind="T", trans=tr, **({"stutter": True} if stt else {})))
     sh = _tidy(sh, lines)
     return dict(shots=sh, lines=lines, slams=[(g[k1 + 2 * j], g[k1 + 2 * j + 2]) for j in range(ns)], tdend=tdend, gap=gap, tT=g[kT], D=g[kE])
 
@@ -145,21 +182,30 @@ def speed_curve(d, avail=None):
     return pos, v, need
 
 
-def tail_slots(n, photos):
-    """Tail shot indices (of n) that show the person: with `photos` photos about one in three, never adjacent, each photo once
-    (spread over the tail); without, one or two spread moments from the speaker's own clips."""
-    if photos:
-        every = list(range(1, n, 3))
-        k = min(photos, len(every))
-        return {every[i * len(every) // k] for i in range(k)}
-    return set() if n < 3 else {n // 2} if n < 6 else {n // 3, 2 * n // 3}
+def tail_pick(shots, pool):
+    """(item, in-point) for each tail shot from the person's real material: cycles the pool, never the same file twice in a row (unless
+    the pool is one file), a reused file starts later. A stutter shot after another stutter shot repeats that shot's file and in-point."""
+    out, uses = [], {}
+    for k, s in enumerate(shots):
+        out.append(out[-1] if k and s.get("stutter") and shots[k - 1].get("stutter") else _pick(pool, uses, 0, prev=out[-1][0]["file"] if out else None))
+    return out
 
 
 def speech_real(shots):
-    """Indices of the speech's b-roll shots that show the person (a photo or footage of their work) instead of stock: the drop
-    cutaway and every second b-roll shot; never a stat slam (its text sits on a calm stock shot) or a tail shot."""
+    """Indices of the speech's b-roll shots that show the person (a photo or footage of their work) instead of stock: every b-roll
+    shot, the drop cutaway first (owner 2026-11-17: real material first, stock only to fill); never a stat slam (its text sits on
+    a calm stock shot) or a tail shot."""
     bs = [i for i, x in enumerate(shots) if x["kind"] == "B" and "slam" not in x]
-    return [i for k, i in enumerate(bs) if shots[i]["trans"] == "drop" or k % 2 == 1]
+    return sorted(bs, key=lambda i: shots[i]["trans"] != "drop")
+
+
+TAIL_MIN_REAL = 6   # footage clips kept for the montage before the speech takes more than 2
+
+
+def speech_footage(nb, photos, footage):
+    """How many footage clips the speech's nb b-roll shots take: what the photos leave unfilled, at least 2, never so many that the
+    montage keeps fewer than TAIL_MIN_REAL clips (beyond those 2)."""
+    return min(max(2, nb - photos), max(2, footage - TAIL_MIN_REAL), footage)
 
 
 def zoom_cap(size, W, H, face_max=FACE_MAX):
@@ -187,11 +233,29 @@ def quiet_point(rms, t, lo, hi, hop=RMS_HOP):
     return (min(range(i0, i1 + 1), key=key) + 0.5) * hop
 
 
+STARTERS = {"and", "but", "so", "then", "like", "because", "um", "uh", "i"}
+
+
+def phrase_end(words, end, max_ext=1.2, gap=0.35):
+    """Run a line planned to stop at `end` on through the source words that follow within `gap` s, up to a phrase starter or end + max_ext.
+    -> (new end, added words [{w, s, e}]); word ends are capped at the next start (ASR ends can be garbage)."""
+    ws = sorted(words, key=lambda w: w["s"])
+    nxt = lambda i: ws[i + 1]["s"] if i + 1 < len(ws) else 1e9
+    wend = lambda i: min(ws[i]["e"], nxt(i)) if ws[i]["e"] > ws[i]["s"] else ws[i]["s"] + 0.4
+    j = max((i for i, w in enumerate(ws) if w["s"] < end), default=-1)
+    cur, add = max(end, wend(j)) if j >= 0 else end, []
+    while j + 1 < len(ws) and ws[j + 1]["s"] - cur <= gap and re.sub(r"\W", "", ws[j + 1]["w"].lower()) not in STARTERS and wend(j + 1) <= end + max_ext:
+        j += 1
+        cur = wend(j)
+        add.append(dict(w=ws[j]["w"], s=ws[j]["s"], e=cur))
+    return (cur, add) if add else (end, [])
+
+
 def _rms(path):
-    """RMS level per RMS_HOP of the file's audio (8 kHz mono); empty if there is none."""
-    raw = subprocess.run(["ffmpeg", "-v", "quiet", "-i", str(path), "-vn", "-ac", "1", "-ar", "8000", "-f", "f32le", "-"], capture_output=True).stdout
+    """RMS level per RMS_HOP of the file's audio (16 kHz mono); empty if there is none."""
+    raw = subprocess.run(["ffmpeg", "-v", "quiet", "-i", str(path), "-vn", "-ac", "1", "-ar", "16000", "-f", "f32le", "-"], capture_output=True).stdout
     x = np.frombuffer(raw[:len(raw) // 4 * 4], np.float32)
-    m = int(8000 * RMS_HOP)
+    m = int(16000 * RMS_HOP)
     return np.sqrt((x[:len(x) // m * m].reshape(-1, m) ** 2).mean(1)) if len(x) >= m else np.zeros(0)
 
 
@@ -346,11 +410,17 @@ def _split_person(tl, shots):
     return out
 
 
-def _assemble(shots, spk, dst, total, fx=lambda t: (0.0, 0.0)):
-    """fx(t) -> (k, pulse): the tail build-up (tail_k); (0, 0) leaves a frame untouched."""
+def beat_pulse(t, beats):
+    """(pulse 0..1 decaying over BEAT_PULSE s after the latest beat <= t, number of beats <= t)."""
+    n = bisect.bisect_right(beats, t + 1e-6)
+    return (max(0.0, 1 - (t - beats[n - 1]) / BEAT_PULSE) ** 2 if n else 0.0), n
+
+
+def _assemble(shots, spk, dst, total, fx=lambda t: (0.0, 0.0), models=None, beats=()):
+    """fx(t) -> (k, pulse): the tail build-up (tail_k); (0, 0) leaves a frame untouched. beats: beat times that drive the montage looks."""
     enc = subprocess.Popen(["ffmpeg", "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
                             "-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-pix_fmt", "yuv420p", dst], stdin=subprocess.PIPE)
-    f0 = 0
+    f0, ti, cuts, prev, bgs = 0, -1, 0, None, []   # ti: tail shot index, prev: last frame of the previous shot before _tail_fx, bgs: earlier tail shots' frames
     for k, s in enumerate(shots):
         f1 = total if k + 1 == len(shots) else round(shots[k + 1]["t0"] * FPS)
         n = f1 - f0
@@ -359,16 +429,49 @@ def _assemble(shots, spk, dst, total, fx=lambda t: (0.0, 0.0)):
         prog = np.array([_ease(i / max(n - 1, 1)) for i in range(n)]) if sk else pos / max(pos[-1], 1e-9)   # camera follows the speed curve
         rd = _Reader(spk if sk else s["file"], s["ss"], need if vid else n / FPS, not sk and s["image"])
         nxt = FX.get(shots[k + 1]["trans"], "blur") if k + 1 < len(shots) and shots[k + 1]["trans"] == "whip" else None
+        tail, kind = s["kind"] == "T", s["trans"] if s["trans"] in editfx.KINDS else None
+        if tail:
+            ti += 1
+            hist, stut, lk, mask = [], bool(s.get("stutter")), None, None
+        if kind:
+            cuts += 1
+        if k + 1 < len(shots) and shots[k + 1]["trans"] in editfx.KINDS:
+            nxt = None
         for i in range(n):
             fr = rd.at(pos[i] * FPS) if vid else rd.next()
             z = s["z0"] + (s["z1"] - s["z0"]) * prog[i]
             fr = _zoom_about(fr, z) if s["kind"] == "S" else _crop(fr, z, s["ox"], s["oy"])
             kk, pp = fx((f0 + i) / FPS)
-            if k and i < 3:
+            raw = fr
+            if FRY:
+                fr = editfx.fry(fr)
+            if not tail:
+                mask = None
+            else:
+                if models and not stut:
+                    mask = editfx.subject(raw, models, mask)
+                    if i == 0:   # one look for the whole shot, in turn (a close-up shrinks into an inset first); no subject: grade only
+                        sc = editfx.inset_scale(mask)
+                        lk = editfx.LOOKS[ti % len(editfx.LOOKS)] if editfx.cutout_ok(editfx.inset(raw, mask, sc)[1]) else None
+                    if lk:
+                        fr, mask = editfx.inset(fr, mask, sc)
+                fr = editfx.grade(fr, ti)
+                if i == n // 2:
+                    bgs = (bgs + [fr])[-4:]
+                if lk:
+                    bp, bn = beat_pulse((f0 + i) / FPS, beats)
+                    fr = editfx.look(lk, fr, mask, hist, bgs[:-1] if i >= n // 2 else bgs, (f0 + i) / FPS, bp, bn)
+                    hist = (hist + [mask])[-10:]
+                fr = editfx.halftone(fr, 0.12)
+            ntr = min(TR_FRAMES.get(kind, 8), n)
+            if kind and i < ntr and prev is not None:
+                fr = editfx.transition(kind, prev, fr, (i + 1) / ntr, m_in=mask, sign=1 if cuts % 2 else -1)
+            elif k and i < 3 and not kind:
                 fr = _fx(fr, FX.get(s["trans"], "blur"), 1 - i / 3, 1, 1 + WHIP_GAIN * kk)
             if nxt and i >= n - 2:
                 fr = _fx(fr, "whip", 0.5 if i == n - 2 else 1.0, -1, 1 + WHIP_GAIN * kk)
             dz = (s["z1"] - s["z0"]) * (prog[i] - prog[max(i - 1, 0)])
+            prev = fr
             fr = _tail_fx(fr, kk, pp, dz, float(np.clip((vel[i] - 1) / (RAMP_FAST - 1), 0, 1)))
             enc.stdin.write(np.ascontiguousarray(fr).tobytes())
         rd.close()
@@ -422,7 +525,9 @@ def _words(line, c, v0, cuts=(), t0=None):
     out = []
     for i, w in enumerate(ws):
         s = v0 + w["s"] - gone(w["s"]) - t0
-        e = v0 + (ws[i + 1]["s"] if i + 1 < len(ws) else min(w["e"], c["end"])) - gone(ws[i + 1]["s"] if i + 1 < len(ws) else min(w["e"], c["end"])) - t0
+        # the ASR end, not the next start: a pause must stay visible so captions split there (C.chunks)
+        x = min(w["e"], ws[i + 1]["s"] if i + 1 < len(ws) else c["end"])
+        e = v0 + x - gone(x) - t0
         out.append(dict(w=w["w"].replace(">>", "").strip(), s=s, e=max(e, s + 0.1)))
     return out
 
@@ -449,6 +554,16 @@ def render(job, cfg, run):
     ld, ref, cuts, lost, t0s, ezs, rms = [], facecrop.load_ref(run), [], [], [], [], {}
     jin = [False] * len(lines)   # line i runs on from line i - 1
     for i, (l, c, f) in enumerate(lines):
+        w_ = next((run / p["words"] for p in job.get("pool", []) if p["id"] == c["source"]["id"] and p.get("words")), None)
+        nx = lines[i + 1][1] if i + 1 < len(lines) else None
+        if w_ and w_.exists() and not (nx and runs_on(c, nx)):   # a line that stops mid-phrase runs on to the phrase's end
+            ws = json.loads(w_.read_text())
+            if nx and nx["source"]["id"] == c["source"]["id"]:   # never run into the next line of the same video
+                ws = [w for w in ws if w["s"] < max(nx["start"], c["end"])]
+            e_, add = phrase_end(ws, c["end"])
+            if add:
+                c, l = dict(c, end=e_), dict(l, words=list(l.get("words", [])) + add)
+                lines[i] = (l, c, f)
         src, a, b = str(run / f["file"]), c["start"] - f.get("offset", 0), c["end"] - f.get("offset", 0)
         # safety net: a line's in and out points go to the quietest frame near the plan, so no line starts or ends mid-word
         W_, H_, fd = probe(src)
@@ -489,20 +604,26 @@ def render(job, cfg, run):
         off = music.place(an, td, 0)["music_offset"]
     else:  # the plan placed the drop for the uncut lines: what the filler cuts took out before the drop line moves the music with it
         off += sum(lost[:dl])
-    S = schedule(ld, dl, len(slams), grid(an, off, 90.0), td, music_len=(an.get("duration") or 0) - off or None)
+    g = grid(an, off, 90.0)
+    g = snap(g, _onsets(mp, off, g[-1] + 1), 0.01)
+    S = schedule(ld, dl, len(slams), g, td, music_len=(an.get("duration") or 0) - off or None)
     D, shots, vs = S["D"], S["shots"], S["lines"]
     cover(shots, vs, [bool(c.get("cover")) for _, c, _ in lines])
     total = round(D * FPS)
 
     # visuals: speaker shots seek into spk.mp4 (the slam gap is not in it), b-roll and tail shots pick files
     line_at = lambda t: max(i for i, (a, _) in enumerate(vs) if a <= t + 1e-6)
-    uses, tuses, puses, nb, nt, ti, mom, prev = {}, {}, {}, 0, 0, 0, 0, None
+    uses, tuses, nb, nt, ti, prev = {}, {}, 0, 0, 0, None
     broll, tails, persons = assets.get("broll") or [], list(assets.get("tail") or []), list(assets.get("person") or [])
     footage = list(assets.get("footage") or [])
-    # the person's photos and footage, each shown once: half in the montage, the rest (footage first) cut into the speech
-    hf, hp = (len(footage) + 1) // 2, (len(persons) + 1) // 2
-    real_tail, real_speech = footage[:hf] + persons[:hp], footage[hf:] + persons[hp:]
-    slots, sreal = tail_slots(sum(x["kind"] == "T" for x in shots), len(real_tail)), set(speech_real(shots))
+    # real material first: every speech cutaway is footage (speech_footage clips, drop first) or a photo, the montage gets the other
+    # footage (all of it when there are <= 2 clips, reused as needed) then the photos; stock only when real material runs out
+    sreal = speech_real(shots)
+    k = speech_footage(len(sreal), len(persons), len(footage))
+    real_speech = footage[:k] + persons   # popped in sreal order: footage on the drop cutaway first
+    real_tail = (footage[k:] or footage) + persons
+    sreal = set(sreal)
+    tp = tail_pick([x for x in shots if x["kind"] == "T"], real_tail) if real_tail else None
     img = lambda it: it.get("kind") == "image" or str(it["file"]).lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
     spans = {x["file"]: picture_span(str(run / x["file"])) for x in broll + tails + footage if not img(x)}
     usable = lambda xs: [x for x in xs if spans.get(x["file"], 1)] or xs   # drop clips with no usable picture, unless none is left
@@ -517,14 +638,10 @@ def render(job, cfg, run):
             prev = None
             continue
         isT, avail = s["kind"] == "T", None
-        if isT and ti in slots and real_tail:
-            it, ss = _pick(real_tail, puses, 0, prev=prev)
+        if isT and tp:
+            it, ss = tp[ti]
         elif si in sreal and real_speech:
             it, ss = real_speech.pop(0), 0.0
-        elif isT and ti in slots:   # no photos: a short slow-motion moment from the speaker's own clips
-            j, mom = mom % len(lines), mom + 1
-            c, f = lines[j][1], lines[j][2]
-            it, ss, avail = dict(file=f["file"]), max(c["start"] - f.get("offset", 0) + 0.3, 0.0), c["end"] - c["start"] - 0.3
         else:
             it, ss = _pick(tails + broll if isT else broll, tuses if isT else uses, dl if "slam" in s else line_at(s["t0"]), prev=prev)
         ti += isT
@@ -537,7 +654,7 @@ def render(job, cfg, run):
             avail = fd - ss
         s.update(file=str(run / it["file"]), image=im, ss=0.0 if im else ss, avail=avail, z0=1.0 + 0.04 * (nt % 3), z1=1.16 + 0.05 * (nt % 4), ox=0.5, oy=0.5)
     lead, pulses = vs[-1][0], [(x["t0"], PULSE_W.get(x["trans"], 0.3)) for x in shots if x["t0"] >= vs[-1][0] and x["trans"]]
-    _assemble(shots, str(cut / "spk.mp4"), str(cut / "base.mp4"), total, lambda t: tail_k(t, lead, S["tT"], D, pulses))
+    _assemble(shots, str(cut / "spk.mp4"), str(cut / "base.mp4"), total, lambda t: tail_k(t, lead, S["tT"], D, pulses), cfg.get("models"), beats=g)
 
     # audio: lines at their start, music placed on the drop, no voice after the last line
     ins, fc, labs = [], [], []

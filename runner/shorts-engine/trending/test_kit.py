@@ -45,6 +45,11 @@ items = [{"text": "big words", "start": 0, "end": 1}]
 full, small = (C.GoldCaptions(items, scale=s).frame(0.5)[0][0] for s in (1.0, 0.8))
 assert small.width < full.width and small.height < full.height, (small.size, full.size)
 assert C.GoldCaptions(items).frame(0.5)[0][0].size == full.size  # default scale is 1.0
+# before a pause the caption keeps shrinking after its end until it is gone: no tiny caption left holding on screen
+gc = C.GoldCaptions([{"text": "big words", "start": 0, "end": 1}, {"text": "later", "start": 3, "end": 4}])
+ws_ = [gc.frame(1 + k * 0.04)[0][0].width for k in range(5)]   # 1.00 .. 1.16 s
+assert all(a > b for a, b in zip(ws_, ws_[1:])), ws_
+assert gc.frame(1 + C.GoldCaptions.OUT)  == [] and gc.frame(2.9) == []
 # sensitive wording reaches every caption layer: same pixels as the caption form typed directly
 g2 = C.group_words([{"w": "Rape,", "s": 0, "e": .3}, {"w": "grape", "s": 1.0, "e": 1.2}])  # a comma splits only after 2+ words, so a pause does it here
 assert [x["text"] for x in g2] == ["R*pe,", "grape"], g2  # originals only: a spoken "grape" in a clip is left alone

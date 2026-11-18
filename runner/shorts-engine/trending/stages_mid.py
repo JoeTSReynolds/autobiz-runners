@@ -562,6 +562,9 @@ def verify(job, cfg, run, state):
     plan = {'format': fmt, 'person': _plan_person(job['person']), **{k: v for k, v in body.items() if k != 'format'}, 'clips': clips}
     if fmt in ('edit', 'casefile'):   # YouTube queries for real footage of the person's work (the assets stage fetches it)
         plan['footage'] = [q.strip() for q in sb.get('footage') or [] if isinstance(q, str) and q.strip()][:4]
+    if fmt == 'edit':   # famous people the story is about besides the speaker: up to 2, each with up to 2 YouTube searches
+        plan['others'] = [{'name': o['name'].strip(), 'footage': [q.strip() for q in o.get('footage') or [] if isinstance(q, str) and q.strip()][:2]}
+                          for o in (sb.get('others') or []) if isinstance(o, dict) and isinstance(o.get('name'), str) and o['name'].strip()][:2]
     (Path(run) / 'broll.txt').write_text(_broll_text(plan))   # the b-roll agent block needs its fileKeys to exist for every format
     return 'next', {'plan': plan, 'story': _story(job, clips), 'download': 'yes' if clips else 'no', 'predictedDuration': plan['predictedDuration'], 'agentErrors': [],
                     'brollText': {'file': 'broll.txt'}}, f'{fmt}: {len(clips)} clips, predicted {plan["predictedDuration"]} s'
@@ -1039,27 +1042,35 @@ def _bing_images(q):
     return out
 
 
-FOOTAGE_MAX, FOOTAGE_PER_VIDEO, FOOTAGE_S, FOOTAGE_BUDGET = 6, 2, 3.0, 240   # shots, shots a video, seconds a shot, seconds in all
+FOOTAGE_MAX, FOOTAGE_PER_VIDEO, FOOTAGE_S, FOOTAGE_BUDGET = 14, 4, 3.0, 600   # shots, shots a video, seconds a shot, seconds in all
+FOOTAGE_FACE, FOOTAGE_OTHER = 0.035, 4   # smallest face of the person that counts (stage footage), shots of a person the story is about
+FOOTAGE_FACE_MAX = 0.17   # share of source width; above it the 9:16 crop is a face close-up
+WINDOWS = (0.08, 0.2, 0.32, 0.44, 0.56, 0.68, 0.8, 0.92)
+STRICT = {'windows': (0.2, 0.4, 0.6, 0.8), 'videos': 2, 'per_video': 2, 'max': 6, 'budget': 240}   # the case file keeps its old limits
 
 
-def _footage(job, run, state, base, strict=False):
+def _footage(job, run, state, base, strict=False, who=None, ref=None, queries=None, cap=None, stem='footage'):
     """Shots of the person from YouTube footage of their work (plan.footage queries: film scenes, performances, speeches), 9:16
     around their face -> [{file, kind, credit, page}]. Per query the first video with the surname in its title or channel that
-    gives a shot (2 tried at most); four FOOTAGE_S windows from each, kept when _shot_ok;
-    strict (case file): nobody else's face either. NOT freely licensed (owner 2026-11-13: accepted, a few shots a video)."""
+    gives a shot (3 tried at most); eight FOOTAGE_S windows from each, kept when _shot_ok; who/ref/queries/cap default to the
+    job's person, identity and plan.footage (plan.others pass their own); strict (case file): nobody else's face either,
+    the STRICT limits. NOT freely licensed (owner 2026-11-13: accepted, a few shots a video)."""
     idf = (job.get('identity') or {}).get('file')
-    ref = np.load(Path(run) / idf) if idf and (Path(run) / idf).is_file() else None
-    queries, models = (job['plan'].get('footage') or [])[:4], Path(state) / 'models'
+    if ref is None:
+        ref = np.load(Path(run) / idf) if idf and (Path(run) / idf).is_file() else None
+    lim = STRICT if strict else {'windows': WINDOWS, 'videos': 3, 'per_video': FOOTAGE_PER_VIDEO, 'max': FOOTAGE_MAX, 'budget': FOOTAGE_BUDGET}
+    cap = min(cap or lim['max'], lim['max'])
+    queries, models = (queries if queries is not None else job['plan'].get('footage') or [])[:4], Path(state) / 'models'
     if not queries or ref is None:
         return []
-    surname = _fold((job.get('person') or {}).get('name') or '').split()[-1:]
+    surname = _fold(who or (job.get('person') or {}).get('name') or '').split()[-1:]
     out, seen, t0 = [], set(), time.time()
     for q in queries:
-        tried = 0   # a video that gives no shot hands over to the next result, 2 videos a query at most
+        tried = 0   # a video that gives no shot hands over to the next result
         for e in [e for e in _safe(ytsrc.search, q, 8) if 30 <= (e.get('duration') or 0) <= 3 * 3600   # full specials and films count
                   and e.get('live_status') not in ('is_live', 'is_upcoming')
                   and surname and surname[0] in _fold(f"{e.get('title', '')} {e.get('channel', '')}").split()]:   # someone else's video otherwise
-            if tried == 2:
+            if tried == lim['videos']:
                 break
             if e['id'] in seen:
                 continue
@@ -1067,14 +1078,14 @@ def _footage(job, run, state, base, strict=False):
             tried += 1
             url, d = f"https://www.youtube.com/watch?v={e['id']}", e['duration']
             try:
-                files = ytsrc.probe_frames(e['id'], url, [(d * f, d * f + FOOTAGE_S) for f in (0.2, 0.4, 0.6, 0.8)], str(base / 'footage' / 'raw'), height=720)
+                files = ytsrc.probe_frames(e['id'], url, [(d * f, d * f + FOOTAGE_S) for f in lim['windows']], str(base / 'footage' / 'raw'), height=720)
             except Exception:
                 continue
             got = 0
             for f in files:
-                if not f or got == FOOTAGE_PER_VIDEO or len(out) == FOOTAGE_MAX or not _shot_ok(f, ref, models, strict):
+                if not f or got == lim['per_video'] or len(out) == cap or not _shot_ok(f, ref, models, strict):
                     continue
-                rel = f'footage/{len(out)}.mp4'
+                rel = f'{stem}/{len(out)}.mp4'
                 try:
                     _vertical(f, base / rel, ref, models)
                 except Exception:
@@ -1083,21 +1094,46 @@ def _footage(job, run, state, base, strict=False):
                 got += 1
             if got:
                 break
-        if len(out) == FOOTAGE_MAX or time.time() - t0 > FOOTAGE_BUDGET:
+        if len(out) == cap or time.time() - t0 > lim['budget']:
             break
     return out
 
 
+def _other_ref(name, state, base):
+    """Face reference of a person the story is about: the first of their Commons photos with exactly one big face, or None."""
+    from . import faces
+    import cv2
+    found = []
+
+    def one_face(path):
+        fs = faces.embed_all(cv2.imread(str(path)), str(Path(state) / 'models'))
+        if len(fs) == 1 and fs[0][1] >= PERSON_FACE:
+            found.append(fs[0][0] / np.linalg.norm(fs[0][0]))
+        return bool(found)
+    cands = [c for c in _safe(_commons_images, name, 30) if _relevant(c, name)]
+    for i, c in enumerate(cands[:8]):
+        if _fetch_first(base, f'others/ref{i}', [c], one_face):
+            return found[0]
+    return None
+
+
 def _shot_ok(path, ref, models, strict=False):
-    """The person's face, big enough to read, in a frame near each end of the shot (a scene cut inside it fails); strict: no other face."""
+    """strict (case file): the person's face, big enough to read, in a frame near each end of the shot (a scene cut inside it
+    fails) and no other face. Otherwise: their face, FOOTAGE_FACE..FOOTAGE_FACE_MAX wide, in 2 of 3 frames, and someone else the biggest face in fewer than 2."""
+    times = (0.6, FOOTAGE_S - 0.6) if strict else (0.4, 1.5, FOOTAGE_S - 0.4)
+    seen = other = 0
     with tempfile.TemporaryDirectory() as d:
-        for k, t in enumerate((0.6, FOOTAGE_S - 0.6)):
+        for k, t in enumerate(times):
             png = Path(d) / f'{k}.png'
             subprocess.run(['ffmpeg', '-y', '-v', 'error', '-ss', str(t), '-i', str(path), '-frames:v', '1', str(png)], capture_output=True)
             fs = _photo_faces(png, ref, models) if png.exists() else []
-            if not any(m >= MATCH_PHOTO and w >= PERSON_FACE for m, w in fs) or (strict and any(m < MATCH_PHOTO for m, _ in fs)):
+            if strict and (not any(m >= MATCH_PHOTO and w >= PERSON_FACE for m, w in fs) or any(m < MATCH_PHOTO for m, _ in fs)):
                 return False
-    return True
+            if not strict:
+                me, them = max([w for m, w in fs if m >= MATCH_PHOTO], default=0), max([w for m, w in fs if m < MATCH_PHOTO], default=0)
+                seen += FOOTAGE_FACE <= me <= FOOTAGE_FACE_MAX
+                other += them >= FOOTAGE_FACE and them > me
+    return strict or (seen >= 2 and other < 2)
 
 
 def _vertical(src, dst, ref, models):
@@ -1124,7 +1160,12 @@ def assets(job, cfg, run, state):
         if have < 0.7 * len(wanted):
             return _missing(job, 'assets', f'only {have} of {len(wanted)} b-roll shots could be downloaded')
         out['person'] = _person_photos(job, run, state, base)
-        out['footage'] = _footage(job, run, state, base)
+        me = (job.get('person') or {}).get('name')
+        out['footage'] = [dict(x, who=me) for x in _footage(job, run, state, base)]
+        for i, o in enumerate(plan.get('others') or []):   # people the story is about: their own reference, surname gate and folder
+            ref = _other_ref(o['name'], state, base)
+            if ref is not None:
+                out['footage'] += [dict(x, who=o['name']) for x in _footage(job, run, state, base, who=o['name'], ref=ref, queries=o['footage'], cap=FOOTAGE_OTHER, stem=f'footage/o{i}')]
         return 'next', {'assets': out, 'plan': plan, 'agentErrors': []}, f'{have} of {len(wanted)} b-roll shots, {len(out["person"])} photos and {len(out["footage"])} footage shots of the person'
     if plan['format'] != 'casefile':
         return 'next', {'assets': {}, 'agentErrors': [], **({'plan': plan} if plan['format'] in ROWS else {})}, 'no assets for this format'

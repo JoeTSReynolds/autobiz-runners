@@ -879,17 +879,17 @@ FQ = ['graduate scene', 'rain man scene', 'tootsie scene']
 r = Path(tempfile.mkdtemp()); np.save(r / 'identity.npy', np.ones(3))
 fj = lambda fmt, q=FQ: pj({'format': fmt, 'footage': q}, identity={'file': 'identity.npy'})
 ft = sm._footage(fj('edit'), r, Path(tempfile.mkdtemp()), r / 'assets')
-assert [w[0] for w in WINS] == ['g1', 'none1', 'r1'] and all(h == 720 and len(ws) == 4 and abs(ws[0][1] - ws[0][0] - 3.0) < 1e-6 for _, ws, h in WINS), WINS
-assert len(ft) == 4 and ft[0] == {'file': 'assets/footage/0.mp4', 'kind': 'video', 'credit': 'Footage: https://www.youtube.com/watch?v=g1 (Movieclips)',
-                                  'page': 'https://www.youtube.com/watch?v=g1'} and (r / ft[3]['file']).exists() and OK and not any(OK), ft   # 2 a video
+assert [w[0] for w in WINS] == ['g1', 'none1', 'r1'] and all(h == 720 and len(ws) == 8 and abs(ws[0][1] - ws[0][0] - 3.0) < 1e-6 for _, ws, h in WINS), WINS
+assert len(ft) == 8 and ft[0] == {'file': 'assets/footage/0.mp4', 'kind': 'video', 'credit': 'Footage: https://www.youtube.com/watch?v=g1 (Movieclips)',
+                                  'page': 'https://www.youtube.com/watch?v=g1'} and (r / ft[7]['file']).exists() and OK and not any(OK), ft   # 8 windows, 4 a video
 OK.clear()
-assert len(sm._footage(fj('casefile'), r, Path(tempfile.mkdtemp()), r / 'assets', strict=True)) == 4 and OK and all(OK)   # every face must be them
+assert len(sm._footage(fj('casefile'), r, Path(tempfile.mkdtemp()), r / 'assets', strict=True)) == 4 and OK and all(OK) and all(len(w[1]) == 4 for w in WINS[3:])   # strict keeps 4 windows, 2 a video; every face must be them
 assert sm._footage(fj('edit', []), r, Path(tempfile.mkdtemp()), r / 'assets') == []                     # no queries
 assert sm._footage(fj('edit'), Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp()), r / 'assets') == []   # no identity reference
 # the assets stage hands the footage to both renders
 real_footage, sm._footage = sm._footage, lambda job, run, state, base, strict=False: [{'file': 'F', 'strict': strict}]
 sm._photo_faces = lambda path, ref, models: []
-assert sm.assets(pj({'format': 'edit', 'broll': [], 'tail': []}), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['footage'] == [{'file': 'F', 'strict': False}]
+assert sm.assets(pj({'format': 'edit', 'broll': [], 'tail': []}), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['footage'] == [{'file': 'F', 'strict': False, 'who': PERSON['name']}]
 r2 = Path(tempfile.mkdtemp()); GOT.clear(); np.save(r2 / 'identity.npy', np.ones(3))
 port, out, _ = sm.assets(pj(cp2, identity={'file': 'identity.npy'}), {}, r2, Path(tempfile.mkdtemp()))
 assert port == 'next' and out['assets']['footage'] == [{'file': 'F', 'strict': True}], out
@@ -901,11 +901,49 @@ v = r / 'shot.mp4'
 subprocess.run(['ffmpeg', '-y', '-v', 'error', '-f', 'lavfi', '-i', 'testsrc=s=640x360:d=3', str(v)], check=True)
 def faces_seq(*frames):
     it = iter(frames); sm._photo_faces = lambda path, ref, models: next(it)
-faces_seq([(0.5, 0.2), (0.1, 0.15)], [(0.6, 0.2)]); assert sm._shot_ok(str(v), np.ones(3), r, False)
+faces_seq([(0.5, 0.1), (0.1, 0.05)], [(0.6, 0.1)], [(0.6, 0.1)]); assert sm._shot_ok(str(v), np.ones(3), r, False)
 faces_seq([(0.5, 0.2), (0.1, 0.15)], [(0.6, 0.2)]); assert not sm._shot_ok(str(v), np.ones(3), r, True)   # a co-star's face
-faces_seq([(0.5, 0.2)], [(0.2, 0.3)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)               # gone by the second sample
-faces_seq([(0.5, 0.05)], [(0.6, 0.05)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)             # too small to read
+faces_seq([(0.5, 0.2)], [(0.2, 0.3)]); assert not sm._shot_ok(str(v), np.ones(3), r, True)               # gone by the second sample
+faces_seq([(0.5, 0.05)], [(0.6, 0.05)]); assert not sm._shot_ok(str(v), np.ones(3), r, True)              # strict: too small to read
+# non-strict: a matching face of 0.035-0.17 in 2 of 3 frames (stage footage has small, turned faces; wider is a close-up)
+faces_seq([], [(0.5, 0.05)], [(0.5, 0.05)]); assert sm._shot_ok(str(v), np.ones(3), r, False)               # 2 of 3 passes
+faces_seq([], [(0.5, 0.05)], []); assert not sm._shot_ok(str(v), np.ones(3), r, False)                      # 1 of 3 is a false match
+faces_seq([(0.5, 0.3)], [(0.5, 0.3)], [(0.5, 0.3)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)   # macro close-up
+faces_seq([(0.5, 0.1), (0.1, 0.05)], [(0.5, 0.1)], [(0.5, 0.1), (0.1, 0.12)]); assert sm._shot_ok(str(v), np.ones(3), r, False)  # co-star bigger in 1 frame only
+faces_seq([(0.5, 0.06), (0.1, 0.12)], [(0.5, 0.1)], [(0.5, 0.06), (0.1, 0.1)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)  # co-star bigger in 2
+faces_seq([(0.5, 0.06)], [(0.1, 0.1)], [(0.5, 0.06), (0.1, 0.1)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)  # co-star dominates 2 frames
+faces_seq([], [(0.5, 0.05)], []); assert not sm._shot_ok(str(v), np.ones(3), r, True)                       # strict needs both ends
+faces_seq([(0.1, 0.2)], [(0.5, 0.02)], [(0.2, 0.2)]); assert not sm._shot_ok(str(v), np.ones(3), r, False)  # wrong face / too small
 sm._photo_faces = real_pf
+
+# others: people the story is about get footage too (their own surname gate, 4 shots at most, tagged with who)
+FS.update({'billie scene': [{'id': 'b1', 'title': 'Billie Eilish Met Gala', 'channel': 'X', 'duration': 600}, {'id': 'sw', 'title': 'Callum Turner', 'channel': 'X', 'duration': 600}]})
+sm.ytsrc.search = lambda q, n=15: FS.get(q, [])
+sm.ytsrc.probe_frames = fake_frames
+sm._shot_ok = lambda path, ref, models, strict: True
+sm._vertical = lambda src, dst, ref, models: (Path(dst).parent.mkdir(parents=True, exist_ok=True), Path(dst).write_bytes(b'v'))
+WINS.clear()
+oj = lambda **kw: pj({'format': 'edit', 'broll': [], 'tail': [], 'footage': ['graduate scene'], **kw}, identity={'file': 'identity.npy'})
+real_or, REFS = sm._other_ref, []
+sm._other_ref = lambda name, state, base: REFS.append(name) or (np.ones(3) if name == 'Billie Eilish' else None)
+res = sm.assets(oj(others=[{'name': 'Billie Eilish', 'footage': ['billie scene']}, {'name': 'No Photo', 'footage': ['billie scene']}]), {}, r, Path(tempfile.mkdtemp()))[1]['assets']['footage']
+who = [x['who'] for x in res]
+assert REFS == ['Billie Eilish', 'No Photo'] and who == [PERSON['name']] * who.count(PERSON['name']) + ['Billie Eilish'] * 4, who
+assert who[0] == PERSON['name'] and {w[0] for w in WINS} == {'g1', 'b1'}, WINS   # Turner's video is not Eilish's: surname gate
+assert len({x['file'] for x in res}) == len(res), res   # no file clobbered between people
+sm._other_ref = real_or
+sm.ytsrc.search, sm.ytsrc.probe_frames, sm._shot_ok, sm._vertical = _srch, _frames, _sok, _vert
+
+# verify keeps up to 2 others with up to 2 searches; schema allows the same
+others = [{'name': 'Billie Eilish', 'footage': ['Billie Eilish Met Gala 2024', ' ', 'b', 'c']}, {'name': 'A B', 'footage': ['x']}, {'name': 'C D', 'footage': ['y']}, {'name': '', 'footage': ['z']}]
+assert verify(job('edit', dict(EDIT, others=others)))[1]['plan']['others'] == [{'name': 'Billie Eilish', 'footage': ['Billie Eilish Met Gala 2024', 'b']}, {'name': 'A B', 'footage': ['x']}]
+assert verify(job('edit', EDIT))[1]['plan']['others'] == []
+import jsonschema
+SCH = json.loads((Path(__file__).parent / 'briefs/edit.schema.json').read_text())
+jsonschema.validate(dict(EDIT, others=[{'name': 'A B', 'footage': ['x', 'y']}, others[1]]), SCH); jsonschema.validate(EDIT, SCH)
+for bad_others in (others[1:4], [{'name': 'A', 'footage': ['x'], 'extra': 1}], [{'name': 'A', 'footage': ['x', 'y', 'z']}]):
+    try: jsonschema.validate(dict(EDIT, others=bad_others), SCH); raise SystemExit('schema accepted ' + repr(bad_others))
+    except jsonschema.ValidationError: pass
 
 # ---------------- brollpick
 def bp(picks=None, fmt='edit', n=6, **kw):

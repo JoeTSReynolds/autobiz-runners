@@ -8,7 +8,7 @@ run = tempfile.mkdtemp()
 ff = lambda *a: subprocess.run(["ffmpeg", "-y", "-v", "error", *a], check=True)
 BPM, PER = 120.0, 0.5
 
-# --- pure scheduling: cut rate speeds up after the drop, the tail is on the grid (2 beats, then 1 beat in the last 5 s)
+# --- pure scheduling: cut rate speeds up after the drop, the tail is on the grid (2 beats, 1 beat, the final beat stutters as 4 quarter shots)
 g = [k * PER for k in range(200)]
 S = edit.schedule([3.0, 3.0, 3.0, 3.0], 1, 2, g, 3.0)
 assert S["shots"][0]["kind"] == "S" and S["shots"][-1]["trans"] == "hit"
@@ -20,17 +20,64 @@ assert [round(a, 3) for a, b in S["slams"]] == [round(S["slams"][0][0] + 2 * PER
 assert [round(b - a, 3) for a, b in S["lines"]] == [3.0] * 4 and S["lines"][2][0] == S["lines"][1][1] + S["gap"] and S["lines"][3][0] == S["lines"][2][1]
 tail = [s for s in S["shots"] if s["kind"] == "T"]
 assert abs(tail[0]["t0"] - S["tT"]) < 1e-6 and abs(tail[-1]["t1"] - S["D"]) < 1e-6
-for s in tail:
-    n = (s["t1"] - s["t0"]) / PER
-    assert abs(n - round(n)) < 1e-6 and round(n) == (1 if s["t0"] >= S["D"] - 5 - 1e-6 else 2), s
-assert 0.30 <= (S["D"] - S["tT"]) / S["D"] <= 0.40 and S["tT"] >= S["lines"][-1][1], S
-assert {"whip", "punch", "flash", "shake"} <= {s["trans"] for s in tail}
+assert abs((S["D"] - S["tT"]) - edit.TAIL_S) <= PER + 1e-6 and S["tT"] >= S["lines"][-1][1], S
+dur_ = [round(s["t1"] - s["t0"], 3) for s in tail]
+assert all(d >= 0.75 * PER for d in dur_[:-4]) and all(abs(d - PER / 4) < 1e-6 for d in dur_[-4:]), dur_   # no half-beat zone, only the last beat stutters
+assert all(abs(d - 2 * PER) < 1e-6 for s, d in zip(tail, dur_) if s["t0"] < S["tT"] + 2.0 - 1e-6 and s["t1"] <= S["tT"] + 2.0 + 1e-6)
+assert all(d <= PER + 1e-6 for s, d in zip(tail, dur_) if s["t0"] >= S["tT"] + 2.0)
+st = [s for s in tail if s.get("stutter")]
+assert len(st) == 4 and st == tail[-4:] and tail[-1]["trans"] == "hit" and all(s["trans"] == "stutter" for s in st[1:3]) and st[0]["trans"] in edit.TAIL_BIG + edit.TAIL_SMALL, st
+d0_ = min(range(len(g)), key=lambda i: abs(g[i] - 3.0))
+assert all(s["trans"] in edit.TAIL_BIG + edit.TAIL_SMALL + ["stutter", "hit"] for s in tail), [s["trans"] for s in tail]
+for s in tail[:-4]:
+    i_ = s["t0"] / PER
+    assert (s["trans"] in edit.TAIL_BIG) == (abs(i_ - round(i_)) < 1e-6 and (round(i_) - d0_) % 4 == 0), s
+assert set(edit.TAIL_BIG) <= {s["trans"] for s in tail} and set(edit.TAIL_SMALL) <= {s["trans"] for s in tail}
+assert all(edit.PULSE_W[t] == 1.0 for t in edit.TAIL_BIG) and all(edit.PULSE_W[t] == 0.6 for t in edit.TAIL_SMALL) and edit.PULSE_W["stutter"] == 0.5
 
-# --- photos and footage of the person also cut in during the speech (owner 2026-11-13): the drop cutaway and every second
-# b-roll shot, never a stat slam (its text sits on a calm stock shot) or a tail shot
+# --- onset snapping: beats move onto kick onsets within +-win, weak/flat envelopes leave them, order is kept
+H = 0.01
+env = np.full(1000, 0.05); gb = [1.0 + 0.5 * k for k in range(10)]
+for t in gb: env[int(round((t + 0.08) / H))] = 3.0
+sn = edit.snap(gb, env, H)
+assert all(abs(x - (t + 0.08)) < H + 1e-9 for x, t in zip(sn, gb)), sn
+assert edit.snap(gb, np.full(1000, 0.05), H) == gb and edit.snap(gb, np.zeros(1000), H) == gb
+e2 = np.full(1000, 0.05); e2[int(1.5 / H)] = 3.0; e2[int(1.6 / H)] = 3.0   # two beats 0.1 apart chasing one peak
+sn2 = edit.snap([1.45, 1.55], e2, H)
+assert sn2[1] - sn2[0] >= 0.1 - 1e-9 and sorted(sn2) == sn2, sn2
+assert all(b - a >= 0.1 - 1e-9 for a, b in zip(sn, sn[1:]))
+
+# --- real-first tail: every tail shot is footage while any exists (no file back-to-back), stutter repeats the file and in-point
+for n_real in (1, 2, 3, 5):
+    pool_ = [{"file": f"f{i}.mp4", "kind": "video"} for i in range(n_real)]
+    got = edit.tail_pick(tail, pool_)
+    assert len(got) == len(tail) and all(it in pool_ for it, _ in got)
+    for k in range(1, len(tail)):
+        if tail[k].get("stutter") and tail[k - 1].get("stutter"):
+            assert got[k][0]["file"] == got[k - 1][0]["file"] and got[k][1] == got[k - 1][1], (k, got[k], got[k - 1])
+        elif n_real > 1:
+            assert got[k][0]["file"] != got[k - 1][0]["file"], (n_real, k)
+assert len({ss for it, ss in edit.tail_pick(tail, pool_[:2]) if it["file"] == "f0.mp4"}) > 1   # a reused clip starts later
+
+# --- photos and footage of the person also cut in during the speech (owner 2026-11-17: real material first, stock only to fill):
+# every b-roll shot, drop cutaway first, never a stat slam (its text sits on a calm stock shot) or a tail shot
 sr = edit.speech_real(S["shots"])
 bs = [i for i, x in enumerate(S["shots"]) if x["kind"] == "B" and "slam" not in x]
-assert sr and set(sr) <= set(bs) and any(S["shots"][i]["trans"] == "drop" for i in sr) and len(sr) < len(bs), (sr, bs)
+assert sorted(sr) == bs and S["shots"][sr[0]]["trans"] == "drop", (sr, bs)
+# speech footage share: enough to fill the speech cutaways after the photos, at least 2, leaving the montage TAIL_MIN_REAL clips
+assert edit.speech_footage(nb=8, photos=2, footage=14) == 6 and edit.speech_footage(8, 2, 9) == 3 and edit.speech_footage(8, 2, 3) == 2
+assert edit.speech_footage(3, 4, 14) == 2 and edit.speech_footage(8, 0, 1) == 1
+# no speaker shot starts after the last line ends (spk.mp4 has nothing there: it rendered black); the payoff line stays on the speaker
+for ld_ in ([4.83, 3.65, 4.18, 5.35, 5.13, 6.0], [3.0, 3.0, 3.0, 3.0], [2.2, 4.1, 3.3, 2.9, 3.7]):
+    for sh_ in (0.0, 0.11, 0.23, 0.35):
+        g_ = [sh_ + 0.4644 * k for k in range(200)]
+        S_ = edit.schedule(ld_, 1, 2, g_, ld_[0])
+        end_ = S_["lines"][-1][1]
+        assert not [x for x in S_["shots"] if x["kind"] == "S" and x["t0"] >= end_ - 1e-6], (ld_, sh_, end_, [(x["t0"], x["kind"]) for x in S_["shots"] if x["t0"] > end_ - 3])
+        assert [x for x in S_["shots"] if x["t0"] < end_ - 1e-6][-1]["kind"] == "S"
+bts = [1.0, 1.5, 2.0]   # beat pulse: 1 on the beat, gone after BEAT_PULSE, counts beats so far
+assert edit.beat_pulse(0.5, bts) == (0.0, 0) and edit.beat_pulse(1.5, bts) == (1.0, 2)
+assert 0 < edit.beat_pulse(1.5 + edit.BEAT_PULSE / 2, bts)[0] < 0.5 and edit.beat_pulse(1.5 + edit.BEAT_PULSE, bts)[0] < 1e-9
 
 # --- speech picture cuts: no sliver or one-frame flash, and a speaker-to-speaker cut at a line boundary is covered (flash or whip)
 for ld in ([3.0] * 4, [3.04, 3.0, 3.0, 3.0], [3.17, 2.9, 3.31, 3.0], [3.43, 2.37, 3.31, 3.0]):
@@ -60,6 +107,12 @@ q2 = edit.quiet_point(np.full(100, 0.01), 1.0, -0.25, 0.35)
 assert abs(q2 - 1.0) <= hop, q2  # a flat floor: keep the planned point
 w_ = {"w": "Hi", "s": 5.0, "e": 5.2}
 assert abs(edit._words({"words": [w_]}, {"start": 5.0, "end": 6.0}, 10.0, t0=4.9)[0]["s"] - 10.1) < 1e-9  # captions follow the moved in point
+# a pause between words (v3: "here" 112.30-112.72, "in" 113.42) splits the caption, so "in" never shows before it is said
+pw = [{"w": "here", "s": 112.30, "e": 112.72}, {"w": "in", "s": 113.42, "e": 113.68}, {"w": "the", "s": 113.68, "e": 113.92}]
+ws_ = edit._words({"words": pw}, {"start": 112.0, "end": 114.0}, 9.0)
+assert abs(ws_[0]["e"] - (9.0 + 0.72)) < 1e-9, ws_   # a word ends where ASR says, not at the next word's start
+assert [c["text"] for c in edit.C.group_words(ws_, max_words=2, max_chars=14)] == ["here", "in the"], edit.C.group_words(ws_)
+assert edit._words({"words": [{"w": "a", "s": 1.0, "e": 3.0}, {"w": "b", "s": 1.5, "e": 1.8}]}, {"start": 0.0, "end": 4.0}, 0.0)[0]["e"] == 1.5  # capped at the next start
 # the zoom on the speaker is capped so the face stays under FACE_MAX of the frame width
 assert abs(edit.zoom_cap(100, 1920, 1080) - edit.FACE_MAX * 607.5 / 100) < 1e-6 and edit.zoom_cap(0, 1920, 1080) > 50
 for cap in (1.0, 1.3, 1.9, 5.0):
@@ -107,18 +160,6 @@ for _ in range(8):
 assert all(a != b for a, b in zip(seq, seq[1:])) and uses == {"a.jpg": 4, "b.jpg": 4}, seq
 assert edit._pick(pool[:1], {}, 0, prev="a.jpg")[0]["file"] == "a.jpg"  # a pool of one cannot avoid it
 
-# --- person photos: about 1 in 3 tail shots, never adjacent; without photos one or two speaker moments, spread
-for nT in range(3, 40):
-    sl = sorted(edit.tail_slots(nT, 99))
-    assert sl and all(b - a >= 3 for a, b in zip(sl, sl[1:])) and abs(len(sl) - nT / 3) <= 1 and max(sl) < nT, (nT, sl)
-    sp = sorted(edit.tail_slots(nT, 0))
-    assert 1 <= len(sp) <= 2 and all(b - a >= 2 for a, b in zip(sp, sp[1:])) and max(sp) < nT, (nT, sp)
-    # each photo shows once: one photo in a long tail is one slot, not every third shot (live 2026-11-12: the one Hoffman
-    # photo 5 times in 16 s)
-    for k in (1, 2):
-        s1 = sorted(edit.tail_slots(nT, k))
-        assert len(s1) == min(k, len(range(1, nT, 3))) and set(s1) <= set(range(1, nT, 3)), (nT, k, s1)
-assert edit.tail_slots(0, 99) == set() and edit.tail_slots(2, 0) == set()
 fr0 = np.random.RandomState(1).randint(0, 255, (1920, 1080, 3)).astype(np.uint8)
 assert np.abs(edit._tail_fx(fr0.copy(), 0.0, 0.0, 0.0, 1.0).astype(int) - fr0).mean() > 1  # speed alone blurs, even before the tail
 
@@ -157,13 +198,48 @@ seen, _track = [], edit.facecrop.track
 edit.facecrop.track = lambda *a, **k: (seen.append(k), _track(*a, **{**k, "ref": None}))[1]
 used, _asm = [], edit._assemble
 edit._assemble = lambda shots, *a, **k: (used.extend((x["kind"], Path(x.get("file") or "").name) for x in shots), _asm(shots, *a, **k))[1]
+import hashlib
+_fx_ = edit.editfx
+_orig = (_fx_.subject, _fx_.transition, _fx_.fry, edit._tail_fx, _fx_.look)
+tr_calls, tail_in, n_fry, tot, looks = [], [], [0], [], []
+H_ = lambda x: hashlib.md5(np.ascontiguousarray(x).tobytes()).hexdigest()
+def _tr(kind, out_fr, in_fr, u, *a, **k):
+    tr_calls.append((kind, u, H_(out_fr), tail_in[-1] if tail_in else None))
+    return _orig[1](kind, out_fr, in_fr, u, *a, **k)
+def _fry(fr):
+    n_fry[0] += 1
+    return _orig[2](fr)
+def _tfx(fr, *a, **k):
+    tail_in.append(H_(fr))
+    return _orig[3](fr, *a, **k)
+def _subj(fr, models, prev=None):   # no models in tests: a centred box as the subject
+    m = np.zeros(fr.shape[:2], np.float32); m[fr.shape[0] // 4:3 * fr.shape[0] // 4, fr.shape[1] // 4:3 * fr.shape[1] // 4] = 1
+    return m
+def _look(kind, fr, m, hist=(), bgs=(), t=0.0, pulse=0.0, n=0):
+    looks.append((kind, round(t, 3), pulse, n, len(bgs)))
+    return _orig[4](kind, fr, m, hist, bgs, t, pulse, n)
+_fx_.subject, _fx_.transition, _fx_.fry, edit._tail_fx, _fx_.look = _subj, _tr, _fry, _tfx, _look
+_asm2 = edit._assemble
+edit._assemble = lambda shots, spk, dst, total, *a, **k: (tot.append(total), _asm2(shots, spk, dst, total, *a, **k))[1]
 out = edit.render(job, {"models": "/nonexistent"}, run)
 edit.facecrop.track, edit._assemble = _track, _asm
-# the footage and the photo each show once, between the speech and the montage
-real = [(k, f) for k, f in used if f in ("f0.mp4", "f1.mp4", "p1.png")]
-assert sorted(f for _, f in real) == ["f0.mp4", "f1.mp4", "p1.png"] and {k for k, _ in real} == {"B", "T"}, used
+_fx_.subject, _fx_.transition, _fx_.fry, edit._tail_fx, _fx_.look = _orig
+# real-first: every tail shot is the person's footage or photo, and the speech cuts away to it too
+real = ("f0.mp4", "f1.mp4", "p1.png")
+assert all(f in real for k, f in used if k == "T") and any(k == "B" and f in real for k, f in used), used   # real material in every tail shot and the speech
 assert "Footage: https://www.youtube.com/watch?v=f0 (Movieclips)" in out["credits"]
 assert seen and all(k.get("ref") is not None and k.get("models") == "/nonexistent" for k in seen), seen  # ref and models reach every track call
+# effects: fry once per output frame; transitions only for tail kinds, each starting from the previous shot's last pre-_tail_fx frame
+assert n_fry[0] == tot[0] == len(tail_in), (n_fry, tot, len(tail_in))
+got = {c[0] for c in tr_calls}
+want = set(edit.TAIL_BIG + edit.TAIL_SMALL + ["stutter"])
+assert got <= want and got >= want - {"stutter"} and tr_calls, (got, want)
+# montage looks: every look in turn, on every frame of the non-stutter tail shots, flaring on the beats
+assert {x[0] for x in looks} == set(_fx_.LOOKS), {x[0] for x in looks}
+assert max(x[2] for x in looks) > 0.9 and min(x[2] for x in looks) < 0.1 and len({x[3] for x in looks}) >= 6, looks[:5]
+assert any(x[0] == "swap" and x[4] for x in looks)   # swap gets earlier shots as backgrounds
+first = [c for i, c in enumerate(tr_calls) if i == 0 or c[1] <= tr_calls[i - 1][1]]
+assert len(first) >= 6 and all(c[2] == c[3] for c in first), [c[:2] for c in first if c[2] != c[3]]
 print("render s", round(__import__("time").time() - t0, 1))
 f = Path(run) / out["short"]["file"]
 assert f.exists()
@@ -183,7 +259,7 @@ assert kinds[-1] == "tail" and "slam" in kinds and kinds.index("slam") > 0 and s
 assert any(e["kind"] == "speech" and not e["person"] for e in tl) and any(e["kind"] == "speech" and e["person"] for e in tl), tl
 last_speech = max(e["end"] for e in tl if e["kind"] == "speech")
 tailE = tl[-1]
-assert tailE["start"] >= last_speech and (tailE["end"] - tailE["start"]) / dur >= 0.30, (tailE, dur)
+assert tailE["start"] >= last_speech and abs(tailE["end"] - tailE["start"] - edit.TAIL_S) <= 1.0, (tailE, dur)
 # the "um" (0.25 s) is cut from line 0: the line is that much shorter and the music shifts with it, so the drop line still starts on the music's drop
 cut0 = out["musicOffset"] - plan["musicOffset"]
 assert abs(cut0 - 0.25) <= 0.06, cut0
@@ -225,4 +301,15 @@ assert edit.runs_on(src_(456.78, 457.99), src_(457.839, 460.0))          # overl
 assert edit.runs_on(src_(456.0, 457.0), src_(457.2, 460.0))              # a short gap
 assert not edit.runs_on(src_(456.0, 457.0), src_(458.0, 460.0))          # a skipped sentence
 assert not edit.runs_on(src_(456.0, 457.0), src_(457.0, 460.0, "v2"))    # another video
+# a line that stops mid-phrase runs on through the words that follow closely, up to a phrase starter (live 2026-11-18: "obsessed" was clipped)
+W_ = lambda *a: [dict(w=w, s=s, e=e) for w, s, e in a]
+ws_ = W_(("it", 6.96, 7.08), ("just", 7.08, 7.259), ("said", 7.259, 7.379), ("obsessed", 7.379, 7.9), ("with", 7.98, 8.04), ("you", 8.04, 8.22), ("and", 8.22, 8.4), ("I", 8.4, 8.5))
+e_, add_ = edit.phrase_end(ws_, 7.59)
+assert abs(e_ - 8.22) < 0.02 and [w["w"] for w in add_] == ["with", "you"], (e_, add_)
+assert edit.phrase_end(W_(("it", 6.96, 7.08), ("obsessed", 7.379, 7.7), ("with", 8.5, 8.6)), 7.59) == (7.59, [])   # a pause: unchanged
+e2_, a2_ = edit.phrase_end(W_(("a", 7.0, 7.2), ("b", 7.3, 7.5), ("and", 7.5, 7.8), ("c", 7.8, 8.0)), 7.4)
+assert a2_ == [] and e2_ == 7.4, (e2_, a2_)   # stops before "and": unchanged
+long_ = W_(*[(f"w{k}", 7.0 + 0.3 * k, 7.0 + 0.3 * k + 0.3) for k in range(12)])
+e3_, a3_ = edit.phrase_end(long_, 7.1, max_ext=1.2)
+assert e3_ <= 8.3 + 1e-6 and len(a3_) >= 2, (e3_, a3_)   # capped at end + max_ext
 print("ok")

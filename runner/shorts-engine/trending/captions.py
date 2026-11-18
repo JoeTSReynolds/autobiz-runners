@@ -186,9 +186,9 @@ def gold_scale(t, d):
 
 class GoldCaptions:
     """Main word captions. A caption that is followed within 0.4 s by another is stretched to the next one's start
-    (so it reaches 1/3 exactly then); otherwise it shrinks over its own duration, holds 0.2 s, fades over 0.1 s.
+    (so it reaches 1/3 exactly then); otherwise it shrinks over its own duration, then on to nothing over OUT s (fading in the second half).
     scale multiplies the text size and the width limit (person edits use 0.8)."""
-    HOLD, FADE, GAP = 0.2, 0.1, 0.4
+    OUT, GAP = 0.2, 0.4
 
     def __init__(self, items, cy=0.52, font_path=MONTSERRAT, cap=95, max_w=900, scale=1.0):
         self.cy, self.cache = cy * H, {}
@@ -200,7 +200,7 @@ class GoldCaptions:
             if nxt is not None and nxt - it["end"] <= self.GAP:
                 self.items.append((it["text"], it["start"], nxt, nxt))
             else:
-                self.items.append((it["text"], it["start"], it["end"], it["end"] + self.HOLD + self.FADE))
+                self.items.append((it["text"], it["start"], it["end"], it["end"] + self.OUT))
 
     def _img(self, text):
         if text not in self.cache:
@@ -213,9 +213,9 @@ class GoldCaptions:
     def frame(self, t):
         for text, s, e, vis in self.items:
             if s <= t < vis:
-                tt = t - s
-                sc = gold_scale(min(tt, e - s), e - s)
-                a = 1.0 if t < e + self.HOLD else max(0.0, 1 - (t - e - self.HOLD) / self.FADE)
+                u = max(0.0, t - e) / self.OUT   # 0 until the end, then 0 -> 1 over the shrink-out (gap captions only)
+                sc = gold_scale(min(t - s, e - s), e - s) * (1 - u)
+                a = min(1.0, 2 * (1 - u))
                 return [_at(_scaled(self._img(text), sc, a), W / 2, self.cy)]
         return []
 
