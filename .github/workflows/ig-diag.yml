@@ -31,9 +31,12 @@ jobs:
           const auth = { authorization: `OAuth ${t.access_token}` }
           const clean = (s) => String(s).split(t.access_token).join('[token]').replace(/\s+/g, ' ').slice(0, 500)
           const container = async () => (await (await fetch(`https://graph.facebook.com/v26.0/${t.user_id}/media`, { method: 'POST', headers: { ...auth, 'content-type': 'application/json' }, body: JSON.stringify({ media_type: 'REELS', upload_type: 'resumable', caption: 'diagnostic, never published', share_to_feed: true }) })).json())
-          const a = await container()
-          const u = await fetch(a.uri, { method: 'POST', headers: { ...auth, offset: '0', file_size: String(v.length) }, body: v })
-          console.log('node fetch upload', u.status, clean(await u.text()))
+          console.log('node', process.version)
+          for (const ct of [undefined, 'application/octet-stream', 'application/x-www-form-urlencoded']) {
+            const a = await container()
+            const u = await fetch(a.uri, { method: 'POST', headers: { ...auth, offset: '0', file_size: String(v.length), ...(ct ? { 'content-type': ct } : {}) }, body: v })
+            console.log('node fetch upload', ct ?? 'no content-type', u.status, clean(await u.text()))
+          }
           const b = await container()
           let out
           try { out = execFileSync('curl', ['-sS', '-w', ' HTTP %{http_code}', '-X', 'POST', b.uri, '-H', `Authorization: OAuth ${t.access_token}`, '-H', 'offset: 0', '-H', `file_size: ${v.length}`, '--data-binary', '@' + file]).toString() } catch (e) { out = 'curl error ' + e.message }
