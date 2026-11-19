@@ -695,6 +695,18 @@
           "default": 15
         },
         {
+          "key": "archive",
+          "label": "Skip videos already downloaded (archive)",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "key": "momentsFile",
+          "label": "Used moments file (state, empty: off)",
+          "type": "string",
+          "default": ""
+        },
+        {
           "key": "blockedRetries",
           "label": "Retries after a YouTube block",
           "type": "number",
@@ -846,6 +858,8 @@
         "clipLead": 3.5,
         "clipTail": 5,
         "payoffTail": 15,
+        "archive": true,
+        "momentsFile": "",
         "blockedRetries": 3,
         "blockedWaitSeconds": 30,
         "onlyWhen": "",
@@ -1044,7 +1058,35 @@
           "options": [
             "box",
             "frame",
-            "card"
+            "card",
+            "split",
+            "auto"
+          ]
+        },
+        {
+          "key": "splitTop",
+          "label": "Split layout: which half goes on top",
+          "type": "select",
+          "default": "left",
+          "options": [
+            "left",
+            "right"
+          ]
+        },
+        {
+          "key": "faceTop",
+          "label": "Auto layout: face height from the top in px (0 = off)",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "hookTransition",
+          "label": "Hook to intro transition",
+          "type": "select",
+          "default": "blur",
+          "options": [
+            "blur",
+            "stretch"
           ]
         },
         {
@@ -1084,6 +1126,28 @@
           "label": "Italic captions",
           "type": "boolean",
           "default": true
+        },
+        {
+          "key": "captionColor",
+          "label": "Caption colour (#RRGGBB)",
+          "type": "string",
+          "default": "#FFFFFF"
+        },
+        {
+          "key": "headlineStyle",
+          "label": "Headline style",
+          "type": "select",
+          "default": "outline",
+          "options": [
+            "outline",
+            "box"
+          ]
+        },
+        {
+          "key": "headlineEmoji",
+          "label": "Headline emoji (CLDR name, empty: none)",
+          "type": "string",
+          "default": ""
         },
         {
           "key": "emojiDir",
@@ -1130,6 +1194,9 @@
         "renderTimeoutMs": 600000,
         "background": "brick",
         "layout": "box",
+        "splitTop": "left",
+        "faceTop": 0,
+        "hookTransition": "blur",
         "cardBackgrounds": [
           "plain"
         ],
@@ -1138,6 +1205,9 @@
         "storySounds": true,
         "storyTransitions": true,
         "captionItalic": true,
+        "captionColor": "#FFFFFF",
+        "headlineStyle": "outline",
+        "headlineEmoji": "",
         "emojiDir": "emoji",
         "storySeed": "",
         "outputKey": "short"
@@ -1304,6 +1374,12 @@
           "default": false
         },
         {
+          "key": "paidPromotion",
+          "label": "Paid promotion (declares a paid product placement)",
+          "type": "boolean",
+          "default": false
+        },
+        {
           "key": "setCover",
           "label": "Set cover",
           "type": "boolean",
@@ -1340,6 +1416,7 @@
         "categoryId": "23",
         "madeForKids": false,
         "containsSyntheticMedia": false,
+        "paidPromotion": false,
         "setCover": true,
         "maxHashtags": 10,
         "titleHashtags": true,

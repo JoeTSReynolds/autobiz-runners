@@ -53,7 +53,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/pipx
-          key: tools-pipx-yt-dlp-2026.08.19-bgutil-2.0.2-${{ runner.os }}-${{ runner.arch }}
+          key: tools-pipx-yt-dlp-2026.10.26-bgutil-2.0.2-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
         with:
           path: runner/node_modules
@@ -75,7 +75,7 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" "$a"
           export PIPX_HOME="$HOME/.cache/autobiz/pipx" PIPX_BIN_DIR="$HOME/.cache/autobiz/pipx/bin"
           if [ ! -x "$PIPX_BIN_DIR/yt-dlp" ]; then
-            pipx install "yt-dlp[default]==2026.08.19"
+            pipx install "yt-dlp[default]==2026.10.26"
             pipx inject yt-dlp "bgutil-ytdlp-pot-provider==2.0.2"
           fi
           echo "$PIPX_BIN_DIR" >> "$GITHUB_PATH"

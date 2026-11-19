@@ -49,11 +49,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/apt
-          key: tools-apt-b0c69999f5a6-${{ steps.apt-week.outputs.week }}-${{ runner.os }}-${{ runner.arch }}
+          key: tools-apt-dde914990a19-${{ steps.apt-week.outputs.week }}-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/pipx
-          key: tools-pipx-yt-dlp-2026.08.19-bgutil-2.0.2-whisper-0.5.8-${{ runner.os }}-${{ runner.arch }}
+          key: tools-pipx-yt-dlp-2026.10.26-bgutil-2.0.2-whisper-0.5.8-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
         with:
           path: runner/node_modules
@@ -66,7 +66,7 @@ jobs:
           a="$HOME/.cache/autobiz/apt"
           mkdir -p "$a/archives/partial" "$a/lists/partial"
           APT="-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180 -o Dir::Cache::Archives=$a/archives -o Dir::State::Lists=$a/lists"
-          PKGS='fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp'
+          PKGS='fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp fonts-noto-color-emoji fonts-unifont xfonts-cyrillic xfonts-scalable fonts-liberation fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf fonts-freefont-ttf'
           # A cache hit installs from the cached lists and packages without the mirror; a miss or a stale cache updates first.
           if ! sudo apt-get $APT install -y -qq --no-download $PKGS > /dev/null 2>&1; then
             sudo apt-get $APT update -qq
@@ -75,12 +75,22 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" "$a"
           export PIPX_HOME="$HOME/.cache/autobiz/pipx" PIPX_BIN_DIR="$HOME/.cache/autobiz/pipx/bin"
           if [ ! -x "$PIPX_BIN_DIR/yt-dlp" ]; then
-            pipx install "yt-dlp[default]==2026.08.19"
+            pipx install "yt-dlp[default]==2026.10.26"
             pipx inject yt-dlp "bgutil-ytdlp-pot-provider==2.0.2"
             pipx install "whisper-ctranslate2==0.5.8"
           fi
           echo "$PIPX_BIN_DIR" >> "$GITHUB_PATH"
           if [ ! -d runner/node_modules ]; then npm install --prefix runner --no-audit --no-fund; fi
+      - uses: actions/cache@v4
+        with:
+          path: .venv-video
+          key: video-venv-py3.12-numpy-2.5.3-opencv-python-headless-5.0.0.93-pillow-12.3.0-${{ runner.os }}-${{ runner.arch }}
+      - name: Install video tools
+        run: |
+          if [ ! -x .venv-video/bin/python ]; then
+            python3.12 -m venv .venv-video
+            .venv-video/bin/pip install --quiet numpy==2.5.3 opencv-python-headless==5.0.0.93 pillow==12.3.0
+          fi
       - name: Start Cloudflare WARP for yt-dlp
         run: bash runner/warp.sh start
       - name: Start the PO token provider for yt-dlp
@@ -127,6 +137,7 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           YOUTUBE_DATA_API_CLIENT_ID: ${{ secrets.YOUTUBE_DATA_API_CLIENT_ID }}
           YOUTUBE_DATA_API_CLIENT_SECRET: ${{ secrets.YOUTUBE_DATA_API_CLIENT_SECRET }}
+          AUTOBIZ_PYTHON: ${{ github.workspace }}/.venv-video/bin/python
         run: node runner/runner.mjs businesses/nowayclips/business.json --data data
       - name: Forget credentials and browser caches before saving state
         if: always()

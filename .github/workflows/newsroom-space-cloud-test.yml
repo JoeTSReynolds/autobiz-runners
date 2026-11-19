@@ -93,8 +93,10 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: data/state
-          key: state-newsroom-space-cloud-test-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: state-newsroom-space-cloud-test-
+          key: state/newsroom-space-cloud-test/${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            state/newsroom-space-cloud-test/
+            state-newsroom-space-cloud-test-4
       - name: "Run Newsroom Space (cloud test)"
         env:
           AUTOBIZ_RUN_TIMEOUT_MS: '3600000'
@@ -110,6 +112,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEWSROOM_SITE_CLOUDFLARE_PROJECT: ${{ secrets.NEWSROOM_SITE_CLOUDFLARE_PROJECT }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         run: node runner/runner.mjs businesses/newsroom-space-cloud-test/business.json --data data
       - name: Forget credentials and browser caches before saving state
         if: always()
@@ -120,7 +123,7 @@ jobs:
         if: always()
         with:
           path: data/state
-          key: state-newsroom-space-cloud-test-${{ github.run_id }}-${{ github.run_attempt }}
+          key: state/newsroom-space-cloud-test/${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
