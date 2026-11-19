@@ -21,14 +21,16 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
     const link = dialog.locator("input[type=url]");
     await hold.or(link).first().waitFor({ timeout: 15e3 });
     if (await hold.isVisible()) {
-      const box = await hold.boundingBox();
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      const box2 = await hold.boundingBox();
+      await page.mouse.move(box2.x + box2.width / 2, box2.y + box2.height / 2);
       await page.mouse.down();
       await page.waitForTimeout(1600);
       await page.mouse.up();
     }
     await link.fill(clipUrl, { timeout: 1e4 });
-    await dialog.locator("input[type=checkbox]").check();
+    const box = dialog.locator("input[type=checkbox]");
+    if (!await box.isChecked()) await box.evaluate((input) => input.click());
+    if (!await box.isChecked()) return { submitted: false, reason: "could not tick the requirements checkbox" };
     const before = new Set((await dialog.innerText()).split("\n").map((line) => line.trim()));
     await dialog.getByRole("button", { name: "Submit clip", exact: true }).click();
     for (const end = Date.now() + 2e4; Date.now() < end; await page.waitForTimeout(250)) {
