@@ -45,7 +45,7 @@ async function submitAll(env) {
   const items = JSON.parse(await readFile(PUBLISHED, "utf8"));
   const results = [];
   const valid = CAMPAIGN.test(CR_CAMPAIGN_URL);
-  const browser = valid && items.some(({ url }) => url.startsWith("https://")) ? await chromium.launch().catch(() => void 0) : void 0;
+  const browser = valid && items.some(({ url }) => url.startsWith("https://")) ? await chromium.launch({ executablePath: process.env.CR_CHROME || void 0 }).catch(() => void 0) : void 0;
   try {
     const context = browser && await browser.newContext({ storageState: CR_SESSION_FILE });
     if (CR_SHOTS_DIR) await mkdir(CR_SHOTS_DIR, { recursive: true });
