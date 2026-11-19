@@ -55820,6 +55820,19 @@ async function checkAccount(fetchImpl, token, userId, name, expired) {
     throw new ExecutionFailure(`The saved Instagram token for @${name} belongs to @${actual}${other}; run npm run instagram:connect -- @${name} with the right account.`);
   }
 }
+var UploadRetry = class extends ExecutionFailure {
+};
+var RETRY_STATUS = (status) => status === 400 || status === 408 || status === 429 || status >= 500;
+function uploadReason(text3, token) {
+  let info;
+  try {
+    info = JSON.parse(text3.slice(0, 2e3))?.debug_info;
+  } catch {
+    return "";
+  }
+  const parts = [info?.type, info?.message].filter((part) => typeof part === "string" && part !== "");
+  return parts.join(": ").split(token).join("[token]").replace(/[\x00-\x1f\x7f\s]+/g, " ").trim().slice(0, 300);
+}
 function trustedUploadUrl(uri) {
   try {
     const url = new URL(String(uri));
@@ -55833,7 +55846,7 @@ function checkId(id) {
   return id;
 }
 function createInstagramGraphApi(options) {
-  const { tokenDir, fetch: fetchImpl, pollMs = 15e3, processingTimeoutMs = 9e5, now = Date.now } = options;
+  const { tokenDir, fetch: fetchImpl, pollMs = 15e3, processingTimeoutMs = 9e5, retryMs = 5e3, now = Date.now } = options;
   const sleep = options.sleep ?? ((ms) => new Promise((resolve7) => setTimeout(resolve7, ms)));
   async function session(username) {
     const name = instagramName(username);
@@ -55853,27 +55866,39 @@ function createInstagramGraphApi(options) {
       if (!bytes) throw new ExecutionFailure("The video file cannot be read.");
       if (bytes.length === 0) throw new ExecutionFailure("The video file is empty.");
       const { token, userId, expired } = await session(username);
-      const created = await graphCall(fetchImpl, token, graphUrl(`${userId}/media`), "Instagram Reel container", {
-        media_type: "REELS",
-        upload_type: "resumable",
-        caption,
-        share_to_feed: shareToFeed,
-        ...isPaidPartnership ? { is_paid_partnership: true } : {}
-      }, expired);
-      const containerId = created?.id;
-      if (typeof containerId !== "string" || !NUMERIC_ID.test(containerId)) throw new ExecutionFailure("Instagram returned no container id; nothing was published.");
-      const response = await timedFetch(fetchImpl, trustedUploadUrl(created?.uri), {
-        method: "POST",
-        headers: { authorization: `OAuth ${token}`, offset: "0", file_size: String(bytes.length) },
-        body: bytes
-      }, UPLOAD_TIMEOUT_MS, "Instagram video upload");
-      if (!response.ok) {
-        await response.body?.cancel().catch(() => void 0);
-        throw new ExecutionFailure(`Instagram video upload failed with HTTP ${response.status}; nothing was published.`);
+      const once = async () => {
+        const created = await graphCall(fetchImpl, token, graphUrl(`${userId}/media`), "Instagram Reel container", {
+          media_type: "REELS",
+          upload_type: "resumable",
+          caption,
+          share_to_feed: shareToFeed,
+          ...isPaidPartnership ? { is_paid_partnership: true } : {}
+        }, expired);
+        const containerId = created?.id;
+        if (typeof containerId !== "string" || !NUMERIC_ID.test(containerId)) throw new ExecutionFailure("Instagram returned no container id; nothing was published.");
+        const response = await timedFetch(fetchImpl, trustedUploadUrl(created?.uri), {
+          method: "POST",
+          headers: { authorization: `OAuth ${token}`, offset: "0", file_size: String(bytes.length) },
+          body: bytes
+        }, UPLOAD_TIMEOUT_MS, "Instagram video upload").catch((error) => {
+          throw error instanceof TransientHttpFailure ? new UploadRetry(`${error.message.replace(/\.$/, "")}; nothing was published.`) : error;
+        });
+        if (!response.ok) {
+          const reason4 = uploadReason(await response.text().catch(() => ""), token);
+          const message2 = `Instagram video upload failed with HTTP ${response.status}${reason4 ? ` (${reason4})` : ""}; nothing was published.`;
+          throw RETRY_STATUS(response.status) ? new UploadRetry(message2) : new ExecutionFailure(message2);
+        }
+        const result = await response.json().catch(() => void 0);
+        if (result?.success !== true) throw new ExecutionFailure("Instagram did not accept the video upload; nothing was published.");
+        return { containerId };
+      };
+      try {
+        return await once();
+      } catch (error) {
+        if (!(error instanceof UploadRetry)) throw error;
+        await sleep(retryMs);
+        return once();
       }
-      const result = await response.json().catch(() => void 0);
-      if (result?.success !== true) throw new ExecutionFailure("Instagram did not accept the video upload; nothing was published.");
-      return { containerId };
     },
     async waitForContainer(username, containerId) {
       checkId(containerId);

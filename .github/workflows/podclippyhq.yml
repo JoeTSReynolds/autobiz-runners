@@ -187,7 +187,7 @@ jobs:
               no:*) body="$platform $url — NOT submitted (${status#no:}), submit within 30 min" ;;
               *) body="$platform $url — submit within 30 min" ;;
             esac
-            curl -fsS -H "Title: New Short: $title" -H "Click: $url" -H "Actions: view, Submit clip, $NOTIFY_LINK" -d "$body" "https://ntfy.sh/$NTFY_TOPIC" > /dev/null || echo "::warning::ntfy post failed for $url"
+            curl -fsS -H "Title: New Short: $title" -H "Click: $url" -H "Actions: view, Submit clip, $NOTIFY_LINK" -H "Priority: high" -d "$body" "https://ntfy.sh/$NTFY_TOPIC" > /dev/null || echo "::warning::ntfy post failed for $url"
           done
       - name: Forget credentials and browser caches before saving state
         if: always()
