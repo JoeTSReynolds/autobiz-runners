@@ -51,7 +51,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/apt
-          key: tools-apt-dde914990a19-${{ steps.apt-week.outputs.week }}-${{ runner.os }}-${{ runner.arch }}
+          key: tools-apt-ae434b6968fc-${{ steps.apt-week.outputs.week }}-${{ runner.os }}-${{ runner.arch }}
       - uses: actions/cache@v4
         with:
           path: ~/.cache/autobiz/pipx
@@ -60,6 +60,10 @@ jobs:
         with:
           path: runner/node_modules
           key: tools-runner-node24-${{ hashFiles('runner/package.json') }}-${{ runner.os }}-${{ runner.arch }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: tools-playwright-${{ hashFiles('runner/package.json') }}-${{ runner.os }}
       - name: Install tools
         timeout-minutes: 10
         run: |
@@ -68,7 +72,7 @@ jobs:
           a="$HOME/.cache/autobiz/apt"
           mkdir -p "$a/archives/partial" "$a/lists/partial"
           APT="-o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=3 -o DPkg::Lock::Timeout=180 -o Dir::Cache::Archives=$a/archives -o Dir::State::Lists=$a/lists"
-          PKGS='fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp fonts-noto-color-emoji fonts-unifont xfonts-cyrillic xfonts-scalable fonts-liberation fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf fonts-freefont-ttf'
+          PKGS='fonts-roboto-unhinted ffmpeg privoxy cloudflare-warp xvfb fonts-noto-color-emoji fonts-unifont libfontconfig1 libfreetype6 xfonts-cyrillic xfonts-scalable fonts-liberation fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf fonts-freefont-ttf libasound2t64 libatk-bridge2.0-0t64 libatk1.0-0t64 libatspi2.0-0t64 libcairo2 libcups2t64 libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 libnspr4 libnss3 libpango-1.0-0 libx11-6 libxcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2'
           # A cache hit installs from the cached lists and packages without the mirror; a miss or a stale cache updates first.
           if ! sudo apt-get $APT install -y -qq --no-download $PKGS > /dev/null 2>&1; then
             sudo apt-get $APT update -qq
@@ -83,6 +87,7 @@ jobs:
           fi
           echo "$PIPX_BIN_DIR" >> "$GITHUB_PATH"
           if [ ! -d runner/node_modules ]; then npm install --prefix runner --no-audit --no-fund; fi
+          npx --prefix runner playwright install chromium
       - uses: actions/cache@v4
         with:
           path: .venv-video
@@ -149,6 +154,21 @@ jobs:
           AUTOBIZ_PUBLISHED_FILE: ${{ runner.temp }}/published.json
           AUTOBIZ_PYTHON: ${{ github.workspace }}/.venv-video/bin/python
         run: node runner/runner.mjs businesses/podclippyhq/business.json --data data
+      - name: Submit to Content Rewards
+        if: always()
+        continue-on-error: true
+        env:
+          CR_SESSION: ${{ secrets.CR_SESSION }}
+          CR_CAMPAIGN_URL: "https://contentrewards.com/c/campaigns/5a842374-34e2-4237-95e8-6a6288046b13"
+          PUBLISHED: ${{ runner.temp }}/published.json
+          CR_SESSION_FILE: ${{ runner.temp }}/cr-session.json
+          CR_RESULT_FILE: ${{ runner.temp }}/cr-result.json
+          CR_SHOTS_DIR: ${{ runner.temp }}/cr-shots
+        run: |
+          if [ -z "$CR_SESSION" ] || [ ! -f "$PUBLISHED" ]; then exit 0; fi
+          trap 'rm -f "$CR_SESSION_FILE"' EXIT
+          (umask 077; printf '%s' "$CR_SESSION" > "$CR_SESSION_FILE")
+          node runner/cr-submit.mjs
       - name: Notify the phone
         if: always()
         continue-on-error: true
@@ -156,11 +176,18 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NOTIFY_LINK: "https://contentrewards.com/c/campaigns/5a842374-34e2-4237-95e8-6a6288046b13"
           PUBLISHED: ${{ runner.temp }}/published.json
+          RESULT: ${{ runner.temp }}/cr-result.json
         run: |
           if [ -z "$NTFY_TOPIC" ] || [ ! -f "$PUBLISHED" ]; then exit 0; fi
-          jq -r '.[] | [.platform, .url, (.title // "")] | map(gsub("[[:cntrl:]]"; " ")) | join("	")' "$PUBLISHED" | while IFS=$'	' read -r platform url title; do
+          [ -f "${RESULT:-}" ] || RESULT=/dev/null
+          jq -r --slurpfile r "$RESULT" '($r[0] // []) as $s | .[] | . as $i | ([$s[] | select(.url == $i.url)] | first) as $x | [.platform, .url, (if $x == null then "-" elif $x.submitted then "ok" else "no:" + ($x.reason // "unknown") end), (.title // "")] | map(gsub("[[:cntrl:]]"; " ")) | join("	")' "$PUBLISHED" | while IFS=$'	' read -r platform url status title; do
             case "$url" in https://*) ;; *) continue ;; esac
-            curl -fsS -H "Title: New Short: $title" -H "Click: $url" -H "Actions: view, Submit clip, $NOTIFY_LINK" -d "$platform $url — submit within 30 min" "https://ntfy.sh/$NTFY_TOPIC" > /dev/null || echo "::warning::ntfy post failed for $url"
+            case "$status" in
+              ok) body="$platform $url — auto-submitted ✅" ;;
+              no:*) body="$platform $url — NOT submitted (${status#no:}), submit within 30 min" ;;
+              *) body="$platform $url — submit within 30 min" ;;
+            esac
+            curl -fsS -H "Title: New Short: $title" -H "Click: $url" -H "Actions: view, Submit clip, $NOTIFY_LINK" -d "$body" "https://ntfy.sh/$NTFY_TOPIC" > /dev/null || echo "::warning::ntfy post failed for $url"
           done
       - name: Forget credentials and browser caches before saving state
         if: always()

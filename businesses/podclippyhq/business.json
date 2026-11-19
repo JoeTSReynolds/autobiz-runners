@@ -15,7 +15,8 @@
         "model": "claude-haiku-5-5",
         "cover": false,
         "notify": {
-          "link": "https://contentrewards.com/c/campaigns/5a842374-34e2-4237-95e8-6a6288046b13"
+          "link": "https://contentrewards.com/c/campaigns/5a842374-34e2-4237-95e8-6a6288046b13",
+          "campaign": "https://contentrewards.com/c/campaigns/5a842374-34e2-4237-95e8-6a6288046b13"
         }
       }
     },
@@ -486,7 +487,7 @@
       ]
     },
     "createdAt": "2026-11-19T00:50:55.049Z",
-    "updatedAt": "2026-11-19T18:52:56.720Z"
+    "updatedAt": "2026-11-19T19:05:41.543Z"
   },
   "modules": [
     {
