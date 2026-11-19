@@ -1,0 +1,37 @@
+name: Instagram upload diagnostic (temporary)
+on: workflow_dispatch
+jobs:
+  diag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Container and upload, never published
+        env:
+          INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN_PODCLIPPYHQ }}
+        run: |
+          umask 077
+          printf '%s' "$INSTAGRAM_TOKEN" > "$RUNNER_TEMP/ig.json"
+          ffmpeg -v error -f lavfi -i testsrc2=size=1080x1920:rate=30 -f lavfi -i sine -t 5 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest "$RUNNER_TEMP/t.mp4"
+          cat > "$RUNNER_TEMP/d.mjs" <<'JS'
+          import { readFileSync } from 'node:fs'
+          const t = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/ig.json', 'utf8'))
+          const v = readFileSync(process.env.RUNNER_TEMP + '/t.mp4')
+          const auth = { authorization: `OAuth ${t.access_token}` }
+          const clean = (s) => String(s).split(t.access_token).join('[token]').slice(0, 800)
+          for (const body of [{ form: true }, { form: false }]) {
+            const p = { media_type: 'REELS', upload_type: 'resumable', caption: 'diagnostic, never published', share_to_feed: true, is_paid_partnership: true }
+            const c = await fetch(`https://graph.facebook.com/v26.0/${t.user_id}/media`, body.form
+              ? { method: 'POST', headers: { ...auth, 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(Object.entries(p).map(([k, x]) => [k, String(x)])) }
+              : { method: 'POST', headers: { ...auth, 'content-type': 'application/json' }, body: JSON.stringify(p) })
+            const cj = await c.json()
+            console.log(body.form ? 'form' : 'json', 'container', c.status, clean(JSON.stringify(cj.error ?? { id: cj.id, uri: String(cj.uri).replace(/\?.*/, '') })))
+            if (!cj.id) continue
+            const u = await fetch(cj.uri, { method: 'POST', headers: { ...auth, offset: '0', file_size: String(v.length) }, body: v })
+            console.log('  upload', u.status, clean(await u.text()))
+          }
+          JS
+          node "$RUNNER_TEMP/d.mjs"
+          rm -f "$RUNNER_TEMP/ig.json"
