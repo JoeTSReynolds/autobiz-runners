@@ -176,14 +176,15 @@ jobs:
         run: |
           if [ -z "$NTFY_TOPIC" ] || [ ! -f "$PUBLISHED" ]; then exit 0; fi
           [ -f "${RESULT:-}" ] || RESULT=/dev/null
-          jq -r --slurpfile r "$RESULT" '($r[0] // []) as $s | .[] | . as $i | ([$s[] | select(.url == $i.url)] | first) as $x | [.platform, .url, (if $x == null then "-" elif $x.submitted then "ok" else "no:" + ($x.reason // "unknown") end), (.title // "")] | map(gsub("[[:cntrl:]]"; " ")) | join("	")' "$PUBLISHED" | while IFS=$'	' read -r platform url status title; do
+          jq -r --slurpfile r "$RESULT" '($r[0] // []) as $s | .[] | . as $i | ([$s[] | select(.url == $i.url)] | first) as $x | [.platform, .url, (if $x == null then "-" elif $x.submitted then "ok" else "no:" + ($x.reason // "unknown") end), ((.campaign // "") | if type == "string" and test("^https://contentrewards\\.com/c/campaigns/[0-9a-f-]{36}$"; "i") then . else "-" end), (.title // "")] | map(gsub("[[:cntrl:]]"; " ")) | join("	")' "$PUBLISHED" | while IFS=$'	' read -r platform url status campaign title; do
             case "$url" in https://*) ;; *) continue ;; esac
+            link="$NOTIFY_LINK"; [ "$campaign" = - ] || link="$campaign"
             case "$status" in
               ok) body="$platform $url — auto-submitted ✅" ;;
               no:*) body="$platform $url — NOT submitted (${status#no:}), submit within 30 min" ;;
               *) body="$platform $url — submit within 30 min" ;;
             esac
-            curl -fsS -H "Title: New Short: $title" -H "Click: $url" -H "Actions: view, Submit clip, $NOTIFY_LINK" -H "Priority: high" -d "$body" "https://ntfy.sh/$NTFY_TOPIC" > /dev/null || echo "::warning::ntfy post failed for $url"
+            curl -fsS -H "Title: New Short: $title" -H "Click: $url" -H "Actions: view, Submit clip, $link" -H "Priority: high" -d "$body" "https://ntfy.sh/$NTFY_TOPIC" > /dev/null || echo "::warning::ntfy post failed for $url"
           done
       - name: Forget credentials and browser caches before saving state
         if: always()

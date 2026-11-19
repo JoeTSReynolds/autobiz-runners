@@ -64,21 +64,23 @@ async function submitAll(env) {
   const { CR_SESSION_FILE, CR_CAMPAIGN_URL = "", PUBLISHED, CR_RESULT_FILE, CR_SHOTS_DIR } = env;
   const items = JSON.parse(await readFile(PUBLISHED, "utf8"));
   const results = [];
-  const valid = CAMPAIGN.test(CR_CAMPAIGN_URL);
-  const browser = valid && items.some(({ url }) => url.startsWith("https://")) ? await chromium.launch({ executablePath: process.env.CR_CHROME || void 0 }).catch(() => void 0) : void 0;
+  const campaignOf = ({ campaign }) => typeof campaign === "string" && CAMPAIGN.test(campaign) ? campaign : CAMPAIGN.test(CR_CAMPAIGN_URL) ? CR_CAMPAIGN_URL : void 0;
+  const browser = items.some((item) => campaignOf(item) && item.url.startsWith("https://")) ? await chromium.launch({ executablePath: process.env.CR_CHROME || void 0 }).catch(() => void 0) : void 0;
   try {
     const context = browser && await browser.newContext({ storageState: CR_SESSION_FILE });
     if (CR_SHOTS_DIR) await mkdir(CR_SHOTS_DIR, { recursive: true });
-    for (const [index, { platform, url }] of items.entries()) {
+    for (const [index, item] of items.entries()) {
+      const { platform, url } = item;
+      const campaign = campaignOf(item);
       let result;
       if (!url.startsWith("https://")) result = { submitted: false, reason: "not an https URL" };
-      else if (!valid) result = { submitted: false, reason: "bad campaign URL" };
+      else if (!campaign) result = { submitted: false, reason: "no campaign URL" };
       else if (!context) result = { submitted: false, reason: "browser did not start" };
       else {
         const page = await context.newPage();
         let timer;
         result = await Promise.race([
-          submitClip(page, CR_CAMPAIGN_URL, url, CR_SHOTS_DIR && join(CR_SHOTS_DIR, `${index}.png`)),
+          submitClip(page, campaign, url, CR_SHOTS_DIR && join(CR_SHOTS_DIR, `${index}.png`)),
           new Promise((resolve) => {
             timer = setTimeout(() => resolve({ submitted: false, reason: "timed out" }), ITEM_MS);
           })

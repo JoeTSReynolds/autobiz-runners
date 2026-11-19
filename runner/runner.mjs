@@ -3361,7 +3361,7 @@ var require_validation = __commonJS({
         return false;
       }
     }
-    function validate(context, request, execution) {
+    function validate2(context, request, execution) {
       const runExecution = execution === void 0;
       if (runExecution && context[paramsSchema] === void 0 && context[bodySchema] === void 0 && context[querystringSchema] === void 0 && context[headersSchema] === void 0) {
         return false;
@@ -3420,7 +3420,7 @@ var require_validation = __commonJS({
         if (paramsResult) {
           return wrapValidationError(paramsResult, "params", context.schemaErrorFormatter);
         }
-        return validate(context, request, { skipParams: true });
+        return validate2(context, request, { skipParams: true });
       });
     }
     function validateAsyncBody(validatePromise, context, request) {
@@ -3428,7 +3428,7 @@ var require_validation = __commonJS({
         if (bodyResult) {
           return wrapValidationError(bodyResult, "body", context.schemaErrorFormatter);
         }
-        return validate(context, request, { skipParams: true, skipBody: true });
+        return validate2(context, request, { skipParams: true, skipBody: true });
       });
     }
     function validateAsyncQuery(validatePromise, context, request) {
@@ -3436,7 +3436,7 @@ var require_validation = __commonJS({
         if (queryResult) {
           return wrapValidationError(queryResult, "querystring", context.schemaErrorFormatter);
         }
-        return validate(context, request, { skipParams: true, skipBody: true, skipQuery: true });
+        return validate2(context, request, { skipParams: true, skipBody: true, skipQuery: true });
       });
     }
     function validateAsyncHeaders(validatePromise, context, request) {
@@ -3465,7 +3465,7 @@ var require_validation = __commonJS({
       symbols: { bodySchema, querystringSchema, responseSchema, paramsSchema, headersSchema },
       compileSchemasForValidation,
       compileSchemasForSerialization,
-      validate
+      validate: validate2
     };
   }
 });
@@ -5806,14 +5806,14 @@ var require_rfdc = __commonJS({
 var require_initial_config_validation = __commonJS({
   "node_modules/fastify/lib/initial-config-validation.js"(exports, module) {
     "use strict";
-    var validate = require_config_validator();
+    var validate2 = require_config_validator();
     var deepClone = require_rfdc()({ circles: true, proto: false });
     var { FST_ERR_INIT_OPTS_INVALID } = require_errors2();
     function validateInitialConfig(options) {
       const opts = deepClone(options);
-      if (!validate(opts)) {
-        const error = new FST_ERR_INIT_OPTS_INVALID(JSON.stringify(validate.errors.map((e) => e.message)));
-        error.errors = validate.errors;
+      if (!validate2(opts)) {
+        const error = new FST_ERR_INIT_OPTS_INVALID(JSON.stringify(validate2.errors.map((e) => e.message)));
+        error.errors = validate2.errors;
         throw error;
       }
       return deepFreezeObject(opts);
@@ -5830,7 +5830,7 @@ var require_initial_config_validation = __commonJS({
       return Object.freeze(object2);
     }
     module.exports = validateInitialConfig;
-    module.exports.defaultInitOptions = validate.defaultInitOptions;
+    module.exports.defaultInitOptions = validate2.defaultInitOptions;
     module.exports.utils = { deepFreezeObject };
   }
 });
@@ -9520,8 +9520,8 @@ var require_safe_stable_stringify = __commonJS({
     }
     function configure(options) {
       options = { ...options };
-      const fail3 = getStrictOption(options);
-      if (fail3) {
+      const fail4 = getStrictOption(options);
+      if (fail4) {
         if (options.bigint === void 0) {
           options.bigint = false;
         }
@@ -9632,7 +9632,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail3 ? fail3(value) : "null";
+            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9643,7 +9643,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail3 ? fail3(value) : void 0;
+            return fail4 ? fail4(value) : void 0;
         }
       }
       function stringifyArrayReplacer(key, value, stack, replacer, spacer, indentation) {
@@ -9723,7 +9723,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail3 ? fail3(value) : "null";
+            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9734,7 +9734,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail3 ? fail3(value) : void 0;
+            return fail4 ? fail4(value) : void 0;
         }
       }
       function stringifyIndent(key, value, stack, spacer, indentation) {
@@ -9835,7 +9835,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail3 ? fail3(value) : "null";
+            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9846,7 +9846,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail3 ? fail3(value) : void 0;
+            return fail4 ? fail4(value) : void 0;
         }
       }
       function stringifySimple(key, value, stack) {
@@ -9931,7 +9931,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail3 ? fail3(value) : "null";
+            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9942,7 +9942,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail3 ? fail3(value) : void 0;
+            return fail4 ? fail4(value) : void 0;
         }
       }
       function stringify2(value, replacer, space) {
@@ -13368,21 +13368,21 @@ var require_request = __commonJS({
         value: function(input, schema, httpPart) {
           httpPart = typeof schema === "string" ? schema : httpPart;
           const symbol = httpPart != null && typeof httpPart === "string" && HTTP_PART_SYMBOL_MAP[httpPart];
-          let validate;
+          let validate2;
           if (symbol) {
-            validate = this[kRouteContext][symbol];
+            validate2 = this[kRouteContext][symbol];
           }
-          if (validate == null && (schema == null || typeof schema !== "object" || Array.isArray(schema))) {
+          if (validate2 == null && (schema == null || typeof schema !== "object" || Array.isArray(schema))) {
             throw new FST_ERR_REQ_INVALID_VALIDATION_INVOCATION(httpPart);
           }
-          if (validate == null) {
+          if (validate2 == null) {
             if (this[kRouteContext][kRequestCacheValidateFns]?.has(schema)) {
-              validate = this[kRouteContext][kRequestCacheValidateFns].get(schema);
+              validate2 = this[kRouteContext][kRequestCacheValidateFns].get(schema);
             } else {
-              validate = this.compileValidationSchema(schema, httpPart);
+              validate2 = this.compileValidationSchema(schema, httpPart);
             }
           }
-          return validate(input);
+          return validate2(input);
         }
       },
       getDecorator: {
@@ -15789,8 +15789,8 @@ var require_keyword = __commonJS({
       var _a;
       const { gen, keyword, schema, parentSchema, $data, it: it2 } = cxt;
       checkAsyncKeyword(it2, def);
-      const validate = !$data && def.compile ? def.compile.call(it2.self, schema, parentSchema, it2) : def.validate;
-      const validateRef = useKeyword(gen, keyword, validate);
+      const validate2 = !$data && def.compile ? def.compile.call(it2.self, schema, parentSchema, it2) : def.validate;
+      const validateRef = useKeyword(gen, keyword, validate2);
       const valid = gen.let("valid");
       cxt.block$data(valid, validateKeyword);
       cxt.ok((_a = def.valid) !== null && _a !== void 0 ? _a : valid);
@@ -16863,28 +16863,28 @@ var require_compile = __commonJS({
         if (this.opts.code.process)
           sourceCode = this.opts.code.process(sourceCode, sch);
         const makeValidate = new Function(`${names_1.default.self}`, `${names_1.default.scope}`, sourceCode);
-        const validate = makeValidate(this, this.scope.get());
-        this.scope.value(validateName, { ref: validate });
-        validate.errors = null;
-        validate.schema = sch.schema;
-        validate.schemaEnv = sch;
+        const validate2 = makeValidate(this, this.scope.get());
+        this.scope.value(validateName, { ref: validate2 });
+        validate2.errors = null;
+        validate2.schema = sch.schema;
+        validate2.schemaEnv = sch;
         if (sch.$async)
-          validate.$async = true;
+          validate2.$async = true;
         if (this.opts.code.source === true) {
-          validate.source = { validateName, validateCode, scopeValues: gen._values };
+          validate2.source = { validateName, validateCode, scopeValues: gen._values };
         }
         if (this.opts.unevaluated) {
           const { props, items } = schemaCxt;
-          validate.evaluated = {
+          validate2.evaluated = {
             props: props instanceof codegen_1.Name ? void 0 : props,
             items: items instanceof codegen_1.Name ? void 0 : items,
             dynamicProps: props instanceof codegen_1.Name,
             dynamicItems: items instanceof codegen_1.Name
           };
-          if (validate.source)
-            validate.source.evaluated = (0, codegen_1.stringify)(validate.evaluated);
+          if (validate2.source)
+            validate2.source.evaluated = (0, codegen_1.stringify)(validate2.evaluated);
         }
-        sch.validate = validate;
+        sch.validate = validate2;
         return sch;
       } catch (e) {
         delete sch.validate;
@@ -22295,8 +22295,8 @@ var require_parse = __commonJS({
           const vts = (0, util_1.useFunc)(gen, timestamp_1.default);
           const { allowDate, parseDate } = self.opts;
           const notValid = allowDate ? (0, codegen_1._)`!${vts}(${data}, true)` : (0, codegen_1._)`!${vts}(${data})`;
-          const fail3 = parseDate ? (0, codegen_1.or)(notValid, (0, codegen_1._)`(${data} = new Date(${data}), false)`, (0, codegen_1._)`isNaN(${data}.valueOf())`) : notValid;
-          gen.if(fail3, () => parsingError(cxt, (0, codegen_1.str)`invalid timestamp`));
+          const fail4 = parseDate ? (0, codegen_1.or)(notValid, (0, codegen_1._)`(${data} = new Date(${data}), false)`, (0, codegen_1._)`isNaN(${data}.valueOf())`) : notValid;
+          gen.if(fail4, () => parsingError(cxt, (0, codegen_1.str)`invalid timestamp`));
           break;
         }
         case "float32":
@@ -22342,10 +22342,10 @@ var require_parse = __commonJS({
       skipWhitespace(cxt);
       gen.if((0, codegen_1._)`"-0123456789".indexOf(${jsonSlice(1)}) < 0`, () => jsonSyntaxError(cxt), () => parseWith(cxt, parseJson_1.parseJsonNumber, maxDigits));
     }
-    function parseBooleanToken(bool, fail3) {
+    function parseBooleanToken(bool, fail4) {
       return (cxt) => {
         const { gen, data } = cxt;
-        tryParseToken(cxt, `${bool}`, () => fail3(cxt), () => gen.assign(data, bool));
+        tryParseToken(cxt, `${bool}`, () => fail4(cxt), () => gen.assign(data, bool));
       };
     }
     function parseRef(cxt) {
@@ -22378,14 +22378,14 @@ var require_parse = __commonJS({
     function parseToken4(cxt, tok) {
       tryParseToken(cxt, tok, jsonSyntaxError);
     }
-    function tryParseToken(cxt, tok, fail3, success2) {
+    function tryParseToken(cxt, tok, fail4, success2) {
       const { gen } = cxt;
       const n = tok.length;
       skipWhitespace(cxt);
       gen.if((0, codegen_1._)`${jsonSlice(n)} === ${tok}`, () => {
         gen.add(names_1.default.jsonPos, n);
         success2 === null || success2 === void 0 ? void 0 : success2(cxt);
-      }, () => fail3(cxt));
+      }, () => fail4(cxt));
     }
     function skipWhitespace({ gen, char: c }) {
       gen.code((0, codegen_1._)`while((${c}=${names_1.default.json}[${names_1.default.jsonPos}],${c}===" "||${c}==="\\n"||${c}==="\\r"||${c}==="\\t"))${names_1.default.jsonPos}++;`);
@@ -23945,8 +23945,8 @@ var require_formats = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.formatNames = exports.fastFormats = exports.fullFormats = void 0;
-    function fmtDef(validate, compare) {
-      return { validate, compare };
+    function fmtDef(validate2, compare) {
+      return { validate: validate2, compare };
     }
     exports.fullFormats = {
       // date: http://tools.ietf.org/html/rfc3339#section-5.6
@@ -24387,14 +24387,14 @@ var require_standalone = __commonJS({
             const v = vRef;
             return validateCode(usedValues, v.source);
           } else if ((n.prefix === "root" || n.prefix === "wrapper") && typeof vRef == "object") {
-            const { validate, validateName } = vRef;
+            const { validate: validate2, validateName } = vRef;
             if (!validateName)
               throw new Error("ajv internal error");
             const def = ajv2.opts.code.es5 ? scope_1.varKinds.var : scope_1.varKinds.const;
             const wrapper = (0, code_1._)`${def} ${n} = {validate: ${validateName}};`;
             if (usedState(validateName) === scope_1.UsedValueState.Started)
               return wrapper;
-            const vCode = validateCode(usedValues, validate === null || validate === void 0 ? void 0 : validate.source);
+            const vCode = validateCode(usedValues, validate2 === null || validate2 === void 0 ? void 0 : validate2.source);
             return (0, code_1._)`${wrapper}${_n2}${vCode}`;
           }
           return void 0;
@@ -27920,7 +27920,7 @@ var require_fast_json_stringify = __commonJS({
     var Serializer = require_serializer();
     var Validator = require_validator();
     var Location = require_location();
-    var validate = require_schema_validator();
+    var validate2 = require_schema_validator();
     var mergeSchemas = require_merge_schemas();
     var largeArraySize = 2e4;
     var largeArrayMechanism = "default";
@@ -27950,13 +27950,13 @@ const asInteger = serializer.asInteger.bind(serializer)
     ]);
     var schemaIdCounter = 0;
     function isValidSchema(schema, name) {
-      if (!validate(schema)) {
+      if (!validate2(schema)) {
         if (name) {
           name = `"${name}" `;
         } else {
           name = "";
         }
-        const first = validate.errors[0];
+        const first = validate2.errors[0];
         const err = new Error(`${name}schema is invalid: data${first.instancePath} ${first.message}`);
         err.errors = isValidSchema.errors;
         throw err;
@@ -32682,19 +32682,19 @@ var require_sets_lookup = __commonJS({
     var Sets = __importStar(require_sets());
     var types_1 = require_types4();
     function setToLookup(tokens) {
-      let lookup2 = {};
+      let lookup3 = {};
       let len = 0;
       for (const token of tokens) {
         if (token.type === types_1.types.CHAR) {
-          lookup2[token.value] = true;
+          lookup3[token.value] = true;
         }
         if (token.type === types_1.types.RANGE) {
-          lookup2[`${token.from}-${token.to}`] = true;
+          lookup3[`${token.from}-${token.to}`] = true;
         }
         len += 1;
       }
       return {
-        lookup: () => Object.assign({}, lookup2),
+        lookup: () => Object.assign({}, lookup3),
         len
       };
     }
@@ -32740,11 +32740,11 @@ var require_write_set_tokens = __commonJS({
       return charCode === 94 ? "\\^" : charCode === 92 ? "\\\\" : charCode === 93 ? "\\]" : charCode === 45 ? "\\-" : String.fromCharCode(charCode);
     }
     exports.setChar = setChar;
-    function isSameSet(set, { lookup: lookup2, len }) {
+    function isSameSet(set, { lookup: lookup3, len }) {
       if (len !== set.length) {
         return false;
       }
-      const map = lookup2();
+      const map = lookup3();
       for (const elem of set) {
         if (elem.type === types_1.types.SET) {
           return false;
@@ -34315,7 +34315,7 @@ var require_find_my_way = __commonJS({
       const newRoutes = this.routes.filter(predicate);
       this._rebuild(newRoutes);
     };
-    Router.prototype.lookup = function lookup2(req, res, ctx, done) {
+    Router.prototype.lookup = function lookup3(req, res, ctx, done) {
       if (typeof ctx === "function") {
         done = ctx;
         ctx = void 0;
@@ -44567,6 +44567,7 @@ var schema_default = {
             "error",
             "composite",
             "random",
+            "campaign",
             "media-fetch",
             "video-edit",
             "thumbnail",
@@ -44655,6 +44656,7 @@ var schema_default = {
             "error",
             "composite",
             "random",
+            "campaign",
             "media-fetch",
             "video-edit",
             "thumbnail",
@@ -45003,6 +45005,7 @@ var schema_default = {
               "error",
               "composite",
               "random",
+              "campaign",
               "media-fetch",
               "video-edit",
               "thumbnail",
@@ -45149,6 +45152,7 @@ var schema_default = {
             "error",
             "composite",
             "random",
+            "campaign",
             "media-fetch",
             "video-edit",
             "thumbnail",
@@ -45294,6 +45298,7 @@ var schema_default = {
             "error",
             "composite",
             "random",
+            "campaign",
             "media-fetch",
             "video-edit",
             "thumbnail",
@@ -45940,6 +45945,7 @@ var schema_default = {
             "error",
             "composite",
             "random",
+            "campaign",
             "media-fetch",
             "video-edit",
             "thumbnail",
@@ -46917,6 +46923,9 @@ var schema_default = {
             $ref: "#/definitions/ModuleDefinition"
           }
         },
+        settings: {
+          $ref: "#/definitions/Config"
+        },
         checkpoint: {
           type: "object",
           additionalProperties: false,
@@ -47039,9 +47048,9 @@ var resultValidators = new Map(AUTHORING_TOOLS.map(({ name, outputSchema: output
 function validateAuthoringInput(name, value) {
   const tool = AUTHORING_TOOLS.find((candidate) => candidate.name === name);
   if (!tool) return { valid: false, errors: [`Unknown authoring tool: ${name}`] };
-  const validate = toolValidators.get(tool.name);
-  const valid = validate(value);
-  const errors = valid ? [] : (validate.errors ?? []).map((error) => {
+  const validate2 = toolValidators.get(tool.name);
+  const valid = validate2(value);
+  const errors = valid ? [] : (validate2.errors ?? []).map((error) => {
     if (error.keyword === "required" && typeof error.params.missingProperty === "string") {
       const path = error.instancePath || "";
       return `${path}/${error.params.missingProperty} is required`;
@@ -47079,8 +47088,8 @@ function validateModuleConfig(module, config) {
     const defaults = module.defaults && typeof module.defaults === "object" ? module.defaults : {};
     if (Object.keys(defaults).some((key) => dangerousKeys.has(key))) return ["Module defaults contain a forbidden property name."];
     const effective = Object.assign(/* @__PURE__ */ Object.create(null), defaults, overrides);
-    const validate = authoringAjv.compile(schema);
-    validate(effective);
+    const validate2 = authoringAjv.compile(schema);
+    validate2(effective);
     const overrideSchema = structuredClone(schema);
     delete overrideSchema.required;
     const configValidator = authoringAjv.compile(overrideSchema);
@@ -47090,7 +47099,7 @@ function validateModuleConfig(module, config) {
       if (error.keyword === "additionalProperties") return `${path}/${error.params.additionalProperty} is not allowed`;
       return `${path || "/"} ${error.message ?? "is invalid"}`;
     });
-    const errors = [.../* @__PURE__ */ new Set([...format2(validate.errors), ...format2(configValidator.errors)])];
+    const errors = [.../* @__PURE__ */ new Set([...format2(validate2.errors), ...format2(configValidator.errors)])];
     if (module.kind === "review" && typeof effective.minLength === "number" && typeof effective.maxLength === "number" && effective.minLength > effective.maxLength) {
       errors.push("/minLength must be less than or equal to /maxLength");
     }
@@ -47200,6 +47209,12 @@ function starterModules() {
     seeded("random", "Random pick", "Picks one value from a list and adds it to the job.", [
       field("options", "Options", "json", ["The Simpsons", "Family Guy", "Rick and Morty", "Futurama", "American Dad", "Bob's Burgers", "King of the Hill", "South Park"]),
       field("outputKey", "Output key", "string", "show")
+    ], ["next"]),
+    seeded("campaign", "Campaign", "Picks an active campaign from the business settings and one of its sources, and adds both to the job.", [
+      field("settingsKey", "Settings key", "string", "campaigns"),
+      field("channel", "Channel (empty: any)", "string", ""),
+      field("outputKey", "Campaign key", "string", "campaign"),
+      field("sourceKey", "Source key", "string", "source")
     ], ["next"]),
     seeded("media-fetch", "Media fetch", "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).", [
       field("mode", "Mode", "select", "search", ["search", "captions", "section", "sections", "download", "index", "locate", "frinkiac"]),
@@ -47324,6 +47339,7 @@ function starterModules() {
       field("shareToFeed", "Share to feed", "boolean", true),
       field("paidPartnership", "Paid partnership label", "boolean", false),
       field("disclosure", "Disclosure first line (max 100, empty = off)", "string", ""),
+      field("disclosureKey", "Disclosure (job path, wins over the text)", "string", ""),
       field("maxHashtags", "Most hashtags (0-30)", "number", 5),
       field("outputKey", "Output key", "string", "instagram")
     ], ["next"]),
@@ -49058,9 +49074,55 @@ function execute9({ input, config }) {
   return { output: { ...input, [outputKey]: picked }, port: "next" };
 }
 
-// modules/media-fetch/index.ts
+// modules/campaign/index.ts
+var DEFAULTS2 = { settingsKey: "campaigns", channel: "", outputKey: "campaign", sourceKey: "source" };
 var isObject3 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-var DEFAULTS2 = {
+var isHttps = (value) => typeof value === "string" && /^https:\/\/\S+$/.test(value);
+var isText = (value) => typeof value === "string";
+var sourceFields = { id: isText, url: isHttps, title: isText, channel: isText, duration: (value) => typeof value === "number" && Number.isFinite(value) };
+var fail = (what) => {
+  throw new ExecutionFailure(`Campaign block: ${what}.`);
+};
+function setting(config, key, empty = false) {
+  const value = config[key] === void 0 ? DEFAULTS2[key] : config[key];
+  if (typeof value !== "string" || !empty && value === "") fail(`setting ${key} must be a${empty ? "" : " non-empty"} string`);
+  return value;
+}
+function validate(record2, index2) {
+  const name = isObject3(record2) && typeof record2.id === "string" ? `"${record2.id}"` : `#${index2}`;
+  const bad = (field2) => fail(`campaign ${name} field ${field2} is invalid`);
+  if (!isObject3(record2)) return fail(`campaign ${name} is not an object`);
+  if (typeof record2.id !== "string" || !/^[A-Za-z0-9._-]+$/.test(record2.id)) bad("id");
+  if (!isHttps(record2.url)) bad("url");
+  if (typeof record2.active !== "boolean") bad("active");
+  if (!Array.isArray(record2.sources) || record2.sources.length === 0) bad("sources");
+  record2.sources.forEach((source, i) => {
+    const bad2 = Object.entries(sourceFields).find(([key, ok]) => !ok(isObject3(source) ? source[key] : void 0));
+    if (bad2) fail(`campaign ${name} field sources[${i}].${bad2[0]} is invalid`);
+  });
+  for (const key of ["channel", "brief", "requirements", "checklist", "featured", "disclosure"]) if (record2[key] !== void 0 && !isText(record2[key])) bad(key);
+  if (record2.splitTop !== void 0 && record2.splitTop !== "left" && record2.splitTop !== "right") bad("splitTop");
+  if (record2.rates !== void 0 && !isObject3(record2.rates)) bad("rates");
+  return record2;
+}
+function execute10({ input, config, settings }) {
+  const settingsKey = setting(config, "settingsKey");
+  const channel = setting(config, "channel", true);
+  const outputKey = setting(config, "outputKey");
+  const sourceKey = setting(config, "sourceKey");
+  if (!isObject3(input)) throw new ExecutionFailure("Campaign input must be a plain object (the job).");
+  const list3 = settings[settingsKey] ?? [];
+  if (!Array.isArray(list3)) fail(`settings.${settingsKey} must be a list of campaign records`);
+  const candidates2 = list3.map((record2, index2) => isObject3(record2) && record2.active === false ? void 0 : validate(record2, index2)).filter((record2) => !!record2 && record2.active === true && (channel === "" || record2.channel === channel));
+  if (candidates2.length === 0) fail(`no active campaign${channel ? ` for channel "${channel}"` : ""}`);
+  const campaign = candidates2[Math.floor(Math.random() * candidates2.length)];
+  const sources = campaign.sources;
+  return { output: { ...input, [outputKey]: campaign, [sourceKey]: sources[Math.floor(Math.random() * sources.length)] }, port: "next" };
+}
+
+// modules/media-fetch/index.ts
+var isObject4 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var DEFAULTS3 = {
   mode: "search",
   // search
   queries: ["ytsearch20:{show} full episode", "ytsearch20:{show} uncropped uncut full episode"],
@@ -49132,14 +49194,14 @@ var HOTSPOTS_FILE = "hotspots.txt";
 var CLIP_FILE = "section.mp4";
 var VIDEO_FILE = "download.mp4";
 function list(config, key, min) {
-  const value = config[key] ?? DEFAULTS2[key];
+  const value = config[key] ?? DEFAULTS3[key];
   if (!Array.isArray(value) || value.length < min || value.some((item) => typeof item !== "string" || item === "")) {
     throw new ExecutionFailure(`media-fetch setting ${key} must be a list of ${min ? "at least one " : ""}non-empty strings.`);
   }
   return value;
 }
 function count(config, key, positive2 = false, whole2 = false) {
-  const value = config[key] ?? DEFAULTS2[key];
+  const value = config[key] ?? DEFAULTS3[key];
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || positive2 && value === 0 || whole2 && !Number.isInteger(value)) {
     throw new ExecutionFailure(`media-fetch setting ${key} must be a ${positive2 ? "positive" : "non-negative"} ${whole2 ? "integer" : "number"}.`);
   }
@@ -49151,12 +49213,12 @@ function positional(value, name) {
   return value;
 }
 function archiveArgs(config, tools) {
-  const value = config.archive ?? DEFAULTS2.archive;
+  const value = config.archive ?? DEFAULTS3.archive;
   if (typeof value !== "boolean") throw new ExecutionFailure("media-fetch setting archive must be true or false.");
   return value ? ["--download-archive", `${tools.stateDir}/archive.txt`] : [];
 }
 function momentsFile(config) {
-  const file = config.momentsFile ?? DEFAULTS2.momentsFile;
+  const file = config.momentsFile ?? DEFAULTS3.momentsFile;
   if (typeof file !== "string" || file !== "" && !/^[a-z0-9][a-z0-9._-]*$/i.test(file)) throw new ExecutionFailure('media-fetch setting momentsFile must be empty or a plain file name (letters, digits, ".", "_" and "-").');
   return file;
 }
@@ -49170,7 +49232,7 @@ async function readMoments(tools, file) {
     parsed = JSON.parse(raw);
   } catch {
   }
-  if (!Array.isArray(parsed) || parsed.some((m) => !isObject3(m) || typeof m.source !== "string" || typeof m.start !== "number" || typeof m.end !== "number" || typeof m.at !== "string")) {
+  if (!Array.isArray(parsed) || parsed.some((m) => !isObject4(m) || typeof m.source !== "string" || typeof m.start !== "number" || typeof m.end !== "number" || typeof m.at !== "string")) {
     throw new ExecutionFailure(`media-fetch state file ${file} must be a JSON list of { source, start, end, at }; fix or delete it.`);
   }
   return parsed;
@@ -49181,7 +49243,7 @@ function rejectedSources(job) {
   return value;
 }
 function parseSource(source, name) {
-  if (!isObject3(source)) throw new ExecutionFailure(`media-fetch ${name} must be an object.`);
+  if (!isObject4(source)) throw new ExecutionFailure(`media-fetch ${name} must be an object.`);
   const { duration } = source;
   if (typeof source.id !== "string" || source.id === "") throw new ExecutionFailure(`media-fetch ${name}.id must be a non-empty string.`);
   if (duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration))) throw new ExecutionFailure(`media-fetch ${name}.duration must be a number.`);
@@ -49250,15 +49312,15 @@ var search = async (job, config, tools, outputKey) => {
   const [minDuration, maxDuration] = [count(config, "minDuration"), count(config, "maxDuration")];
   const timeoutMs = count(config, "searchTimeoutMs", true);
   const maxResults = count(config, "maxResults", true, true);
-  const pick = config.pick ?? DEFAULTS2.pick;
+  const pick = config.pick ?? DEFAULTS3.pick;
   if (pick !== "random" && pick !== "list") throw new ExecutionFailure("media-fetch setting pick must be 'random' or 'list'.");
   const listSize = count(config, "listSize", true, true);
   const withCaptions = count(config, "withCaptions", false, true);
   const maxAgeDays = count(config, "maxAgeDays");
-  const sort = config.sort ?? DEFAULTS2.sort;
+  const sort = config.sort ?? DEFAULTS3.sort;
   if (sort !== "views" && sort !== "velocity") throw new ExecutionFailure("media-fetch setting sort must be 'views' or 'velocity'.");
   const dated = maxAgeDays > 0 || sort === "velocity";
-  const titleIncludes = config.titleIncludes ?? DEFAULTS2.titleIncludes;
+  const titleIncludes = config.titleIncludes ?? DEFAULTS3.titleIncludes;
   if (typeof titleIncludes !== "string") throw new ExecutionFailure("media-fetch setting titleIncludes must be a string.");
   const rejected = rejectedSources(job);
   const fill = (template, encode = (value) => value) => template.replace(/\{(\w+)\}/g, (_, key) => {
@@ -49285,9 +49347,9 @@ var search = async (job, config, tools, outputKey) => {
       listing = JSON.parse(stdout);
     } catch {
     }
-    if (!isObject3(listing)) throw new ExecutionFailure("media-fetch yt-dlp search output is not a JSON object.");
+    if (!isObject4(listing)) throw new ExecutionFailure("media-fetch yt-dlp search output is not a JSON object.");
     for (const item of Array.isArray(listing.entries) ? listing.entries : []) {
-      if (isObject3(item) && typeof item.id === "string" && item.id !== "" && !found.has(item.id)) found.set(item.id, item);
+      if (isObject4(item) && typeof item.id === "string" && item.id !== "" && !found.has(item.id)) found.set(item.id, item);
     }
   }
   if (failures.length === expanded.length) throw new ExecutionFailure(`media-fetch: all ${failures.length} search queries failed; last error: ${failures.at(-1)}`);
@@ -49342,10 +49404,10 @@ function eventsOf(json2) {
 }
 function rawLines(json2) {
   return eventsOf(json2).flatMap((event) => {
-    if (!isObject3(event) || typeof event.tStartMs !== "number" || !Array.isArray(event.segs)) return [];
+    if (!isObject4(event) || typeof event.tStartMs !== "number" || !Array.isArray(event.segs)) return [];
     const start = event.tStartMs;
     const end = start + (typeof event.dDurationMs === "number" ? event.dDurationMs : 0);
-    const segs = event.segs.filter(isObject3);
+    const segs = event.segs.filter(isObject4);
     const offset = (seg) => start + (typeof seg.tOffsetMs === "number" ? seg.tOffsetMs : 0);
     const words2 = segs.flatMap((seg, index2) => {
       if (typeof seg.utf8 !== "string") return [];
@@ -49410,14 +49472,14 @@ function spread(points, gap, limit) {
 }
 function replayPoints(info) {
   return (Array.isArray(info.heatmap) ? info.heatmap : []).flatMap((point) => {
-    if (!isObject3(point)) return [];
+    if (!isObject4(point)) return [];
     const { start_time, end_time, value } = point;
     return typeof start_time === "number" && typeof end_time === "number" && typeof value === "number" ? [{ at: (start_time + end_time) / 2, label: `replay ${value.toFixed(2)}`, score: value }] : [];
   });
 }
 function commentPoints(info, duration) {
   return (Array.isArray(info.comments) ? info.comments : []).flatMap((comment) => {
-    if (!isObject3(comment) || typeof comment.text !== "string") return [];
+    if (!isObject4(comment) || typeof comment.text !== "string") return [];
     const at2 = [...comment.text.matchAll(/\b(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\b/g)].map(([, h, m, s]) => Number(h ?? 0) * 3600 + Number(m) * 60 + Number(s)).find((seconds3) => seconds3 > 0 && seconds3 < duration);
     const likes = typeof comment.like_count === "number" ? comment.like_count : 0;
     return at2 === void 0 ? [] : [{ at: at2, label: `comment (${likes} likes) "${comment.text.replace(/\s+/g, " ").trim().slice(0, 150)}"`, score: likes }];
@@ -49425,9 +49487,9 @@ function commentPoints(info, duration) {
 }
 function laughTimes(json2) {
   return eventsOf(json2).flatMap((event) => {
-    if (!isObject3(event) || typeof event.tStartMs !== "number" || !Array.isArray(event.segs)) return [];
+    if (!isObject4(event) || typeof event.tStartMs !== "number" || !Array.isArray(event.segs)) return [];
     const start = event.tStartMs;
-    return event.segs.flatMap((seg) => isObject3(seg) && typeof seg.utf8 === "string" && /\[[^\]]*laugh[^\]]*\]/i.test(seg.utf8) ? [(start + (typeof seg.tOffsetMs === "number" ? seg.tOffsetMs : 0)) / 1e3] : []);
+    return event.segs.flatMap((seg) => isObject4(seg) && typeof seg.utf8 === "string" && /\[[^\]]*laugh[^\]]*\]/i.test(seg.utf8) ? [(start + (typeof seg.tOffsetMs === "number" ? seg.tOffsetMs : 0)) / 1e3] : []);
   }).sort((a, b) => a - b);
 }
 function laughPoints(laughs, window) {
@@ -49438,7 +49500,7 @@ function laughPoints(laughs, window) {
 async function readInfo(tools) {
   try {
     const info = JSON.parse(await tools.readText("run", "captions.info.json") ?? "");
-    return isObject3(info) ? info : {};
+    return isObject4(info) ? info : {};
   } catch {
     return {};
   }
@@ -49466,8 +49528,8 @@ function whisperToJson3(json2) {
   const { segments } = JSON.parse(json2);
   if (!Array.isArray(segments)) throw new Error("whisper output has no segments list");
   const ms = (value) => Math.round(Number(value) * 1e3);
-  const events = segments.filter(isObject3).flatMap((segment) => {
-    const words2 = (Array.isArray(segment.words) ? segment.words.filter(isObject3) : []).map((word) => ({ utf8: text(word.word).trim(), tOffsetMs: ms(word.start) - ms(segment.start) }));
+  const events = segments.filter(isObject4).flatMap((segment) => {
+    const words2 = (Array.isArray(segment.words) ? segment.words.filter(isObject4) : []).map((word) => ({ utf8: text(word.word).trim(), tOffsetMs: ms(word.start) - ms(segment.start) }));
     const segs = words2.some((word) => word.utf8) ? words2.filter((word) => word.utf8) : [{ utf8: text(segment.text).trim(), tOffsetMs: 0 }];
     return segs[0].utf8 ? [{ tStartMs: ms(segment.start), dDurationMs: ms(segment.end) - ms(segment.start), segs }] : [];
   });
@@ -49496,13 +49558,13 @@ var captions = async (job, config, tools, outputKey) => {
   const languages = list(config, "languages", 1);
   const timeout = count(config, "captionsTimeoutMs", true);
   const downloadTimeoutMs = count(config, "downloadTimeoutMs", true);
-  const hotspots = config.hotspots ?? DEFAULTS2.hotspots;
+  const hotspots = config.hotspots ?? DEFAULTS3.hotspots;
   if (typeof hotspots !== "boolean") throw new ExecutionFailure("media-fetch setting hotspots must be true or false.");
   const commentsToScan = count(config, "commentsToScan", false, true);
   const window = count(config, "hotspotWindow", true);
   const perKind = count(config, "hotspotsPerKind", true, true);
   const transcribeUpTo = count(config, "transcribeUpTo");
-  const unit = config.transcriptUnit ?? DEFAULTS2.transcriptUnit;
+  const unit = config.transcriptUnit ?? DEFAULTS3.transcriptUnit;
   if (unit !== "line" && unit !== "sentence") throw new ExecutionFailure("media-fetch setting transcriptUnit must be 'line' or 'sentence'.");
   const archiveWindow = count(config, "archiveWindow", true);
   const { id, url, duration: sourceDuration } = sourceOf(job);
@@ -49518,7 +49580,7 @@ var captions = async (job, config, tools, outputKey) => {
     await tools.writeText("run", `captions.${languages[0]}.json3`, whisperToJson3(spoken));
   };
   if (archive) {
-    const { start, end } = isObject3(job.hint) ? job.hint : {};
+    const { start, end } = isObject4(job.hint) ? job.hint : {};
     const windowed = typeof start === "number" && typeof end === "number";
     const [from, to] = windowed ? [round(Math.max(0, start - archiveWindow)), round(end + archiveWindow)] : [0, 0];
     try {
@@ -49598,7 +49660,7 @@ var section = async (job, config, tools, outputKey) => {
   const [minMoment, maxMoment] = [count(config, "minMoment"), count(config, "maxMoment")];
   const timeoutMs = count(config, "downloadTimeoutMs", true);
   const { url, duration } = sourceOf(job);
-  const { start, end } = isObject3(job.moment) ? job.moment : {};
+  const { start, end } = isObject4(job.moment) ? job.moment : {};
   if (typeof start !== "number" || typeof end !== "number" || !(start >= 0 && start < end && end - start >= minMoment && end - start <= maxMoment) || duration !== void 0 && end > duration) {
     throw new ExecutionFailure(`media-fetch job.moment needs numeric 0 <= start < end, ${minMoment}-${maxMoment} s long, ending inside the source (got ${JSON.stringify([start, end])}).`);
   }
@@ -49614,12 +49676,12 @@ var sections = async (job, config, tools, outputKey) => {
   const maxHeight = count(config, "maxHeight", true);
   const timeoutMs = count(config, "downloadTimeoutMs", true);
   const [hookLead, clipLead, clipTail, payoffTail] = ["hookLead", "clipLead", "clipTail", "payoffTail"].map((key) => count(config, key));
-  const clips = isObject3(job.story) && Array.isArray(job.story.clips) ? job.story.clips : [];
+  const clips = isObject4(job.story) && Array.isArray(job.story.clips) ? job.story.clips : [];
   if (clips.length === 0) throw new ExecutionFailure("media-fetch job.story.clips must be a non-empty list of { role, start, end }.");
-  const own = clips.map((clip, i) => isObject3(clip) && clip.source !== void 0 ? parseSource(clip.source, `job.story.clips[${i}].source`) : void 0);
+  const own = clips.map((clip, i) => isObject4(clip) && clip.source !== void 0 ? parseSource(clip.source, `job.story.clips[${i}].source`) : void 0);
   const base = own.includes(void 0) ? sourceOf(job) : void 0;
   const wanted = clips.map((clip, i) => {
-    const { role, start, end } = isObject3(clip) ? clip : {};
+    const { role, start, end } = isObject4(clip) ? clip : {};
     const source = own[i] ?? base;
     if (typeof role !== "string" || !ROLES.includes(role) || typeof start !== "number" || typeof end !== "number" || !(start >= 0 && start < end && Number.isFinite(end)) || source.duration !== void 0 && end > source.duration) {
       throw new ExecutionFailure(`media-fetch job.story.clips[${i}] needs a role (${ROLES.join(", ")}) and numeric 0 <= start < end, ending inside the source (got ${JSON.stringify(clip)}).`);
@@ -49716,14 +49778,14 @@ var download = async (job, config, tools, outputKey) => {
 var day = (timestamp) => typeof timestamp === "number" ? new Date(timestamp * 1e3).toISOString().slice(0, 10) : void 0;
 var twoDecimals = (value) => Math.round(value * 100) / 100;
 function indexDir(config) {
-  const dir = config.indexDir ?? DEFAULTS2.indexDir;
+  const dir = config.indexDir ?? DEFAULTS3.indexDir;
   if (typeof dir !== "string" || !/^[a-z0-9][a-z0-9_-]*$/i.test(dir)) throw new ExecutionFailure("media-fetch setting indexDir must be a plain folder name (letters, digits, - and _).");
   return dir;
 }
 async function readJson(tools, path) {
   try {
     const value = JSON.parse(await tools.readText("state", path) ?? "");
-    return isObject3(value) ? value : {};
+    return isObject4(value) ? value : {};
   } catch {
     return {};
   }
@@ -49741,15 +49803,15 @@ var index = async (job, config, tools, outputKey) => {
     try {
       const { stdout } = await tools.run("yt-dlp", ["--flat-playlist", "-J", "--no-warnings", "--playlist-end", String(listSize), "--extractor-args", "youtubetab:approximate_date", "--", url], { timeoutMs: listTimeout });
       const listing = JSON.parse(stdout);
-      const entries = isObject3(listing) && Array.isArray(listing.entries) ? listing.entries : [];
+      const entries = isObject4(listing) && Array.isArray(listing.entries) ? listing.entries : [];
       const stamp4 = ({ timestamp }) => typeof timestamp === "number" ? timestamp : -Infinity;
-      const owner = isObject3(listing) ? text(listing.channel, listing.uploader) : "";
-      queues.push(entries.filter((item) => isObject3(item) && typeof item.id === "string" && item.id !== "" && !(item.id in catalog) && typeof item.duration === "number" && item.duration >= minDuration && item.duration <= maxDuration).map((item) => ({ ...item, channel: text(item.channel, item.uploader, owner) })).sort((a, b) => stamp4(b) - stamp4(a)));
+      const owner = isObject4(listing) ? text(listing.channel, listing.uploader) : "";
+      queues.push(entries.filter((item) => isObject4(item) && typeof item.id === "string" && item.id !== "" && !(item.id in catalog) && typeof item.duration === "number" && item.duration >= minDuration && item.duration <= maxDuration).map((item) => ({ ...item, channel: text(item.channel, item.uploader, owner) })).sort((a, b) => stamp4(b) - stamp4(a)));
     } catch (error) {
       rethrowStop(error);
     }
   }
-  const todo = Array.from({ length: Math.max(0, ...queues.map((q2) => q2.length)) }, (_, i) => queues.map((q2) => q2[i]).filter(isObject3)).flat();
+  const todo = Array.from({ length: Math.max(0, ...queues.map((q2) => q2.length)) }, (_, i) => queues.map((q2) => q2[i]).filter(isObject4)).flat();
   const seen = /* @__PURE__ */ new Set();
   let [added, none, tried] = [0, 0, 0];
   let stoppedBy = "done";
@@ -49788,7 +49850,7 @@ var index = async (job, config, tools, outputKey) => {
   } finally {
     await tools.writeText("state", `${dir}/catalog.json`, JSON.stringify(catalog));
   }
-  const total2 = Object.values(catalog).filter((entry) => isObject3(entry) && entry.status === "ok").length;
+  const total2 = Object.values(catalog).filter((entry) => isObject4(entry) && entry.status === "ok").length;
   return { output: { ...job, [outputKey]: { added, none, total: total2, stoppedBy } }, port: "next" };
 };
 var words = (value) => value.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
@@ -49801,20 +49863,20 @@ function occurrences(tokens, sequence) {
 }
 var locate = async (job, config, tools, outputKey) => {
   const dir = indexDir(config);
-  const fromKey = config.fromKey ?? DEFAULTS2.fromKey;
+  const fromKey = config.fromKey ?? DEFAULTS3.fromKey;
   if (typeof fromKey !== "string" || fromKey === "") throw new ExecutionFailure("media-fetch setting fromKey must be a non-empty string.");
-  const minQuoteScore = config.minQuoteScore ?? DEFAULTS2.minQuoteScore;
+  const minQuoteScore = config.minQuoteScore ?? DEFAULTS3.minQuoteScore;
   if (typeof minQuoteScore !== "number" || !(minQuoteScore >= 0 && minQuoteScore <= 1)) throw new ExecutionFailure("media-fetch setting minQuoteScore must be a number from 0 to 1.");
   const minHits = count(config, "minKeywordHits", true, true);
   const window = count(config, "keywordWindow", true);
-  const brief = isObject3(job.brief) ? job.brief : {};
+  const brief = isObject4(job.brief) ? job.brief : {};
   const show = typeof brief.show === "string" ? squash(brief.show) : "";
   const quotes = strings(brief.quotes).map((quote) => ({ quote, tokens: words(quote) })).filter(({ tokens }) => tokens.length >= 3);
   const keywords = strings(brief.keywords).map((keyword) => ({ keyword, tokens: words(keyword) })).filter(({ tokens }) => tokens.length);
-  const fallback = (Array.isArray(job[fromKey]) ? job[fromKey] : []).filter(isObject3);
+  const fallback = (Array.isArray(job[fromKey]) ? job[fromKey] : []).filter(isObject4);
   const excluded = /* @__PURE__ */ new Set([...await usedIds(tools), ...rejectedSources(job)]);
   const catalog = await readJson(tools, `${dir}/catalog.json`);
-  const ids = Object.entries(catalog).filter(([id, entry]) => isObject3(entry) && entry.status === "ok" && !excluded.has(id)).map(([id]) => id);
+  const ids = Object.entries(catalog).filter(([id, entry]) => isObject4(entry) && entry.status === "ok" && !excluded.has(id)).map(([id]) => id);
   const videos = [];
   if (quotes.length || keywords.length) {
     for (const id of ids) {
@@ -49882,19 +49944,19 @@ var locate = async (job, config, tools, outputKey) => {
 var getJson = async (tools, url, timeoutMs) => JSON.parse((await tools.run("ffmpeg", ["-v", "error", "-user_agent", "autobiz", "-f", "data", "-i", url, "-map", "0", "-c", "copy", "-f", "data", "pipe:1"], { timeoutMs })).stdout);
 var frinkiac = async (job, config, tools, outputKey) => {
   const timeoutMs = count(config, "captionsTimeoutMs", true);
-  const site = config.quoteSite ?? DEFAULTS2.quoteSite;
+  const site = config.quoteSite ?? DEFAULTS3.quoteSite;
   if (typeof site !== "string" || !site.startsWith("https://")) throw new ExecutionFailure("media-fetch setting quoteSite must be an https:// URL.");
-  const item = config.archiveItem ?? DEFAULTS2.archiveItem;
+  const item = config.archiveItem ?? DEFAULTS3.archiveItem;
   if (typeof item !== "string" || !/^[A-Za-z0-9._-]+$/.test(item)) throw new ExecutionFailure('media-fetch setting archiveItem must be letters, digits, ".", "_" and "-".');
-  const brief = isObject3(job.brief) ? job.brief : {};
+  const brief = isObject4(job.brief) ? job.brief : {};
   const quotes = strings(brief.quotes).filter(Boolean);
   if (quotes.length === 0) throw new ExecutionFailure("media-fetch job.brief.quotes must be a non-empty list of quotes.");
   const excluded = /* @__PURE__ */ new Set([...await usedIds(tools), ...rejectedSources(job)]);
   const episodes = /* @__PURE__ */ new Map();
   try {
     const metadata = await getJson(tools, `https://archive.org/metadata/${item}`, timeoutMs);
-    for (const file of isObject3(metadata) && Array.isArray(metadata.files) ? metadata.files : []) {
-      const code = isObject3(file) && file.format === "Matroska" && typeof file.name === "string" ? /S\d\dE\d\d/.exec(file.name)?.[0] : void 0;
+    for (const file of isObject4(metadata) && Array.isArray(metadata.files) ? metadata.files : []) {
+      const code = isObject4(file) && file.format === "Matroska" && typeof file.name === "string" ? /S\d\dE\d\d/.exec(file.name)?.[0] : void 0;
       if (code && !episodes.has(code)) episodes.set(code, file);
     }
   } catch (error) {
@@ -49909,7 +49971,7 @@ var frinkiac = async (job, config, tools, outputKey) => {
       rethrowStop(error);
       continue;
     }
-    if (!isObject3(top) || typeof top.Episode !== "string" || !/^S\d\dE\d\d$/.test(top.Episode) || typeof top.Timestamp !== "number" || !Number.isFinite(top.Timestamp)) continue;
+    if (!isObject4(top) || typeof top.Episode !== "string" || !/^S\d\dE\d\d$/.test(top.Episode) || typeof top.Timestamp !== "number" || !Number.isFinite(top.Timestamp)) continue;
     const file = episodes.get(top.Episode);
     const id = `${item}-${top.Episode}`;
     if (!file || excluded.has(id)) continue;
@@ -49921,12 +49983,12 @@ var frinkiac = async (job, config, tools, outputKey) => {
   throw new ExecutionFailure("media-fetch frinkiac: no quote matched an unused archive episode.");
 };
 var modes = { search, captions, section, sections, download, index, locate, frinkiac };
-async function execute10({ input, config }, { tools }) {
+async function execute11({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("media-fetch requires the tools capability.");
-  const mode = config.mode ?? DEFAULTS2.mode;
+  const mode = config.mode ?? DEFAULTS3.mode;
   if (typeof mode !== "string" || !Object.hasOwn(modes, mode)) throw new ExecutionFailure("media-fetch setting mode must be 'search', 'captions', 'section', 'sections', 'download', 'index', 'locate' or 'frinkiac'.");
-  if (!isObject3(input)) throw new ExecutionFailure("media-fetch input (the job) must be a plain object.");
-  const onlyWhen = config.onlyWhen ?? DEFAULTS2.onlyWhen;
+  if (!isObject4(input)) throw new ExecutionFailure("media-fetch input (the job) must be a plain object.");
+  const onlyWhen = config.onlyWhen ?? DEFAULTS3.onlyWhen;
   const condition = typeof onlyWhen === "string" ? /^(\w+)(!?)=(.*)$/s.exec(onlyWhen) : null;
   if (onlyWhen !== "" && !condition) throw new ExecutionFailure('media-fetch setting onlyWhen must be empty, "key=value" or "key!=value" with a key of letters, digits and _.');
   if (condition && String(input[condition[1]]) === condition[3] === (condition[2] === "!")) return { output: input, port: "next" };
@@ -50131,7 +50193,7 @@ function particlesAss(events, seed) {
 // modules/video-edit/story.ts
 var EPS = 1e-6;
 var r3 = (x) => Math.round(x * 1e3) / 1e3;
-var isObject4 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num = (value) => typeof value === "number" && Number.isFinite(value);
 var text2 = (value) => typeof value === "string" && value.trim() !== "";
 var ROLES2 = ["hook", "intro", "beat", "payoff"];
@@ -50143,56 +50205,56 @@ var MAX_CORRECTIONS = 20;
 var SERIOUS_SOUNDS = ["cinematic-impact", "suspense-sting"];
 var SERIOUS_VISUALS = ["zoom", "none"];
 var SERIOUS_MAX_EFFECTS = 2;
-function fail(rest) {
+function fail2(rest) {
   throw new ExecutionFailure(`video-edit job.story${rest}`);
 }
 function validatePlan(plan, knownSounds, { hook = true } = {}) {
-  if (!isObject4(plan)) fail(" must be an object.");
+  if (!isObject5(plan)) fail2(" must be an object.");
   const { tone, headline, clips: rawClips, effects: rawEffects, emojis: rawEmojis, corrections: rawCorrections } = plan;
-  if (tone !== "light" && tone !== "serious") fail(".tone must be light or serious.");
-  if (!text2(headline)) fail(".headline must be a non-empty string.");
-  if (!Array.isArray(rawClips)) fail(".clips must be a list.");
+  if (tone !== "light" && tone !== "serious") fail2(".tone must be light or serious.");
+  if (!text2(headline)) fail2(".headline must be a non-empty string.");
+  if (!Array.isArray(rawClips)) fail2(".clips must be a list.");
   const clips = rawClips.map((raw, i) => {
-    if (!isObject4(raw)) fail(`.clips[${i}] must be an object.`);
+    if (!isObject5(raw)) fail2(`.clips[${i}] must be an object.`);
     const { role, start, end, why } = raw;
-    if (typeof role !== "string" || !ROLES2.includes(role)) fail(`.clips[${i}].role must be hook, intro, beat or payoff.`);
-    if (!num(start) || !num(end)) fail(`.clips[${i}] needs a numeric start and end.`);
-    if (end <= start) fail(`.clips[${i}] must have its end after its start.`);
+    if (typeof role !== "string" || !ROLES2.includes(role)) fail2(`.clips[${i}].role must be hook, intro, beat or payoff.`);
+    if (!num(start) || !num(end)) fail2(`.clips[${i}] needs a numeric start and end.`);
+    if (end <= start) fail2(`.clips[${i}] must have its end after its start.`);
     return { role, start, end, ...typeof why === "string" ? { why } : {} };
   });
   const roles = clips.map((c) => c.role);
   const beats = roles.filter((role) => role === "beat").length;
   const expected = [...hook ? ["hook"] : [], "intro", ...Array(beats).fill("beat"), "payoff"];
   if (beats < 2 || beats > 4 || roles.join() !== expected.join()) {
-    fail(`.clips roles must be ${hook ? "hook, " : ""}intro, 2-4 beats, payoff in that order; got ${roles.join()}.`);
+    fail2(`.clips roles must be ${hook ? "hook, " : ""}intro, 2-4 beats, payoff in that order; got ${roles.join()}.`);
   }
-  if (rawEffects !== void 0 && rawEffects !== null && !Array.isArray(rawEffects)) fail(".effects must be a list.");
+  if (rawEffects !== void 0 && rawEffects !== null && !Array.isArray(rawEffects)) fail2(".effects must be a list.");
   if (tone === "serious") {
-    if (Array.isArray(rawEmojis) && rawEmojis.length > 0) fail(".emojis must be an empty list for a serious story.");
-    if (Array.isArray(rawEffects) && rawEffects.length > SERIOUS_MAX_EFFECTS) fail(`.effects allows at most ${SERIOUS_MAX_EFFECTS} effects for a serious story.`);
+    if (Array.isArray(rawEmojis) && rawEmojis.length > 0) fail2(".emojis must be an empty list for a serious story.");
+    if (Array.isArray(rawEffects) && rawEffects.length > SERIOUS_MAX_EFFECTS) fail2(`.effects allows at most ${SERIOUS_MAX_EFFECTS} effects for a serious story.`);
     (rawEffects ?? []).forEach((raw, i) => {
-      const { sound, visual } = isObject4(raw) ? raw : {};
+      const { sound, visual } = isObject5(raw) ? raw : {};
       if (typeof sound !== "string" || !SERIOUS_SOUNDS.includes(sound) || typeof visual !== "string" || !SERIOUS_VISUALS.includes(visual)) {
-        fail(`.effects[${i}] must use sound cinematic-impact or suspense-sting and visual zoom or none for a serious story.`);
+        fail2(`.effects[${i}] must use sound cinematic-impact or suspense-sting and visual zoom or none for a serious story.`);
       }
     });
   }
   const effects = (rawEffects ?? []).flatMap((raw, i) => {
-    if (!isObject4(raw)) fail(`.effects[${i}] must be an object.`);
+    if (!isObject5(raw)) fail2(`.effects[${i}] must be an object.`);
     const { at: at2, sound, visual } = raw;
-    if (!num(at2)) fail(`.effects[${i}] needs a numeric at.`);
-    if (typeof visual !== "string" || !VISUALS.includes(visual)) fail(`.effects[${i}].visual must be zoom, shake, flash, correct, wrong or none.`);
+    if (!num(at2)) fail2(`.effects[${i}] needs a numeric at.`);
+    if (typeof visual !== "string" || !VISUALS.includes(visual)) fail2(`.effects[${i}].visual must be zoom, shake, flash, correct, wrong or none.`);
     const played = visual === "correct" || visual === "wrong" ? visual : sound;
     return typeof played === "string" && knownSounds.includes(played) ? [{ at: at2, sound: played, visual }] : [];
   });
   const emojis = (Array.isArray(rawEmojis) ? rawEmojis : []).flatMap((raw) => {
-    if (!isObject4(raw)) return [];
+    if (!isObject5(raw)) return [];
     const { sentenceStart, word, glyph, name, funny } = raw;
     const lower = typeof name === "string" ? name.trim().toLowerCase() : "";
     return num(sentenceStart) && text2(word) && text2(glyph) && EMOJI_NAME.test(lower) ? [{ sentenceStart, word, glyph, name: lower, funny: funny === true }] : [];
   });
   const corrections = (Array.isArray(rawCorrections) ? rawCorrections : []).flatMap((raw) => {
-    if (!isObject4(raw)) return [];
+    if (!isObject5(raw)) return [];
     const heard = typeof raw.heard === "string" ? raw.heard.trim() : "";
     const meant = typeof raw.meant === "string" ? raw.meant.trim().split(/\s+/).join(" ") : "";
     const fits = HEARD.test(heard) && MEANT.test(meant) && meant.split(" ").length <= 3 && heard.toLowerCase() !== meant.toLowerCase();
@@ -50413,7 +50475,7 @@ function emojiSounds(emojis, busy, sounds) {
 
 // modules/video-edit/shots.ts
 var PYTHON_DIR = decodeURIComponent(new URL("./video-edit-python/", import.meta.url).pathname);
-var isObject5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject6 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num2 = (value) => typeof value === "number" && Number.isFinite(value);
 async function analyseShots(file, modelPath, tools, timeoutMs) {
   const { stdout } = await tools.run("python3", [`${PYTHON_DIR}shots.py`, file, modelPath], { timeoutMs });
@@ -50424,11 +50486,11 @@ async function analyseShots(file, modelPath, tools, timeoutMs) {
   } catch {
     throw bad("is not valid JSON");
   }
-  if (!isObject5(data) || !num2(data.width) || !num2(data.height) || data.width <= 0 || data.height <= 0 || !Array.isArray(data.shots) || data.shots.length === 0) throw bad("needs a width, a height and a non-empty shots list");
+  if (!isObject6(data) || !num2(data.width) || !num2(data.height) || data.width <= 0 || data.height <= 0 || !Array.isArray(data.shots) || data.shots.length === 0) throw bad("needs a width, a height and a non-empty shots list");
   let at2 = 0;
   for (const [i, shot] of data.shots.entries()) {
-    if (!isObject5(shot) || !num2(shot.start) || !num2(shot.end) || !Array.isArray(shot.faces) || shot.end <= shot.start || i > 0 && Math.abs(shot.start - at2) > 1e-6) throw bad(`has a bad or non-contiguous shot at index ${i}`);
-    if (!shot.faces.every((f) => isObject5(f) && num2(f.cx) && num2(f.cy) && num2(f.size))) throw bad(`has a malformed face in shot ${i}`);
+    if (!isObject6(shot) || !num2(shot.start) || !num2(shot.end) || !Array.isArray(shot.faces) || shot.end <= shot.start || i > 0 && Math.abs(shot.start - at2) > 1e-6) throw bad(`has a bad or non-contiguous shot at index ${i}`);
+    if (!shot.faces.every((f) => isObject6(f) && num2(f.cx) && num2(f.cy) && num2(f.size))) throw bad(`has a malformed face in shot ${i}`);
     at2 = shot.end;
   }
   return data;
@@ -50604,7 +50666,7 @@ var POP_VOLUME = 0.5;
 var FINAL_CRF = 18;
 var FLUENT = "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/";
 var REQUIRED_SOUNDS = ["whoosh", "reverse-whoosh", "bubble-pop"];
-var isObject6 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num3 = (value) => typeof value === "number" && Number.isFinite(value);
 var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.test(value) && !value.split("/").includes("..");
 var r33 = (x) => Math.round(x * 1e3) / 1e3;
@@ -50956,7 +51018,7 @@ function storyCaptions(story, lines, corrections = [], applied) {
 function readSources(value) {
   if (!Array.isArray(value) || value.length === 0) throw new ExecutionFailure("video-edit job.clips must be a non-empty list of { role, file, offset, duration }.");
   return value.map((clip, i) => {
-    if (!isObject6(clip) || typeof clip.role !== "string" || !["hook", "intro", "beat", "payoff"].includes(clip.role) || !safeName(clip.file) || !num3(clip.offset) || !num3(clip.duration) || clip.duration <= 0) {
+    if (!isObject7(clip) || typeof clip.role !== "string" || !["hook", "intro", "beat", "payoff"].includes(clip.role) || !safeName(clip.file) || !num3(clip.offset) || !num3(clip.duration) || clip.duration <= 0) {
       throw new ExecutionFailure(`video-edit job.clips[${i}] needs a role (hook, intro, beat or payoff), a relative file name in the run folder, a numeric offset and a positive duration.`);
     }
     return { role: clip.role, file: clip.file, offset: clip.offset, duration: clip.duration };
@@ -50969,7 +51031,7 @@ function readLibrary(raw, path) {
   } catch {
     data = void 0;
   }
-  if (!Array.isArray(data) || !data.every((e) => isObject6(e) && typeof e.name === "string" && safeName(e.file) && num3(e.seconds) && e.seconds > 0)) {
+  if (!Array.isArray(data) || !data.every((e) => isObject7(e) && typeof e.name === "string" && safeName(e.file) && num3(e.seconds) && e.seconds > 0)) {
     throw new ExecutionFailure(`video-edit needs ${path} in the business state folder for sounds.`);
   }
   return new Map(data.map((e) => [e.name, { file: e.file, seconds: e.seconds }]));
@@ -50982,16 +51044,16 @@ function readWords(raw, file) {
   } catch {
     throw bad("is not valid JSON");
   }
-  if (!isObject6(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
+  if (!isObject7(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
   const lines = data.lines.map((line2, i) => {
-    if (!isObject6(line2) || !Array.isArray(line2.words) || !line2.words.every((w) => isObject6(w) && typeof w.text === "string" && num3(w.start) && num3(w.end))) {
+    if (!isObject7(line2) || !Array.isArray(line2.words) || !line2.words.every((w) => isObject7(w) && typeof w.text === "string" && num3(w.start) && num3(w.end))) {
       throw bad(`has a malformed line at index ${i}`);
     }
     return { words: line2.words };
   });
   if (!Array.isArray(data.sentences)) throw bad("needs a sentences array");
   const sentences = data.sentences.map((s, i) => {
-    if (!isObject6(s) || !num3(s.start) || !num3(s.end) || typeof s.text !== "string" || typeof s.speakerChange !== "boolean" || !Number.isInteger(s.first) || !Number.isInteger(s.last)) {
+    if (!isObject7(s) || !num3(s.start) || !num3(s.end) || typeof s.text !== "string" || typeof s.speakerChange !== "boolean" || !Number.isInteger(s.first) || !Number.isInteger(s.last)) {
       throw bad(`has a malformed sentence at index ${i}`);
     }
     return s;
@@ -51009,7 +51071,7 @@ async function present(tools, file, timeoutMs) {
   }
 }
 async function checkStory(input, settings, tools) {
-  if (!isObject6(input)) throw new ExecutionFailure("video-edit needs a job object.");
+  if (!isObject7(input)) throw new ExecutionFailure("video-edit needs a job object.");
   const manifest = `${settings.soundsDir}/sounds.json`;
   const library = readLibrary(await tools.readText("state", manifest), manifest);
   const { agentErrors, ...job } = input;
@@ -51022,13 +51084,13 @@ async function checkStory(input, settings, tools) {
   return { output: job, port: "next" };
 }
 async function renderStory(input, settings, tools) {
-  if (!isObject6(input)) throw new ExecutionFailure("video-edit input must be a job object.");
+  if (!isObject7(input)) throw new ExecutionFailure("video-edit input must be a job object.");
   const timeoutMs = settings.renderTimeoutMs;
   const ffmpeg = (args) => tools.run("ffmpeg", args, { timeoutMs });
   const sfx = `${tools.stateDir}/${settings.soundsDir}`;
   const emojiPath = (name) => `${tools.stateDir}/${settings.emojiDir}/${emojiFile(name)}`;
   const sources = readSources(input.clips);
-  const wordsFile = isObject6(input.transcript) ? input.transcript.wordsFile : void 0;
+  const wordsFile = isObject7(input.transcript) ? input.transcript.wordsFile : void 0;
   if (!safeName(wordsFile)) throw new ExecutionFailure("video-edit needs job.transcript.wordsFile as a relative file name in the run folder.");
   const manifest = `${settings.soundsDir}/sounds.json`;
   const library = readLibrary(await tools.readText("state", manifest), manifest);
@@ -51041,7 +51103,7 @@ async function renderStory(input, settings, tools) {
   const story = normalizeStory(plan, words2, sentences, laughs);
   const files = matchSources(story.clips, sources);
   const card = settings.layout === "card";
-  const seed = settings.storySeed !== "" ? settings.storySeed : isObject6(input.source) && typeof input.source.id === "string" ? input.source.id : "";
+  const seed = settings.storySeed !== "" ? settings.storySeed : isObject7(input.source) && typeof input.source.id === "string" ? input.source.id : "";
   const picked = settings.cardBackgrounds[Math.floor(seededRandom(`${seed}-background`)() * settings.cardBackgrounds.length)];
   const cardBackground = picked === "plain" || picked === "blur" ? picked : "texture";
   const still = settings.layout === "box" || card && cardBackground === "texture";
@@ -51137,7 +51199,7 @@ async function renderStory(input, settings, tools) {
 }
 
 // modules/video-edit/index.ts
-var DEFAULTS3 = {
+var DEFAULTS4 = {
   mode: "short",
   width: 1080,
   height: 1920,
@@ -51179,7 +51241,7 @@ var DEFAULTS3 = {
   storySeed: "",
   outputKey: "short"
 };
-var isObject7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num4 = (value) => typeof value === "number" && Number.isFinite(value);
 var between = (min, max = Infinity) => (value) => num4(value) && value >= min && value <= max;
 var positive = (value) => num4(value) && value > 0;
@@ -51235,7 +51297,7 @@ function box({ width, contentAspect }) {
   return { aw, ah, ch: Math.round(width * ah / aw) };
 }
 function readSettings(config) {
-  const merged = { ...DEFAULTS3, ...config };
+  const merged = { ...DEFAULTS4, ...config };
   for (const [name, [valid, rule]] of Object.entries(RULES)) {
     if (!valid(merged[name])) throw new ExecutionFailure(`video-edit setting ${name} must be ${rule}.`);
   }
@@ -51247,16 +51309,16 @@ function readSettings(config) {
   return settings;
 }
 function readJob(input) {
-  if (!isObject7(input)) throw new ExecutionFailure("video-edit input must be a job object.");
+  if (!isObject8(input)) throw new ExecutionFailure("video-edit input must be a job object.");
   const { moment, clip, transcript } = input;
-  if (!isObject7(moment) || !num4(moment.start) || !num4(moment.end) || moment.end <= moment.start) {
+  if (!isObject8(moment) || !num4(moment.start) || !num4(moment.end) || moment.end <= moment.start) {
     throw new ExecutionFailure("video-edit needs job.moment with numeric start and end, end after start.");
   }
-  if (!isObject7(clip) || !num4(clip.offset) || !num4(clip.duration) || clip.duration <= 0) {
+  if (!isObject8(clip) || !num4(clip.offset) || !num4(clip.duration) || clip.duration <= 0) {
     throw new ExecutionFailure("video-edit needs job.clip with numeric offset and a positive duration.");
   }
   if (!safeName2(clip.file)) throw new ExecutionFailure("video-edit needs job.clip.file as a relative file name in the run folder.");
-  if (!isObject7(transcript) || !safeName2(transcript.wordsFile)) {
+  if (!isObject8(transcript) || !safeName2(transcript.wordsFile)) {
     throw new ExecutionFailure("video-edit needs job.transcript.wordsFile as a relative file name in the run folder.");
   }
   return {
@@ -51265,7 +51327,7 @@ function readJob(input) {
     wordsFile: transcript.wordsFile
   };
 }
-var lookup = (job, path) => path.split(".").reduce((value, key) => isObject7(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
+var lookup = (job, path) => path.split(".").reduce((value, key) => isObject8(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
 function headlineText(job, path) {
   const value = lookup(job, path);
   if (typeof value !== "string" || clean2(value) === "") throw new ExecutionFailure(`video-edit job.${path} (the headline) must be a non-empty string.`);
@@ -51285,7 +51347,7 @@ async function readLibrary2(tools, dir) {
   } catch {
     data = void 0;
   }
-  if (!Array.isArray(data) || !data.every((entry) => isObject7(entry) && typeof entry.name === "string" && safeName2(entry.file))) {
+  if (!Array.isArray(data) || !data.every((entry) => isObject8(entry) && typeof entry.name === "string" && safeName2(entry.file))) {
     throw new ExecutionFailure(`video-edit needs ${file} in the business state folder for sounds.`);
   }
   return data;
@@ -51298,9 +51360,9 @@ function parseLines(raw, file) {
   } catch {
     throw bad("is not valid JSON");
   }
-  if (!isObject7(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
+  if (!isObject8(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
   return data.lines.map((line2, index2) => {
-    const valid = isObject7(line2) && num4(line2.start) && num4(line2.end) && typeof line2.text === "string" && Array.isArray(line2.words) && line2.words.every((word) => isObject7(word) && num4(word.start) && num4(word.end));
+    const valid = isObject8(line2) && num4(line2.start) && num4(line2.end) && typeof line2.text === "string" && Array.isArray(line2.words) && line2.words.every((word) => isObject8(word) && num4(word.start) && num4(word.end));
     if (!valid) throw bad(`has a malformed line at index ${index2}`);
     return line2;
   });
@@ -51336,7 +51398,7 @@ function pickSounds(items, library, offset, segments, maxSounds) {
   const first = segments[0].start;
   const last = segments[segments.length - 1].end;
   return items.flatMap((item) => {
-    if (!isObject7(item) || !num4(item.at) || typeof item.sound !== "string") return [];
+    if (!isObject8(item) || !num4(item.at) || typeof item.sound !== "string") return [];
     const volume = item.volume === void 0 ? 1 : item.volume;
     const entry = library.find(({ name }) => name === item.sound);
     const time = item.at - offset;
@@ -51439,7 +51501,7 @@ function ffmpegArgs(clipFile, segments, settings, sounds = []) {
     "short.mp4"
   ];
 }
-async function execute11({ input, config }, { tools }) {
+async function execute12({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("video-edit requires the tools capability.");
   const settings = readSettings(config);
   if (settings.mode === "check") return checkStory(input, settings, tools);
@@ -51475,7 +51537,7 @@ async function execute11({ input, config }, { tools }) {
 }
 
 // modules/thumbnail/index.ts
-var DEFAULTS4 = {
+var DEFAULTS5 = {
   mode: "candidates",
   count: 6,
   width: 1080,
@@ -51500,10 +51562,10 @@ var TITLE_FILE = "thumbnail-title.txt";
 var MAX_BYTES = 2e6;
 var ADVANCE = { I: 0.29, M: 0.88, W: 0.88, " ": 0.25, "!": 0.27, ".": 0.29, ",": 0.25, "'": 0.16, "-": 0.39 };
 var ADVANCE_DEFAULT = 0.68;
-var isObject8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num5 = (value) => String(Math.round(value * 1e6) / 1e6);
 function object(value, name) {
-  if (!isObject8(value)) throw new ExecutionFailure(`Thumbnail ${name} must be an object.`);
+  if (!isObject9(value)) throw new ExecutionFailure(`Thumbnail ${name} must be an object.`);
   return value;
 }
 function bounded(value, name, min, max = Infinity, integer = false) {
@@ -51519,7 +51581,7 @@ function fileName2(value, name) {
   return value;
 }
 function readSettings2(config) {
-  const merged = { ...DEFAULTS4, ...config };
+  const merged = { ...DEFAULTS5, ...config };
   const { mode, font, arrow, circle: circle2 } = merged;
   if (mode !== "candidates" && mode !== "compose") throw new ExecutionFailure("Thumbnail setting mode must be 'candidates' or 'compose'.");
   if (typeof font !== "string" || !/^[\w./ -]+$/.test(font)) throw new ExecutionFailure("Thumbnail setting font must be a font file path.");
@@ -51567,7 +51629,7 @@ function frameTimes(moment, offset, count2) {
   return Array.from({ length: count2 }, (_, index2) => first + span * (index2 + 0.5) / count2 - offset);
 }
 async function candidates(job, settings, tools) {
-  const payoff = job.clip === void 0 && Array.isArray(job.clips) ? job.clips.find((item) => isObject8(item) && item.role === "payoff") : void 0;
+  const payoff = job.clip === void 0 && Array.isArray(job.clips) ? job.clips.find((item) => isObject9(item) && item.role === "payoff") : void 0;
   const clip = object(job.clip ?? payoff, "clip");
   const file = fileName2(clip.file, "clip.file");
   const offset = bounded(clip.offset, "clip.offset", 0);
@@ -51673,7 +51735,7 @@ async function compose(job, settings, tools) {
   }
   return { output: { ...job, thumbnail: { file: "thumbnail.jpg" } }, port: "next" };
 }
-async function execute12({ input, config }, { tools }) {
+async function execute13({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("Thumbnail module requires the tools capability.");
   const settings = readSettings2(config);
   const job = object(input, "input");
@@ -51681,7 +51743,7 @@ async function execute12({ input, config }, { tools }) {
 }
 
 // modules/youtube-publish/index.ts
-var DEFAULTS5 = {
+var DEFAULTS6 = {
   channelHandle: "",
   privacy: "public",
   categoryId: "23",
@@ -51695,8 +51757,8 @@ var DEFAULTS5 = {
   outputKey: "youtube"
 };
 var PRIVACIES = ["private", "unlisted", "public"];
-var isObject9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-var isText = (value) => typeof value === "string" && value.trim() !== "";
+var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isText2 = (value) => typeof value === "string" && value.trim() !== "";
 var reason2 = (error) => error instanceof Error ? error.message : String(error);
 function clipTitle(title) {
   if (title.length <= 100) return title;
@@ -51737,7 +51799,7 @@ function withHashtags(description, hashtags) {
 ${line2}`;
 }
 function readSettings3(config) {
-  const get = (key) => config[key] === void 0 ? DEFAULTS5[key] : config[key];
+  const get = (key) => config[key] === void 0 ? DEFAULTS6[key] : config[key];
   const channelHandle = get("channelHandle");
   const privacy = get("privacy");
   const categoryId = get("categoryId");
@@ -51765,23 +51827,23 @@ function readSettings3(config) {
   if (typeof publishAfterHours !== "number" || !Number.isFinite(publishAfterHours) || publishAfterHours < 0 || publishAfterHours > 720) {
     throw new ExecutionFailure("YouTube publish setting publishAfterHours must be a number from 0 to 720.");
   }
-  if (!isText(outputKey)) throw new ExecutionFailure("YouTube publish setting outputKey must be a non-empty string.");
+  if (!isText2(outputKey)) throw new ExecutionFailure("YouTube publish setting outputKey must be a non-empty string.");
   return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey };
 }
 function readJob2(input, needCover, maxHashtags, titleHashtags) {
-  if (!isObject9(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
+  if (!isObject10(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
   const { short, meta, thumbnail } = input;
-  if (!isObject9(short) || !isText(short.file)) throw new ExecutionFailure("YouTube publish input job.short.file must be a non-empty string.");
-  if (!isObject9(meta) || !isText(meta.title)) throw new ExecutionFailure("YouTube publish input job.meta.title must be a non-empty string.");
+  if (!isObject10(short) || !isText2(short.file)) throw new ExecutionFailure("YouTube publish input job.short.file must be a non-empty string.");
+  if (!isObject10(meta) || !isText2(meta.title)) throw new ExecutionFailure("YouTube publish input job.meta.title must be a non-empty string.");
   if (meta.description !== void 0 && typeof meta.description !== "string") throw new ExecutionFailure("YouTube publish input job.meta.description must be a string.");
   if (meta.tags !== void 0 && !Array.isArray(meta.tags)) throw new ExecutionFailure("YouTube publish input job.meta.tags must be an array.");
   if (meta.hashtags !== void 0 && !Array.isArray(meta.hashtags)) throw new ExecutionFailure("YouTube publish input job.meta.hashtags must be an array.");
   if (meta.comment !== void 0 && typeof meta.comment !== "string") throw new ExecutionFailure("YouTube publish input job.meta.comment must be a string.");
-  if (needCover && (!isObject9(thumbnail) || !isText(thumbnail.file))) throw new ExecutionFailure("YouTube publish input job.thumbnail.file must be a non-empty string.");
+  if (needCover && (!isObject10(thumbnail) || !isText2(thumbnail.file))) throw new ExecutionFailure("YouTube publish input job.thumbnail.file must be a non-empty string.");
   return {
     job: input,
     file: short.file,
-    cover: isObject9(thumbnail) ? String(thumbnail.file) : "",
+    cover: isObject10(thumbnail) ? String(thumbnail.file) : "",
     title: withTitleHashtags(clipTitle(meta.title.trim()), titleHashtags ? cleanHashtags(meta.hashtags ?? [], maxHashtags) : []),
     description: withHashtags(meta.description ?? "", cleanHashtags(meta.hashtags ?? [], maxHashtags)),
     tags: cleanTags(meta.tags ?? []),
@@ -51806,8 +51868,8 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
       receipt = JSON.parse(saved);
     } catch {
     }
-    if (!isObject9(receipt) || receipt.handle === handle && receipt.file === file) {
-      if (!isObject9(receipt) || typeof receipt.videoId !== "string" || !/^[A-Za-z0-9_-]{6,20}$/.test(receipt.videoId)) {
+    if (!isObject10(receipt) || receipt.handle === handle && receipt.file === file) {
+      if (!isObject10(receipt) || typeof receipt.videoId !== "string" || !/^[A-Za-z0-9_-]{6,20}$/.test(receipt.videoId)) {
         throw new ExecutionFailure(`The upload receipt ${name} is unreadable, so nothing was uploaded; check the channel for a video that was already uploaded, then delete the receipt to upload again.`);
       }
       return receipt.videoId;
@@ -51822,7 +51884,7 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
   }
   return videoId;
 }
-async function execute13({ input, config, node }, { youtube, tools }) {
+async function execute14({ input, config, node }, { youtube, tools }) {
   if (!youtube) throw new ExecutionFailure("YouTube publish requires the youtube capability.");
   const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey } = readSettings3(config);
   const { job, file, cover, title, description, tags, comment } = readJob2(input, setCover, maxHashtags, titleHashtags);
@@ -51858,19 +51920,22 @@ async function execute13({ input, config, node }, { youtube, tools }) {
 }
 
 // modules/instagram-publish/index.ts
-var DEFAULTS6 = {
+var DEFAULTS7 = {
   username: "",
   shareToFeed: true,
   paidPartnership: false,
   disclosure: "",
+  disclosureKey: "",
   maxHashtags: 5,
   outputKey: "instagram"
 };
 var CAPTION_LIMIT = 2200;
 var USERNAME = /^@?([A-Za-z0-9._]{1,30})$/;
 var ID = /^[A-Za-z0-9_-]{1,64}$/;
-var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-var isText2 = (value) => typeof value === "string" && value.trim() !== "";
+var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isText3 = (value) => typeof value === "string" && value.trim() !== "";
+var lookup2 = (job, path) => path.split(".").reduce((value, key) => isObject11(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
+var oneLine = (value) => typeof value === "string" && value.trim().length <= 100 && !/[\r\n]/.test(value);
 var reason3 = (error) => error instanceof Error ? error.message : String(error);
 function cleanHashtags2(items, max) {
   const kept = /* @__PURE__ */ new Map();
@@ -51891,35 +51956,42 @@ function buildCaption(disclosure, title, description, hashtags) {
   return [disclosure, body, tail].filter((part) => part !== "").join("\n\n");
 }
 function readSettings4(config) {
-  const get = (key) => config[key] === void 0 ? DEFAULTS6[key] : config[key];
+  const get = (key) => config[key] === void 0 ? DEFAULTS7[key] : config[key];
   const username = get("username");
   const shareToFeed = get("shareToFeed");
   const paidPartnership = get("paidPartnership");
   const disclosure = get("disclosure");
+  const disclosureKey = get("disclosureKey");
   const maxHashtags = get("maxHashtags");
   const outputKey = get("outputKey");
   const match = typeof username === "string" ? USERNAME.exec(username) : null;
   if (!match) throw new ExecutionFailure("Instagram publish setting username must be an Instagram username (1 to 30 letters, digits, dots or underscores, with or without @).");
   if (typeof shareToFeed !== "boolean") throw new ExecutionFailure("Instagram publish setting shareToFeed must be true or false.");
   if (typeof paidPartnership !== "boolean") throw new ExecutionFailure("Instagram publish setting paidPartnership must be true or false.");
-  if (typeof disclosure !== "string" || disclosure.trim().length > 100 || /[\r\n]/.test(disclosure)) {
+  if (!oneLine(disclosure)) {
     throw new ExecutionFailure("Instagram publish setting disclosure must be text of at most 100 characters on one line (empty turns it off).");
   }
+  if (typeof disclosureKey !== "string") throw new ExecutionFailure("Instagram publish setting disclosureKey must be a string (a dotted path into the job, empty = off).");
   if (typeof maxHashtags !== "number" || !Number.isInteger(maxHashtags) || maxHashtags < 0 || maxHashtags > 30) {
     throw new ExecutionFailure("Instagram publish setting maxHashtags must be a whole number from 0 to 30.");
   }
-  if (!isText2(outputKey)) throw new ExecutionFailure("Instagram publish setting outputKey must be a non-empty string.");
-  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), maxHashtags, outputKey };
+  if (!isText3(outputKey)) throw new ExecutionFailure("Instagram publish setting outputKey must be a non-empty string.");
+  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), disclosureKey: disclosureKey.trim(), maxHashtags, outputKey };
 }
-function readJob3(input, disclosure, maxHashtags) {
-  if (!isObject10(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
+function readJob3(input, settings) {
+  const { disclosureKey, maxHashtags } = settings;
+  if (!isObject11(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
   const { short, meta = {} } = input;
-  if (!isObject10(short) || !isText2(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
-  if (!isObject10(meta)) throw new ExecutionFailure("Instagram publish input job.meta must be an object.");
+  if (!isObject11(short) || !isText3(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
+  if (!isObject11(meta)) throw new ExecutionFailure("Instagram publish input job.meta must be an object.");
   for (const key of ["title", "description"]) {
     if (meta[key] !== void 0 && typeof meta[key] !== "string") throw new ExecutionFailure(`Instagram publish input job.meta.${key} must be a string.`);
   }
   if (meta.hashtags !== void 0 && !Array.isArray(meta.hashtags)) throw new ExecutionFailure("Instagram publish input job.meta.hashtags must be an array.");
+  let disclosure = settings.disclosure;
+  const keyed = disclosureKey === "" ? void 0 : lookup2(input, disclosureKey);
+  if (keyed !== void 0 && !oneLine(keyed)) throw new ExecutionFailure(`Instagram publish input job.${disclosureKey} (the disclosure) must be text of at most 100 characters on one line.`);
+  if (typeof keyed === "string" && keyed.trim() !== "") disclosure = keyed.trim();
   const caption = buildCaption(disclosure, String(meta.title ?? ""), String(meta.description ?? ""), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
   return { job: input, file: short.file, caption };
 }
@@ -51940,18 +52012,18 @@ async function readReceipt(tools, name, username, file) {
     receipt = JSON.parse(saved);
   } catch {
   }
-  if (isObject10(receipt) && (receipt.username !== username || receipt.file !== file)) return void 0;
-  const valid = isObject10(receipt) && typeof receipt.containerId === "string" && ID.test(receipt.containerId) && (receipt.mediaId === void 0 || typeof receipt.mediaId === "string" && ID.test(receipt.mediaId)) && (receipt.permalink === void 0 || typeof receipt.permalink === "string");
+  if (isObject11(receipt) && (receipt.username !== username || receipt.file !== file)) return void 0;
+  const valid = isObject11(receipt) && typeof receipt.containerId === "string" && ID.test(receipt.containerId) && (receipt.mediaId === void 0 || typeof receipt.mediaId === "string" && ID.test(receipt.mediaId)) && (receipt.permalink === void 0 || typeof receipt.permalink === "string");
   if (!valid) {
     throw new ExecutionFailure(`The Instagram receipt ${name} is unreadable, so nothing was uploaded; check @${username} for a Reel that was already posted, then delete the receipt to post again.`);
   }
   return receipt;
 }
-async function execute14({ input, config, node }, { instagram, tools }) {
+async function execute15({ input, config, node }, { instagram, tools }) {
   if (!instagram) throw new ExecutionFailure("Instagram publish requires the instagram capability.");
   if (!tools) throw new ExecutionFailure("Instagram publish requires the tools capability, which keeps the receipt that stops a retried run from posting twice.");
-  const { username, shareToFeed, paidPartnership, disclosure, maxHashtags, outputKey } = readSettings4(config);
-  const { job, file, caption } = readJob3(input, disclosure, maxHashtags);
+  const { username, shareToFeed, paidPartnership, outputKey, ...caps } = readSettings4(config);
+  const { job, file, caption } = readJob3(input, caps);
   const name = `instagram-reel-${node.id.replace(/[^A-Za-z0-9_-]/g, "_")}.json`;
   const save = (receipt2, wrap2) => guard2(() => tools.writeText("run", name, JSON.stringify({ username, file, ...receipt2 })), wrap2);
   const done = ({ mediaId, permalink }) => ({ output: { ...job, [outputKey]: { username, mediaId, ...permalink ? { permalink } : {} } }, port: "next" });
@@ -51987,7 +52059,7 @@ async function execute14({ input, config, node }, { instagram, tools }) {
 }
 
 // modules/shorts/index.ts
-var DEFAULTS7 = {
+var DEFAULTS8 = {
   mode: "feeds",
   lane: "",
   hours: 72,
@@ -52003,10 +52075,10 @@ var VOICES = ["kokoro", "elevenlabs"];
 var PORTS = ["next", "invalid", "missing"];
 var LOG_TAIL = 1e3;
 var ENGINE_DIR = decodeURIComponent(new URL("./shorts-engine/", import.meta.url).pathname);
-var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject12 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var whole = (value, min, max) => typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 function readSettings5(config) {
-  const merged = { ...DEFAULTS7, ...config };
+  const merged = { ...DEFAULTS8, ...config };
   const { mode, lane, hours, minFacts, voice, elevenModel, elevenVoice, render: render2, timeoutMs } = merged;
   if (typeof mode !== "string" || !MODES.includes(mode)) throw new ExecutionFailure(`Shorts setting mode must be one of ${MODES.join(", ")}.`);
   if (typeof lane !== "string") throw new ExecutionFailure("Shorts setting lane must be text (empty keeps job.lane).");
@@ -52025,16 +52097,16 @@ function readResult(text3) {
     parsed = text3 === void 0 ? void 0 : JSON.parse(text3);
   } catch {
   }
-  const log = isObject11(parsed) && typeof parsed.log === "string" ? parsed.log : "";
-  if (!isObject11(parsed) || typeof parsed.port !== "string" || !PORTS.includes(parsed.port) || !isObject11(parsed.output)) {
+  const log = isObject12(parsed) && typeof parsed.log === "string" ? parsed.log : "";
+  if (!isObject12(parsed) || typeof parsed.port !== "string" || !PORTS.includes(parsed.port) || !isObject12(parsed.output)) {
     throw new ExecutionFailure(`Shorts engine wrote no usable result (shorts-result.json).${log ? ` Log tail: ${log.slice(-LOG_TAIL)}` : ""}`);
   }
   return { port: parsed.port, output: parsed.output, log };
 }
-async function execute15({ input, config }, { tools }) {
+async function execute16({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("Shorts module requires the tools capability.");
   const { mode, lane, timeoutMs, engine } = readSettings5(config);
-  if (!isObject11(input)) throw new ExecutionFailure("Shorts input must be a job object.");
+  if (!isObject12(input)) throw new ExecutionFailure("Shorts input must be a job object.");
   const job = lane === "" ? input : { ...input, lane };
   const at2 = (name) => `${tools.runDir}/${name}`;
   await tools.writeText("run", "shorts-job.json", JSON.stringify(job));
@@ -52062,12 +52134,13 @@ var moduleRegistry = deepFreeze({
   error: { execute: execute7, capabilities: [] },
   composite: { execute: execute8, capabilities: ["executeWorkflow"] },
   random: { execute: execute9, capabilities: [] },
-  "media-fetch": { execute: execute10, capabilities: ["tools"] },
-  "video-edit": { execute: execute11, capabilities: ["tools"] },
-  thumbnail: { execute: execute12, capabilities: ["tools"] },
-  "youtube-publish": { execute: execute13, capabilities: ["youtube", "tools"] },
-  "instagram-publish": { execute: execute14, capabilities: ["instagram", "tools"] },
-  shorts: { execute: execute15, capabilities: ["tools"] }
+  campaign: { execute: execute10, capabilities: [] },
+  "media-fetch": { execute: execute11, capabilities: ["tools"] },
+  "video-edit": { execute: execute12, capabilities: ["tools"] },
+  thumbnail: { execute: execute13, capabilities: ["tools"] },
+  "youtube-publish": { execute: execute14, capabilities: ["youtube", "tools"] },
+  "instagram-publish": { execute: execute15, capabilities: ["instagram", "tools"] },
+  shorts: { execute: execute16, capabilities: ["tools"] }
 });
 
 // packages/runtime/src/provider.ts
@@ -52141,9 +52214,9 @@ var printable = (value) => typeof value === "string" ? value : json(value);
 function shorten(text3, max) {
   return text3.length > max ? `${text3.slice(0, max - 1)}\u2026` : text3;
 }
-var isObject12 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject13 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function summarizeOutput(input, output2) {
-  if (!isObject12(input) || !isObject12(output2)) return shorten(printable(output2), 300);
+  if (!isObject13(input) || !isObject13(output2)) return shorten(printable(output2), 300);
   const changed = Object.keys(output2).filter((key) => json(output2[key]) !== json(input[key])).map((key) => `${key}=${shorten(json(output2[key]), 120)}`);
   const removed = Object.keys(input).filter((key) => !(key in output2)).map((key) => `${key} removed`);
   return [...changed, ...removed].join(", ") || "no changes";
@@ -52379,7 +52452,7 @@ async function executeNode(module, node, input, config, context, depth) {
     executeWorkflow: (graph, value) => executeGraph(graph, value, context, depth + 1)
   };
   const capabilities = Object.freeze(Object.fromEntries(registration.capabilities.map((key) => [key, available[key]])));
-  const request = Object.freeze({ module: deepFreeze(module), node: deepFreeze(node), input: deepFreeze(cloneJson(input)), config });
+  const request = Object.freeze({ module: deepFreeze(module), node: deepFreeze(node), input: deepFreeze(cloneJson(input)), config, settings: deepFreeze(cloneJson(context.options.settings ?? {})) });
   return registration.execute(request, capabilities);
 }
 function reportCheckpoint(context, nodeId, input) {
@@ -52739,7 +52812,8 @@ var RunService = class {
       cost: 0,
       logs: [],
       workflow: structuredClone(business.workflow),
-      modules: structuredClone(workspace.modules)
+      modules: structuredClone(workspace.modules),
+      settings: structuredClone(business.settings ?? {})
     };
     this.repository.createRun(run2);
     this.launch(run2.id);
@@ -52810,7 +52884,8 @@ var RunService = class {
       cost: 0,
       logs: [],
       workflow: structuredClone(original.workflow),
-      modules: structuredClone(original.modules)
+      modules: structuredClone(original.modules),
+      ...original.settings && { settings: structuredClone(original.settings) }
     };
     if (checkpoint) {
       run2.resumedFrom = { runId: original.id, nodeId: checkpoint.nodeId };
@@ -52885,6 +52960,7 @@ var RunService = class {
       }
       result = await runWorkflow(run2.workflow, run2.modules, run2.input, {
         runId: run2.id,
+        settings: run2.settings,
         signal: active.controller.signal,
         agent: this.agent ? async (prompt, input, config, images) => {
           if (images?.length && !runDir) throw new Error("Agent images need the server media data folder.");
@@ -52964,7 +53040,7 @@ function validateWorkspaceStructure(workspace) {
     if (!module.configSchema) return;
     for (const issue of validateModuleConfig(module, config)) errors.push(`${label} (${module.id}): ${issue}`);
   };
-  const validate = (workflow, label, compositePath = []) => {
+  const validate2 = (workflow, label, compositePath = []) => {
     const nodes = /* @__PURE__ */ new Map();
     const operators = /* @__PURE__ */ new Map();
     const elementIds = /* @__PURE__ */ new Set();
@@ -53030,15 +53106,15 @@ function validateWorkspaceStructure(workspace) {
           target.config = { ...target.config, [exposed.fieldKey]: structuredClone(effective[exposed.key]) };
         }
       }
-      validate(nested, `${label} node ${node.id} (${module.id})`, [...compositePath, module.id]);
+      validate2(nested, `${label} node ${node.id} (${module.id})`, [...compositePath, module.id]);
     }
   };
   for (const module of workspace.modules) {
     validateConfig(module, {}, `Module ${module.id} defaults`);
   }
-  for (const business of workspace.businesses) validate(business.workflow, `Business ${business.id}`);
-  for (const blueprint of workspace.blueprints) validate(blueprint.workflow, `Blueprint ${blueprint.id}`);
-  for (const template of workspace.templates) validate(template.workflow, `Template ${template.id}`);
+  for (const business of workspace.businesses) validate2(business.workflow, `Business ${business.id}`);
+  for (const blueprint of workspace.blueprints) validate2(blueprint.workflow, `Blueprint ${blueprint.id}`);
+  for (const template of workspace.templates) validate2(template.workflow, `Template ${template.id}`);
   for (const module of workspace.modules) {
     if (!module.workflow) continue;
     const workflow = structuredClone(module.workflow);
@@ -53054,7 +53130,7 @@ function validateWorkspaceStructure(workspace) {
         }
       }
     }
-    validate(workflow, `Module ${module.id}`, module.kind === "composite" ? [module.id] : []);
+    validate2(workflow, `Module ${module.id}`, module.kind === "composite" ? [module.id] : []);
   }
   return errors;
 }
@@ -55021,15 +55097,15 @@ var GraphError = class extends Error {
   code;
   issues;
 };
-function fail2(code, message2, path = "") {
+function fail3(code, message2, path = "") {
   throw new GraphError(code, message2, path ? [{ path, message: message2 }] : []);
 }
 function record(value, path) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) fail2("INVALID_OPERATION", `${path} must be an object.`, path);
+  if (!value || typeof value !== "object" || Array.isArray(value)) fail3("INVALID_OPERATION", `${path} must be an object.`, path);
   return value;
 }
 function nonEmptyString(value, path) {
-  if (typeof value !== "string" || value.length === 0) fail2("INVALID_OPERATION", `${path} must be a non-empty string.`, path);
+  if (typeof value !== "string" || value.length === 0) fail3("INVALID_OPERATION", `${path} must be a non-empty string.`, path);
   return value;
 }
 function outputPortsFor(workflow, modules, elementId) {
@@ -55041,19 +55117,19 @@ function outputPortsFor(workflow, modules, elementId) {
 function validateGraph(workflow, modules) {
   const moduleById = /* @__PURE__ */ new Map();
   for (const module of modules) {
-    if (moduleById.has(module.id)) fail2("DUPLICATE_MODULE_ID", `Duplicate module ID: ${module.id}.`);
+    if (moduleById.has(module.id)) fail3("DUPLICATE_MODULE_ID", `Duplicate module ID: ${module.id}.`);
     moduleById.set(module.id, module);
   }
   const elementIds = /* @__PURE__ */ new Set();
   const elements = [...workflow.nodes, ...workflow.operators ?? []];
   for (const element of elements) {
-    if (!element.id) fail2("INVALID_ELEMENT_ID", "Graph element IDs must not be empty.");
-    if (elementIds.has(element.id)) fail2("DUPLICATE_ELEMENT_ID", `Duplicate graph element ID: ${element.id}.`);
+    if (!element.id) fail3("INVALID_ELEMENT_ID", "Graph element IDs must not be empty.");
+    if (elementIds.has(element.id)) fail3("DUPLICATE_ELEMENT_ID", `Duplicate graph element ID: ${element.id}.`);
     elementIds.add(element.id);
   }
   for (const node of workflow.nodes) {
     const module = moduleById.get(node.moduleId);
-    if (!module) fail2("UNKNOWN_MODULE", `Node ${node.id} references unknown module ${node.moduleId}.`);
+    if (!module) fail3("UNKNOWN_MODULE", `Node ${node.id} references unknown module ${node.moduleId}.`);
     const configIssues = validateModuleConfig(module, node.config);
     if (configIssues.length) throw new GraphError("INVALID_MODULE_CONFIG", `Node ${node.id} has invalid configuration.`, configIssues.map((message2) => ({ path: `/nodes/${node.id}/config`, message: message2 })));
     if (node.logging !== void 0) {
@@ -55063,22 +55139,22 @@ function validateGraph(workflow, modules) {
   }
   for (const operator of workflow.operators ?? []) {
     if (operator.kind === "retry" && (!Number.isInteger(operator.maxRetries) || operator.maxRetries < 1 || operator.maxRetries > 100)) {
-      fail2("INVALID_RETRY_LIMIT", `Retry operator ${operator.id} maxRetries must be an integer from 1 to 100.`);
+      fail3("INVALID_RETRY_LIMIT", `Retry operator ${operator.id} maxRetries must be an integer from 1 to 100.`);
     }
   }
   const edgeIds = /* @__PURE__ */ new Set();
   const routes = /* @__PURE__ */ new Set();
   for (const edge of workflow.edges) {
-    if (!edge.id) fail2("INVALID_EDGE_ID", "Edge IDs must not be empty.");
-    if (edgeIds.has(edge.id)) fail2("DUPLICATE_EDGE_ID", `Duplicate edge ID: ${edge.id}.`);
+    if (!edge.id) fail3("INVALID_EDGE_ID", "Edge IDs must not be empty.");
+    if (edgeIds.has(edge.id)) fail3("DUPLICATE_EDGE_ID", `Duplicate edge ID: ${edge.id}.`);
     edgeIds.add(edge.id);
     const route = `${edge.source}\0${edge.sourcePort}\0${edge.target}`;
-    if (routes.has(route)) fail2("DUPLICATE_EDGE_ROUTE", `Duplicate edge route ${edge.source}.${edge.sourcePort} \u2192 ${edge.target}.`);
+    if (routes.has(route)) fail3("DUPLICATE_EDGE_ROUTE", `Duplicate edge route ${edge.source}.${edge.sourcePort} \u2192 ${edge.target}.`);
     routes.add(route);
-    if (!elementIds.has(edge.source)) fail2("UNKNOWN_EDGE_SOURCE", `Edge ${edge.id} references unknown source ${edge.source}.`);
-    if (!elementIds.has(edge.target)) fail2("UNKNOWN_EDGE_TARGET", `Edge ${edge.id} references unknown target ${edge.target}.`);
+    if (!elementIds.has(edge.source)) fail3("UNKNOWN_EDGE_SOURCE", `Edge ${edge.id} references unknown source ${edge.source}.`);
+    if (!elementIds.has(edge.target)) fail3("UNKNOWN_EDGE_TARGET", `Edge ${edge.id} references unknown target ${edge.target}.`);
     if (!outputPortsFor(workflow, modules, edge.source).includes(edge.sourcePort)) {
-      fail2("UNKNOWN_OUTPUT_PORT", `Edge ${edge.id} references unknown output port ${edge.sourcePort} on ${edge.source}.`);
+      fail3("UNKNOWN_OUTPUT_PORT", `Edge ${edge.id} references unknown output port ${edge.sourcePort} on ${edge.source}.`);
     }
   }
 }
@@ -55091,8 +55167,8 @@ function applyOperation(workflow, operation, workspace, idMap) {
     const input = record(operation.node, "/node");
     const id = nonEmptyString(input.id, "/node/id");
     const moduleId = nonEmptyString(input.moduleId, "/node/moduleId");
-    if (graphElementIds(workflow).has(id)) fail2("DUPLICATE_ELEMENT_ID", `Graph element ID already exists: ${id}.`);
-    if (!workspace.modules.some((module) => module.id === moduleId)) fail2("UNKNOWN_MODULE", `Unknown module ID: ${moduleId}.`);
+    if (graphElementIds(workflow).has(id)) fail3("DUPLICATE_ELEMENT_ID", `Graph element ID already exists: ${id}.`);
+    if (!workspace.modules.some((module) => module.id === moduleId)) fail3("UNKNOWN_MODULE", `Unknown module ID: ${moduleId}.`);
     const node = { id, moduleId, position: { x: 0, y: 0 }, config: structuredClone(record(input.config ?? {}, "/node/config")) };
     if (input.logging !== void 0) node.logging = structuredClone(input.logging);
     workflow.nodes.push(node);
@@ -55101,20 +55177,20 @@ function applyOperation(workflow, operation, workspace, idMap) {
   if (op === "setNodeConfig" || op === "unsetNodeConfig") {
     const nodeId = nonEmptyString(operation.nodeId, "/nodeId");
     const node = workflow.nodes.find(({ id }) => id === nodeId);
-    if (!node) fail2("UNKNOWN_NODE", `Unknown node ID: ${nodeId}.`);
+    if (!node) fail3("UNKNOWN_NODE", `Unknown node ID: ${nodeId}.`);
     if (op === "setNodeConfig") {
       const values = record(operation.values, "/values");
       node.config = { ...node.config, ...structuredClone(values) };
       return { change: { op, nodeId, changedKeys: Object.keys(values) }, topologyChanged: false };
     }
-    if (!Array.isArray(operation.keys) || operation.keys.some((key) => typeof key !== "string")) fail2("INVALID_OPERATION", "keys must be an array of strings.", "/keys");
+    if (!Array.isArray(operation.keys) || operation.keys.some((key) => typeof key !== "string")) fail3("INVALID_OPERATION", "keys must be an array of strings.", "/keys");
     for (const key of operation.keys) delete node.config[key];
     return { change: { op, nodeId, removedKeys: operation.keys }, topologyChanged: false };
   }
   if (op === "setNodeLogging") {
     const nodeId = nonEmptyString(operation.nodeId, "/nodeId");
     const node = workflow.nodes.find(({ id }) => id === nodeId);
-    if (!node) fail2("UNKNOWN_NODE", `Unknown node ID: ${nodeId}.`);
+    if (!node) fail3("UNKNOWN_NODE", `Unknown node ID: ${nodeId}.`);
     if (operation.logging === null) delete node.logging;
     else node.logging = structuredClone(record(operation.logging, "/logging"));
     return { change: { op, nodeId }, topologyChanged: false };
@@ -55123,12 +55199,12 @@ function applyOperation(workflow, operation, workspace, idMap) {
     const input = record(operation.operator, "/operator");
     const id = nonEmptyString(input.id, "/operator/id");
     const kind = input.kind;
-    if (kind !== "retry" && kind !== "split") fail2("INVALID_OPERATOR_KIND", "Operator kind must be retry or split.", "/operator/kind");
-    if (graphElementIds(workflow).has(id)) fail2("DUPLICATE_ELEMENT_ID", `Graph element ID already exists: ${id}.`);
+    if (kind !== "retry" && kind !== "split") fail3("INVALID_OPERATOR_KIND", "Operator kind must be retry or split.", "/operator/kind");
+    if (graphElementIds(workflow).has(id)) fail3("DUPLICATE_ELEMENT_ID", `Graph element ID already exists: ${id}.`);
     let operator;
     if (kind === "retry") {
       if (!Number.isInteger(input.maxRetries) || input.maxRetries < 1 || input.maxRetries > 100) {
-        fail2("INVALID_RETRY_LIMIT", "Retry maxRetries must be an integer from 1 to 100.", "/operator/maxRetries");
+        fail3("INVALID_RETRY_LIMIT", "Retry maxRetries must be an integer from 1 to 100.", "/operator/maxRetries");
       }
       operator = { id, kind, position: { x: 0, y: 0 }, maxRetries: input.maxRetries };
     } else operator = { id, kind, position: { x: 0, y: 0 } };
@@ -55139,18 +55215,18 @@ function applyOperation(workflow, operation, workspace, idMap) {
   if (op === "updateOperator") {
     const operatorId = nonEmptyString(operation.operatorId, "/operatorId");
     const operator = workflow.operators?.find(({ id }) => id === operatorId);
-    if (!operator) fail2("UNKNOWN_OPERATOR", `Unknown operator ID: ${operatorId}.`);
+    if (!operator) fail3("UNKNOWN_OPERATOR", `Unknown operator ID: ${operatorId}.`);
     const values = record(operation.values, "/values");
-    if (operator.kind !== "retry" || Object.keys(values).some((key) => key !== "maxRetries")) fail2("INVALID_OPERATOR_UPDATE", "Only retry operators support maxRetries updates.");
+    if (operator.kind !== "retry" || Object.keys(values).some((key) => key !== "maxRetries")) fail3("INVALID_OPERATOR_UPDATE", "Only retry operators support maxRetries updates.");
     if (Object.hasOwn(values, "maxRetries") && (!Number.isInteger(values.maxRetries) || values.maxRetries < 1 || values.maxRetries > 100)) {
-      fail2("INVALID_RETRY_LIMIT", "Retry maxRetries must be an integer from 1 to 100.", "/values/maxRetries");
+      fail3("INVALID_RETRY_LIMIT", "Retry maxRetries must be an integer from 1 to 100.", "/values/maxRetries");
     }
     if (Object.hasOwn(values, "maxRetries")) operator.maxRetries = values.maxRetries;
     return { change: { op, operatorId, changedKeys: Object.keys(values) }, topologyChanged: false };
   }
   if (op === "removeElement") {
     const elementId = nonEmptyString(operation.elementId, "/elementId");
-    if (!graphElementIds(workflow).has(elementId)) fail2("UNKNOWN_ELEMENT", `Unknown graph element ID: ${elementId}.`);
+    if (!graphElementIds(workflow).has(elementId)) fail3("UNKNOWN_ELEMENT", `Unknown graph element ID: ${elementId}.`);
     workflow.nodes = workflow.nodes.filter(({ id }) => id !== elementId);
     if (workflow.operators) workflow.operators = workflow.operators.filter(({ id }) => id !== elementId);
     workflow.edges = workflow.edges.filter(({ source, target }) => source !== elementId && target !== elementId);
@@ -55170,7 +55246,7 @@ function applyOperation(workflow, operation, workspace, idMap) {
   if (op === "removeEdge") {
     const edgeId = nonEmptyString(operation.edgeId, "/edgeId");
     const index2 = workflow.edges.findIndex(({ id }) => id === edgeId);
-    if (index2 < 0) fail2("UNKNOWN_EDGE", `Unknown edge ID: ${edgeId}.`);
+    if (index2 < 0) fail3("UNKNOWN_EDGE", `Unknown edge ID: ${edgeId}.`);
     workflow.edges.splice(index2, 1);
     return { change: { op, edgeId }, topologyChanged: true };
   }
@@ -55178,7 +55254,7 @@ function applyOperation(workflow, operation, workspace, idMap) {
     const blueprintId = nonEmptyString(operation.blueprintId, "/blueprintId");
     const namespace = nonEmptyString(operation.namespace, "/namespace");
     const blueprint = workspace.blueprints.find(({ id }) => id === blueprintId);
-    if (!blueprint) fail2("UNKNOWN_BLUEPRINT", `Unknown blueprint ID: ${blueprintId}.`);
+    if (!blueprint) fail3("UNKNOWN_BLUEPRINT", `Unknown blueprint ID: ${blueprintId}.`);
     const elementIds = graphElementIds(workflow);
     const edgeIds = new Set(workflow.edges.map(({ id }) => id));
     const prefix = `${namespace}__`;
@@ -55188,7 +55264,7 @@ function applyOperation(workflow, operation, workspace, idMap) {
     for (const edge of imported.edges) mappings.set(edge.id, `${prefix}${edge.id}`);
     for (const [oldId, newId] of mappings) {
       const isEdge = imported.edges.some(({ id }) => id === oldId);
-      if ((isEdge ? edgeIds : elementIds).has(newId)) fail2(isEdge ? "DUPLICATE_EDGE_ID" : "DUPLICATE_ELEMENT_ID", `Imported ID already exists: ${newId}.`);
+      if ((isEdge ? edgeIds : elementIds).has(newId)) fail3(isEdge ? "DUPLICATE_EDGE_ID" : "DUPLICATE_ELEMENT_ID", `Imported ID already exists: ${newId}.`);
       Object.defineProperty(idMap, oldId, { value: newId, enumerable: true, configurable: true, writable: true });
     }
     for (const node of imported.nodes) node.id = mappings.get(node.id);
@@ -55203,7 +55279,7 @@ function applyOperation(workflow, operation, workspace, idMap) {
     workflow.edges.push(...imported.edges);
     return { change: { op, blueprintId, namespace, importedIds: Object.fromEntries(mappings) }, topologyChanged: true };
   }
-  fail2("UNKNOWN_OPERATION", `Unknown workflow operation: ${op}.`, "/op");
+  fail3("UNKNOWN_OPERATION", `Unknown workflow operation: ${op}.`, "/op");
 }
 function applyWorkflowOperations(workflow, operations, workspace) {
   const updated = structuredClone(workflow);
@@ -55294,10 +55370,10 @@ function validation(business, workspace, agentConfigured) {
           for (const message2 of validateWorkflow(module.workflow, workspace.modules)) issues.push({ code: "COMPOSITE_INVALID", nodeId: node.id, message: message2 });
           const nested = structuredClone(module.workflow);
           const effective = { ...module.defaults, ...node.config };
-          for (const setting of module.exposed ?? []) {
-            const target = nested.nodes.find((item) => item.id === setting.nodeId);
-            if (!target) issues.push({ code: "COMPOSITE_INVALID", nodeId: node.id, message: `Exposed setting ${setting.key} references missing node ${setting.nodeId}.` });
-            else if (Object.hasOwn(effective, setting.key)) target.config[setting.fieldKey] = structuredClone(effective[setting.key]);
+          for (const setting2 of module.exposed ?? []) {
+            const target = nested.nodes.find((item) => item.id === setting2.nodeId);
+            if (!target) issues.push({ code: "COMPOSITE_INVALID", nodeId: node.id, message: `Exposed setting ${setting2.key} references missing node ${setting2.nodeId}.` });
+            else if (Object.hasOwn(effective, setting2.key)) target.config[setting2.fieldKey] = structuredClone(effective[setting2.key]);
           }
           visit(nested, /* @__PURE__ */ new Set([...stack, module.id]));
         }
@@ -55327,7 +55403,7 @@ function list2(items, args) {
 function read(tool, args, workspace, agentConfigured) {
   switch (tool) {
     case "autobiz_get_capabilities":
-      return { schemaVersion: 1, agentConfigured, moduleKinds: ["start", "transform", "review", "agent", "approval", "output", "error", "composite", "random", "media-fetch", "video-edit", "thumbnail", "youtube-publish", "instagram-publish", "shorts"], operators: arrowOperatorPorts, tools: AUTHORING_TOOLS.map(({ name }) => name), layout: { algorithm: "dagre", version: 1, direction: "left-to-right", agentPositioning: false }, limits: { maxOperations: 500, maxRetries: 100, maxPageSize: 100 }, businessSettingsAreMetadata: true };
+      return { schemaVersion: 1, agentConfigured, moduleKinds: ["start", "transform", "review", "agent", "approval", "output", "error", "composite", "random", "campaign", "media-fetch", "video-edit", "thumbnail", "youtube-publish", "instagram-publish", "shorts"], operators: arrowOperatorPorts, tools: AUTHORING_TOOLS.map(({ name }) => name), layout: { algorithm: "dagre", version: 1, direction: "left-to-right", agentPositioning: false }, limits: { maxOperations: 500, maxRetries: 100, maxPageSize: 100 }, businessSettingsAreMetadata: true };
     case "autobiz_list_modules":
       return list2(workspace.modules.filter((module) => !args.kind || module.kind === args.kind).map(({ id, name, description, kind, version }) => ({ id, name, description, kind, version })), args);
     case "autobiz_get_module": {
@@ -55360,12 +55436,12 @@ function patchSettings(settings, patch) {
 }
 function checkExposed(exposed, workflow, configSchema) {
   const keys = /* @__PURE__ */ new Set();
-  for (const setting of exposed) {
-    if (keys.has(setting.key)) throw new AuthoringError("VALIDATION_ERROR", `Duplicate exposed key ${setting.key}.`);
-    keys.add(setting.key);
-    const node = workflow.nodes.find((item) => item.id === setting.nodeId);
-    if (!node || !Object.hasOwn(node.config, setting.fieldKey)) throw new AuthoringError("VALIDATION_ERROR", `Exposed setting ${setting.key} must reference an explicit internal setting.`);
-    if (configSchema && !Object.hasOwn(configSchema.properties ?? {}, setting.key)) throw new AuthoringError("VALIDATION_ERROR", `Exposed key ${setting.key} is absent from configSchema.`);
+  for (const setting2 of exposed) {
+    if (keys.has(setting2.key)) throw new AuthoringError("VALIDATION_ERROR", `Duplicate exposed key ${setting2.key}.`);
+    keys.add(setting2.key);
+    const node = workflow.nodes.find((item) => item.id === setting2.nodeId);
+    if (!node || !Object.hasOwn(node.config, setting2.fieldKey)) throw new AuthoringError("VALIDATION_ERROR", `Exposed setting ${setting2.key} must reference an explicit internal setting.`);
+    if (configSchema && !Object.hasOwn(configSchema.properties ?? {}, setting2.key)) throw new AuthoringError("VALIDATION_ERROR", `Exposed key ${setting2.key} is absent from configSchema.`);
   }
 }
 function makeModule(definition, workspace) {
@@ -56141,12 +56217,12 @@ var TOOL_TIMEOUT_MS = 3e4;
 var COMPARE_SIZE = 64;
 var MAX_MEAN_DIFFERENCE = 12;
 function run(command, args, stdin) {
-  return new Promise((done, fail3) => {
+  return new Promise((done, fail4) => {
     const child = spawn3(command, args, { stdio: [stdin ? "pipe" : "ignore", "pipe", "ignore"], signal: AbortSignal.timeout(TOOL_TIMEOUT_MS) });
     const chunks = [];
     child.stdout?.on("data", (chunk) => chunks.push(chunk));
     child.stdin?.on("error", () => void 0);
-    child.on("error", () => fail3(new ExecutionFailure(`${command} is unavailable or timed out; install ffmpeg and rerun`)));
+    child.on("error", () => fail4(new ExecutionFailure(`${command} is unavailable or timed out; install ffmpeg and rerun`)));
     child.on("close", (code) => done({ code, stdout: Buffer.concat(chunks) }));
     child.stdin?.end(stdin);
   });
@@ -56558,15 +56634,17 @@ function failedInMediaFetch(run2) {
 }
 function publishedItems(run2) {
   const found = [];
-  const walk = (value, title) => {
-    if (Array.isArray(value)) return value.forEach((item) => walk(item, title));
+  const walk = (value, title, campaign) => {
+    if (Array.isArray(value)) return value.forEach((item) => walk(item, title, campaign));
     if (typeof value !== "object" || value === null) return;
     const node = value;
     const meta = node.meta;
     const here = typeof meta?.title === "string" ? meta.title : title;
+    const record2 = node.campaign;
+    const camp = typeof record2?.url === "string" ? record2.url : campaign;
     const [platform, url] = typeof node.videoId === "string" ? ["youtube", node.url] : typeof node.mediaId === "string" ? ["instagram", node.permalink] : [];
-    if (platform && typeof url === "string") found.push({ platform, url, ...here && { title: here } });
-    for (const child of Object.values(node)) walk(child, here);
+    if (platform && typeof url === "string") found.push({ platform, url, ...here && { title: here }, ...camp && { campaign: camp } });
+    for (const child of Object.values(node)) walk(child, here, camp);
   };
   walk(run2.output ?? run2.checkpoint?.input);
   return found;
