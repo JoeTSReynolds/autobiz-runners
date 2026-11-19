@@ -18,12 +18,16 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
     await open.click();
     const dialog = page.getByRole("dialog");
     const hold = dialog.getByRole("button", { name: "Hold to confirm" });
-    const box = await hold.boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
-    await page.waitForTimeout(1600);
-    await page.mouse.up();
-    await dialog.locator("input[type=url]").fill(clipUrl, { timeout: 1e4 });
+    const link = dialog.locator("input[type=url]");
+    await hold.or(link).first().waitFor({ timeout: 15e3 });
+    if (await hold.isVisible()) {
+      const box = await hold.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.waitForTimeout(1600);
+      await page.mouse.up();
+    }
+    await link.fill(clipUrl, { timeout: 1e4 });
     await dialog.locator("input[type=checkbox]").check();
     const before = new Set((await dialog.innerText()).split("\n").map((line) => line.trim()));
     await dialog.getByRole("button", { name: "Submit clip", exact: true }).click();
