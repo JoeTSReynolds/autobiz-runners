@@ -8685,14 +8685,14 @@ var require_tools = __commonJS({
       }
       return point < 32 ? JSON.stringify(str2) : '"' + result + '"';
     }
-    function asJson(obj, msg, num5, time) {
+    function asJson(obj, msg, num6, time) {
       if (asJsonChan.hasSubscribers === false) {
-        return _asJson.call(this, obj, msg, num5, time);
+        return _asJson.call(this, obj, msg, num6, time);
       }
       const store = { instance: this, arguments };
-      return asJsonChan.traceSync(_asJson, store, this, obj, msg, num5, time);
+      return asJsonChan.traceSync(_asJson, store, this, obj, msg, num6, time);
     }
-    function _asJson(obj, msg, num5, time) {
+    function _asJson(obj, msg, num6, time) {
       const stringify2 = this[stringifySym];
       const stringifySafe = this[stringifySafeSym];
       const stringifiers = this[stringifiersSym];
@@ -8702,7 +8702,7 @@ var require_tools = __commonJS({
       const formatters = this[formattersSym];
       const messageKey = this[messageKeySym];
       const errorKey = this[errorKeySym];
-      let data = this[lsCacheSym][num5] + time;
+      let data = this[lsCacheSym][num6] + time;
       data = data + chindings;
       let value;
       if (formatters.log) {
@@ -9329,7 +9329,7 @@ var require_proto = __commonJS({
     function defaultMixinMergeStrategy(mergeObject, mixinObject) {
       return Object.assign(mixinObject, mergeObject);
     }
-    function write(_obj, msg, num5) {
+    function write(_obj, msg, num6) {
       const t = this[timeSym]();
       const mixin = this[mixinSym];
       const errorKey = this[errorKeySym];
@@ -9351,12 +9351,12 @@ var require_proto = __commonJS({
         }
       }
       if (mixin) {
-        obj = mixinMergeStrategy(obj, mixin(obj, num5, this));
+        obj = mixinMergeStrategy(obj, mixin(obj, num6, this));
       }
-      const s = this[asJsonSym](obj, msg, num5, t);
+      const s = this[asJsonSym](obj, msg, num6, t);
       const stream = this[streamSym];
       if (stream[needsMetadataGsym] === true) {
-        stream.lastLevel = num5;
+        stream.lastLevel = num6;
         stream.lastObj = obj;
         stream.lastMsg = msg;
         stream.lastTime = t.slice(this[timeSliceIndexSym]);
@@ -10718,13 +10718,13 @@ var require_serializer = __commonJS({
         return "" + integer;
       }
       asNumber(i) {
-        const num5 = Number(i);
-        if (num5 !== num5) {
+        const num6 = Number(i);
+        if (num6 !== num6) {
           throw new Error(`The value "${i}" cannot be converted to a number.`);
-        } else if (num5 === Infinity || num5 === -Infinity) {
+        } else if (num6 === Infinity || num6 === -Infinity) {
           return "null";
         } else {
-          return "" + num5;
+          return "" + num6;
         }
       }
       asBoolean(bool) {
@@ -29436,9 +29436,9 @@ var require_semver = __commonJS({
         } else {
           this.prerelease = m[4].split(".").map((id) => {
             if (/^[0-9]+$/.test(id)) {
-              const num5 = +id;
-              if (num5 >= 0 && num5 < MAX_SAFE_INTEGER) {
-                return num5;
+              const num6 = +id;
+              if (num6 >= 0 && num6 < MAX_SAFE_INTEGER) {
+                return num6;
               }
             }
             return id;
@@ -41504,24 +41504,24 @@ var require_dist5 = __commonJS({
     var DAY = HOUR * 24;
     var YEAR = DAY * 365.25;
     function parse2(val) {
-      var num5, arr = val.toLowerCase().match(RGX);
-      if (arr != null && (num5 = parseFloat(arr[1]))) {
-        if (arr[3] != null) return num5 * SEC;
-        if (arr[4] != null) return num5 * MIN;
-        if (arr[5] != null) return num5 * HOUR;
-        if (arr[6] != null) return num5 * DAY;
-        if (arr[7] != null) return num5 * DAY * 7;
-        if (arr[8] != null) return num5 * YEAR;
-        return num5;
+      var num6, arr = val.toLowerCase().match(RGX);
+      if (arr != null && (num6 = parseFloat(arr[1]))) {
+        if (arr[3] != null) return num6 * SEC;
+        if (arr[4] != null) return num6 * MIN;
+        if (arr[5] != null) return num6 * HOUR;
+        if (arr[6] != null) return num6 * DAY;
+        if (arr[7] != null) return num6 * DAY * 7;
+        if (arr[8] != null) return num6 * YEAR;
+        return num6;
       }
     }
     function fmt(val, pfx, str2, long) {
-      var num5 = (val | 0) === val ? val : ~~(val + 0.5);
-      return pfx + num5 + (long ? " " + str2 + (num5 != 1 ? "s" : "") : str2[0]);
+      var num6 = (val | 0) === val ? val : ~~(val + 0.5);
+      return pfx + num6 + (long ? " " + str2 + (num6 != 1 ? "s" : "") : str2[0]);
     }
-    function format2(num5, long) {
-      var pfx = num5 < 0 ? "-" : "", abs = num5 < 0 ? -num5 : num5;
-      if (abs < SEC) return num5 + (long ? " ms" : "ms");
+    function format2(num6, long) {
+      var pfx = num6 < 0 ? "-" : "", abs = num6 < 0 ? -num6 : num6;
+      if (abs < SEC) return num6 + (long ? " ms" : "ms");
       if (abs < MIN) return fmt(abs / SEC, pfx, "second", long);
       if (abs < HOUR) return fmt(abs / MIN, pfx, "minute", long);
       if (abs < DAY) return fmt(abs / HOUR, pfx, "hour", long);
@@ -47231,6 +47231,8 @@ function starterModules() {
       field("clipLead", "Clip lead (s)", "number", 3.5),
       field("clipTail", "Clip tail (s)", "number", 5),
       field("payoffTail", "Payoff tail (s)", "number", 15),
+      field("archive", "Skip videos already downloaded (archive)", "boolean", true),
+      field("momentsFile", "Used moments file (state, empty: off)", "string", ""),
       field("blockedRetries", "Retries after a YouTube block", "number", 3),
       field("blockedWaitSeconds", "First wait after a block (s)", "number", 30),
       field("onlyWhen", "Run only when (key=value or key!=value)", "string", ""),
@@ -47274,13 +47276,19 @@ function starterModules() {
       field("crf", "Quality (CRF)", "number", 20),
       field("renderTimeoutMs", "Render time limit (ms)", "number", 6e5),
       field("background", "Story background", "string", "brick"),
-      field("layout", "Story layout", "select", "box", ["box", "frame", "card"]),
+      field("layout", "Story layout", "select", "box", ["box", "frame", "card", "split", "auto"]),
+      field("splitTop", "Split layout: which half goes on top", "select", "left", ["left", "right"]),
+      field("faceTop", "Auto layout: face height from the top in px (0 = off)", "number", 0),
+      field("hookTransition", "Hook to intro transition", "select", "blur", ["blur", "stretch"]),
       field("cardBackgrounds", "Card backgrounds (one picked per run)", "json", ["plain"]),
       field("headlineFont", "Headline font (empty: the caption font)", "string", ""),
       field("storyHook", "Story opens with a hook", "boolean", true),
       field("storySounds", "Story sound effects", "boolean", true),
       field("storyTransitions", "Zoom and blur at story cuts and zoom effects (off: hard cuts, no zoom)", "boolean", true),
       field("captionItalic", "Italic captions", "boolean", true),
+      field("captionColor", "Caption colour (#RRGGBB)", "string", "#FFFFFF"),
+      field("headlineStyle", "Headline style", "select", "outline", ["outline", "box"]),
+      field("headlineEmoji", "Headline emoji (CLDR name, empty: none)", "string", ""),
       field("emojiDir", "Emoji cache folder", "string", "emoji"),
       field("storySeed", "Particle seed", "string", ""),
       field("outputKey", "Output key", "string", "short")
@@ -47304,6 +47312,7 @@ function starterModules() {
       field("categoryId", "Category id", "string", "23"),
       field("madeForKids", "Made for kids", "boolean", false),
       field("containsSyntheticMedia", "Contains synthetic media", "boolean", false),
+      field("paidPromotion", "Paid promotion (declares a paid product placement)", "boolean", false),
       field("setCover", "Set cover", "boolean", true),
       field("maxHashtags", "Most hashtags", "number", 10),
       field("titleHashtags", "Hashtags in title", "boolean", true),
@@ -49085,6 +49094,9 @@ var DEFAULTS2 = {
   clipLead: 3.5,
   clipTail: 5,
   payoffTail: 15,
+  // section, sections: false stops yt-dlp's --download-archive (a video is then reusable); momentsFile, a state file name, records used payoff moments so one source can be cut many times without repeats ('' = off)
+  archive: true,
+  momentsFile: "",
   // yt-dlp calls: retries after YouTube's bot check or a 429, and the first wait (doubles each retry)
   blockedRetries: 3,
   blockedWaitSeconds: 30,
@@ -49135,6 +49147,31 @@ function positional(value, name) {
   if (typeof value !== "string" || value === "") throw new ExecutionFailure(`media-fetch ${name} must be a non-empty string.`);
   if (value.startsWith("-")) throw new ExecutionFailure(`media-fetch ${name} must not start with "-".`);
   return value;
+}
+function archiveArgs(config, tools) {
+  const value = config.archive ?? DEFAULTS2.archive;
+  if (typeof value !== "boolean") throw new ExecutionFailure("media-fetch setting archive must be true or false.");
+  return value ? ["--download-archive", `${tools.stateDir}/archive.txt`] : [];
+}
+function momentsFile(config) {
+  const file = config.momentsFile ?? DEFAULTS2.momentsFile;
+  if (typeof file !== "string" || file !== "" && !/^[a-z0-9][a-z0-9._-]*$/i.test(file)) throw new ExecutionFailure('media-fetch setting momentsFile must be empty or a plain file name (letters, digits, ".", "_" and "-").');
+  return file;
+}
+async function readMoments(tools, file) {
+  const raw = await tools.readText("state", file).catch((error) => {
+    rethrowStop(error);
+  });
+  if (raw === void 0 || raw.trim() === "") return [];
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+  }
+  if (!Array.isArray(parsed) || parsed.some((m) => !isObject3(m) || typeof m.source !== "string" || typeof m.start !== "number" || typeof m.end !== "number" || typeof m.at !== "string")) {
+    throw new ExecutionFailure(`media-fetch state file ${file} must be a JSON list of { source, start, end, at }; fix or delete it.`);
+  }
+  return parsed;
 }
 function rejectedSources(job) {
   const value = job.rejectedSources ?? [];
@@ -49468,6 +49505,7 @@ var captions = async (job, config, tools, outputKey) => {
   const archiveWindow = count(config, "archiveWindow", true);
   const { id, url, duration: sourceDuration } = sourceOf(job);
   const archive = isArchive(url);
+  const momentsName = momentsFile(config);
   const rejected = rejectedSources(job);
   const missing = () => ({ output: { ...job, rejectedSources: [...rejected, id] }, port: "missing" });
   const transcribe = async () => {
@@ -49524,7 +49562,8 @@ var captions = async (job, config, tools, outputKey) => {
     const entries = unit === "sentence" ? sentences.map(sentenceLine) : lines.map(transcriptLine);
     const transcript = entries.map((entry) => entry.text).join("\n");
     await tools.writeText("run", TRANSCRIPT_FILE, transcript);
-    const output2 = { ...job, [outputKey]: { file: TRANSCRIPT_FILE, wordsFile: WORDS_FILE, language } };
+    const usedMoments = momentsName ? { usedMoments: (await readMoments(tools, momentsName)).filter((m) => m.source === id).map(({ start, end }) => ({ start, end })).sort((a, b) => a.start - b.start) } : {};
+    const output2 = { ...job, ...usedMoments, [outputKey]: { file: TRANSCRIPT_FILE, wordsFile: WORDS_FILE, language } };
     if (!hotspots) return { output: output2, port: "next" };
     const info = await readInfo(tools);
     const found = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind });
@@ -49563,7 +49602,7 @@ var section = async (job, config, tools, outputKey) => {
   }
   const from = round(Math.max(0, start - padding));
   const to = round(duration === void 0 ? end + padding : Math.min(duration, end + padding));
-  await yt2(["-f", sectionFormat(maxHeight), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", "section.%(ext)s", "--no-warnings", "--", url], timeoutMs);
+  await yt2(["-f", sectionFormat(maxHeight), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools), "-o", "section.%(ext)s", "--no-warnings", "--", url], timeoutMs);
   const length3 = await probe(tools, CLIP_FILE, timeoutMs);
   return { output: { ...job, [outputKey]: { file: CLIP_FILE, offset: from, duration: length3 } }, port: "next" };
 };
@@ -49586,6 +49625,25 @@ var sections = async (job, config, tools, outputKey) => {
     const tail = end + (role === "payoff" ? payoffTail : clipTail);
     return { role, source, from: round(Math.max(0, start - (role === "hook" ? hookLead : clipLead))), to: round(source.duration === void 0 ? tail : Math.min(source.duration, tail)) };
   });
+  const momentsName = momentsFile(config);
+  const payoffAt = wanted.findIndex(({ role }) => role === "payoff");
+  const payoff = payoffAt < 0 ? void 0 : { source: wanted[payoffAt].source.id, start: clips[payoffAt].start, end: clips[payoffAt].end };
+  const usedMoments = momentsName && payoff ? await readMoments(tools, momentsName) : [];
+  let reused = false;
+  if (payoff) {
+    for (const used of usedMoments) {
+      if (used.source !== payoff.source) continue;
+      const overlap = Math.min(used.end, payoff.end) - Math.max(used.start, payoff.start);
+      if (overlap > 0.5 * Math.min(used.end - used.start, payoff.end - payoff.start)) {
+        const refusals = typeof job.momentRefusals === "number" ? job.momentRefusals : 0;
+        if (refusals >= 2) {
+          reused = true;
+          break;
+        }
+        return { output: { ...job, momentRefusals: refusals + 1, momentOverlap: { start: payoff.start, end: payoff.end, with: { start: used.start, end: used.end } } }, port: "missing" };
+      }
+    }
+  }
   const groups = /* @__PURE__ */ new Map();
   for (const { source, from, to } of wanted) {
     const group = groups.get(source.id) ?? { source, prefix: "", downloads: /* @__PURE__ */ new Map() };
@@ -49603,7 +49661,7 @@ var sections = async (job, config, tools, outputKey) => {
       }
       continue;
     }
-    const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "--download-archive", `${tools.stateDir}/archive.txt`, "-o", `${prefix}%(section_start).3f.%(ext)s`, "--no-warnings", "--", url];
+    const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools), "-o", `${prefix}%(section_start).3f.%(ext)s`, "--no-warnings", "--", url];
     try {
       await yt2(args, timeoutMs);
     } catch (error) {
@@ -49634,7 +49692,8 @@ var sections = async (job, config, tools, outputKey) => {
     await tools.writeText("state", "archive.txt", `${seen}${seen && !seen.endsWith("\n") ? "\n" : ""}${archived.map(({ source }) => `archive ${source.id}
 `).join("")}`);
   }
-  return { output: { ...job, [outputKey]: found }, port: "next" };
+  if (momentsName && payoff) await tools.writeText("state", momentsName, JSON.stringify([...usedMoments, { ...payoff, at: (/* @__PURE__ */ new Date()).toISOString() }], null, 2));
+  return { output: { ...job, ...reused && { momentReused: true }, [outputKey]: found }, port: "next" };
 };
 function httpLink(value) {
   try {
@@ -50074,7 +50133,7 @@ var isObject4 = (value) => typeof value === "object" && value !== null && !Array
 var num = (value) => typeof value === "number" && Number.isFinite(value);
 var text2 = (value) => typeof value === "string" && value.trim() !== "";
 var ROLES2 = ["hook", "intro", "beat", "payoff"];
-var VISUALS = ["zoom", "shake", "flash", "none"];
+var VISUALS = ["zoom", "shake", "flash", "correct", "wrong", "none"];
 var EMOJI_NAME = /^[a-z0-9][a-z0-9 '-]{0,59}$/;
 var HEARD = /^[\p{L}\p{N}'’-]{1,30}$/u;
 var MEANT = /^[^{}\\]{1,40}$/;
@@ -50120,8 +50179,9 @@ function validatePlan(plan, knownSounds, { hook = true } = {}) {
     if (!isObject4(raw)) fail(`.effects[${i}] must be an object.`);
     const { at: at2, sound, visual } = raw;
     if (!num(at2)) fail(`.effects[${i}] needs a numeric at.`);
-    if (typeof visual !== "string" || !VISUALS.includes(visual)) fail(`.effects[${i}].visual must be zoom, shake, flash or none.`);
-    return typeof sound === "string" && knownSounds.includes(sound) ? [{ at: at2, sound, visual }] : [];
+    if (typeof visual !== "string" || !VISUALS.includes(visual)) fail(`.effects[${i}].visual must be zoom, shake, flash, correct, wrong or none.`);
+    const played = visual === "correct" || visual === "wrong" ? visual : sound;
+    return typeof played === "string" && knownSounds.includes(played) ? [{ at: at2, sound: played, visual }] : [];
   });
   const emojis = (Array.isArray(rawEmojis) ? rawEmojis : []).flatMap((raw) => {
     if (!isObject4(raw)) return [];
@@ -50349,6 +50409,83 @@ function emojiSounds(emojis, busy, sounds) {
   });
 }
 
+// modules/video-edit/shots.ts
+var PYTHON_DIR = decodeURIComponent(new URL("./video-edit-python/", import.meta.url).pathname);
+var isObject5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var num2 = (value) => typeof value === "number" && Number.isFinite(value);
+async function analyseShots(file, modelPath, tools, timeoutMs) {
+  const { stdout } = await tools.run("python3", [`${PYTHON_DIR}shots.py`, file, modelPath], { timeoutMs });
+  const bad = (why) => new ExecutionFailure(`shots.py output for ${file} ${why}.`);
+  let data;
+  try {
+    data = JSON.parse(stdout.trim().split("\n").at(-1) ?? "");
+  } catch {
+    throw bad("is not valid JSON");
+  }
+  if (!isObject5(data) || !num2(data.width) || !num2(data.height) || data.width <= 0 || data.height <= 0 || !Array.isArray(data.shots) || data.shots.length === 0) throw bad("needs a width, a height and a non-empty shots list");
+  let at2 = 0;
+  for (const [i, shot] of data.shots.entries()) {
+    if (!isObject5(shot) || !num2(shot.start) || !num2(shot.end) || !Array.isArray(shot.faces) || shot.end <= shot.start || i > 0 && Math.abs(shot.start - at2) > 1e-6) throw bad(`has a bad or non-contiguous shot at index ${i}`);
+    if (!shot.faces.every((f) => isObject5(f) && num2(f.cx) && num2(f.cy) && num2(f.size))) throw bad(`has a malformed face in shot ${i}`);
+    at2 = shot.end;
+  }
+  return data;
+}
+var even = (x) => 2 * Math.floor(x / 2);
+var clamp = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
+var r32 = (x) => Math.round(x * 1e3) / 1e3;
+var MIN_SHOT = 0.5;
+function planShots({ width: W, height: H2, shots }, from, to, splitTop, faceTop = 0) {
+  const place = (f, w0, h0, panel, fallbackY) => {
+    if (faceTop <= 0) return { x: even(clamp(f.cx - w0 / 2, 0, W - w0)), y: even(fallbackY), w: w0, h: h0 };
+    const at2 = faceTop / panel;
+    const h = f.cy - at2 * h0 >= 0 ? h0 : even(Math.max(h0 / 2, f.cy / at2));
+    const w = h === h0 ? w0 : even(h * w0 / h0);
+    return { x: even(clamp(f.cx - w / 2, 0, W - w)), y: even(clamp(f.cy - at2 * h, 0, H2 - h)), w, h };
+  };
+  const layout = (faces) => {
+    if (faces.length >= 2) {
+      const [a, b] = [...faces].sort((p, q2) => q2.size - p.size).slice(0, 2).sort((p, q2) => p.cx - q2.cx);
+      const w2 = even(0.475 * W);
+      const h2 = even(w2 / 1.125);
+      const crop = (f) => place(f, w2, h2, 960, clamp(f.cy - 0.38 * h2, 0, H2 - h2));
+      return { layout: "split", crops: splitTop === "left" ? [crop(a), crop(b)] : [crop(b), crop(a)] };
+    }
+    if (faces.length === 0) return { layout: "frame", crops: [] };
+    let [w, h] = [even(H2 * 9 / 16), even(H2)];
+    if (w > W) [w, h] = [even(W), even(W * 16 / 9)];
+    return { layout: "single", crops: [place(faces[0], w, h, 1920, Math.max(0, (H2 - h) / 2))] };
+  };
+  const raw = shots.filter((s) => s.end > from && s.start < to).map((s) => ({ start: r32(Math.max(s.start, from) - from), end: r32(Math.min(s.end, to) - from), ...layout(s.faces) }));
+  if (raw.length === 0) return [{ start: 0, end: r32(to - from), layout: "frame", crops: [] }];
+  const out = [];
+  let carry;
+  for (const s of raw) {
+    if (s.end - s.start < MIN_SHOT && out.length > 0) out.at(-1).end = s.end;
+    else if (s.end - s.start < MIN_SHOT && s !== raw.at(-1)) carry ??= s.start;
+    else out.push({ ...s, start: carry ?? s.start }), carry = void 0;
+  }
+  out[0].start = 0;
+  out.at(-1).end = r32(to - from);
+  return out;
+}
+
+// modules/video-edit/headline-card.ts
+var CARD_FILE = "headline-card.png";
+async function renderHeadlineCard(rows, { family, size, emoji }, tools, timeoutMs) {
+  const { stdout } = await tools.run("python3", [`${PYTHON_DIR}headline_card.py`, JSON.stringify(rows), family, String(size), emoji, CARD_FILE], { timeoutMs });
+  const bad = (why) => new ExecutionFailure(`headline-card.py output ${why}.`);
+  let data;
+  try {
+    data = JSON.parse(stdout.trim().split("\n").at(-1) ?? "");
+  } catch {
+    throw bad("is not valid JSON");
+  }
+  const { width, height } = data ?? {};
+  if (typeof width !== "number" || typeof height !== "number" || !(width > 0 && width <= 1080) || !(height > 0)) throw bad("needs a width of 1 to 1080 and a positive height");
+  return { width, height };
+}
+
 // modules/video-edit/story-text.ts
 var HEADLINE = { x: 540, y: 240, chars: 22, rows: 3 };
 var CAPTION = { x: 540, y: 1056 };
@@ -50380,8 +50517,10 @@ function wrap(words2, maxChars, maxRows = Infinity) {
   rows.push(row);
   return rows.map((words3) => words3.join(" "));
 }
-function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline, headlineDark, headlineFont = "", headlineY = HEADLINE.y, italic = true }) {
-  const style = (name, size, dark = false, face = font, upright = dark) => `Style: ${name},${face},${size},${dark ? "&H00000000,&H00000000" : "&H00FFFFFF,&H00FFFFFF"},&H00000000,&H00000000,-1,${upright ? 0 : -1},0,0,100,100,0,0,1,${dark ? 0 : outline},0,5,60,60,0,1`;
+var assColour = (hex) => `&H00${hex.slice(5, 7)}${hex.slice(3, 5)}${hex.slice(1, 3)}`.toUpperCase();
+var headlineRows = (headline) => clean(headline) === "" ? [] : wrap(clean(headline).split(" "), HEADLINE.chars, HEADLINE.rows);
+function storyTextAss(headline, captions2, { font, headlineSize, captionSize, outline, headlineDark, headlineFont = "", headlineY = HEADLINE.y, italic = true, captionColor = "#FFFFFF", headlineStyle = "outline" }) {
+  const style = (name, size, dark = false, face = font, upright = dark, colour = "&H00FFFFFF") => `Style: ${name},${face},${size},${dark ? "&H00000000,&H00000000" : `${colour},${colour}`},&H00000000,&H00000000,-1,${upright ? 0 : -1},0,0,100,100,0,0,1,${dark ? 0 : outline},0,5,60,60,0,1`;
   const event = (start, end, name, x, y, text3) => `Dialogue: 0,${stamp2(start)},${stamp2(end)},${name},,0,0,0,,{\\an5\\pos(${x},${y})}${text3}`;
   const title = clean(headline);
   return [
@@ -50394,26 +50533,39 @@ function storyTextAss(headline, captions2, { font, headlineSize, captionSize, ou
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     style("Head", headlineSize, headlineDark, headlineFont || font, headlineDark || headlineFont !== ""),
-    style("Cap", captionSize, false, font, !italic),
+    style("Cap", captionSize, false, font, !italic, assColour(captionColor)),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
-    ...title === "" ? [] : [event(0, FOREVER, "Head", HEADLINE.x, headlineY, wrap(title.split(" "), HEADLINE.chars, HEADLINE.rows).map(escape2).join(BREAK))],
+    ...title === "" || headlineStyle === "box" ? [] : [event(0, FOREVER, "Head", HEADLINE.x, headlineY, headlineRows(title).map(escape2).join(BREAK))],
+    // the box style is the image card (headline-card.ts)
     ...captions2.map(({ start, end, text: text3 }) => event(start, end, "Cap", CAPTION.x, CAPTION.y, escapeRows(clean(text3)))),
     ""
   ].join("\n");
 }
+var MAX_GAP = 0.3;
 function captionChunks(lines, maxWords = 6, wrapAt = 26) {
-  const chunks = lines.flatMap(({ words: words2 }) => {
-    const per = Math.ceil(words2.length / Math.ceil(words2.length / maxWords));
+  const chunks = lines.flatMap(({ words: raw }) => {
+    const words2 = raw.map((word) => ({ ...word, end: Math.min(word.end, word.start + 0.3 + 0.1 * word.text.length) }));
+    const runs = [];
+    words2.forEach((word, i) => {
+      const prev = words2[i - 1];
+      if (!prev || word.start - prev.end > MAX_GAP || /[.?!]$/.test(prev.text)) runs.push([]);
+      runs.at(-1).push(word);
+    });
     const found = [];
-    for (let from = 0; from < words2.length; from += per) {
-      const chunk = words2.slice(from, from + per);
-      const next = words2[from + per];
-      const start = chunk[0].start;
-      const last = chunk[chunk.length - 1].end;
-      const end = next ? Math.min(next.start, last + 0.25) : last + 0.15;
-      found.push({ start: Math.max(0, start), end: Math.max(end, start + 0.3), text: wrap(chunk.map((word) => word.text), wrapAt).join(BREAK) });
+    let at2 = 0;
+    for (const run2 of runs) {
+      const per = Math.ceil(run2.length / Math.ceil(run2.length / maxWords));
+      for (let from = 0; from < run2.length; from += per) {
+        const chunk = run2.slice(from, from + per);
+        const next = words2[at2 + from + per];
+        const start = chunk[0].start;
+        const last = chunk[chunk.length - 1].end;
+        const end = next ? Math.min(next.start, last + 0.25) : last + 0.15;
+        found.push({ start: Math.max(0, start), end: Math.max(end, start + 0.3), text: wrap(chunk.map((word) => word.text), wrapAt).join(BREAK) });
+      }
+      at2 += run2.length;
     }
     return found;
   });
@@ -50434,7 +50586,13 @@ var FRAME_H = 608;
 var FRAME_STICKER_Y = (1920 + FRAME_H) / 2 + 0.3 * STICKER.w;
 var CARD = { size: 1080, y: 420, color: "0xECECEC" };
 var CARD_RECT = { x0: 0, y0: CARD.y, x1: CARD.size, y1: CARD.y + CARD.size };
+var FIT = [`scale=1080:${FRAME_H}:force_original_aspect_ratio=decrease`, `pad=1080:${FRAME_H}:(ow-iw)/2:(oh-ih)/2`, "setsar=1"];
+var BLUR_BG = "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25";
 var EXIT = 0.2;
+var GREEN = "colorchannelmixer=rr=0.55:gg=1.25:bb=0.55:gb=0.1";
+var RED = "colorchannelmixer=rr=1.35:gg=0.45:bb=0.45:rg=0.1";
+var MARKS = { correct: "check mark button", wrong: "cross mark" };
+var MARK = { w: 420, canvas: 600, show: 1.05, in: 0.55, out: 0.2 };
 var RUN = ["-y", "-v", "error", "-filter_threads", "2", "-filter_complex_threads", "2"];
 var THREADS = ["-threads", "4"];
 var X264 = ["-x264-params", "rc-lookahead=10"];
@@ -50444,26 +50602,41 @@ var POP_VOLUME = 0.5;
 var FINAL_CRF = 18;
 var FLUENT = "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/";
 var REQUIRED_SOUNDS = ["whoosh", "reverse-whoosh", "bubble-pop"];
-var isObject5 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-var num2 = (value) => typeof value === "number" && Number.isFinite(value);
+var isObject6 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var num3 = (value) => typeof value === "number" && Number.isFinite(value);
 var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.test(value) && !value.split("/").includes("..");
-var r32 = (x) => Math.round(x * 1e3) / 1e3;
+var r33 = (x) => Math.round(x * 1e3) / 1e3;
 var n3 = (x) => Number(x.toFixed(3));
 var n4 = (x) => Number(x.toFixed(4));
-function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = noIn, silent, cut }, cmdsFile, layout = "box", cardBackground = "plain") {
+function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = noIn, silent, cut, stretch: wanted }, cmdsFile, layout = "box", cardBackground = "plain", splitTop = "left", segments) {
   const frame = layout === "frame";
   const card = layout === "card";
-  const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : card ? [1, 14, CARD.size, CARD.size] : [K, SHAKE_PX, SIZE, SIZE];
+  const auto = layout === "auto";
+  const split = layout === "split" || auto;
+  const wide = frame || split;
+  const stretch = wide && !cut ? wanted : void 0;
+  const [sIn, sOut] = [stretch === "in", stretch === "out"];
+  const marks = (e) => e.visual === "correct" || e.visual === "wrong";
+  const fx = wide && !cut ? effects.filter(marks) : [];
+  const [k1, shakePx, w, h] = frame ? [1, 14, 1080, FRAME_H] : split ? [1, 14, 1080, 1920] : card ? [1, 14, CARD.size, CARD.size] : [K, SHAKE_PX, SIZE, SIZE];
   const [first, last] = [noIn || !!cut, noOut || !!cut];
   const length3 = frames / FPS;
   const dIn = 0.2;
   const dOut = bigExit ? 0.25 : 0.2;
   const blurIn = 12 * k1;
   const blurOut = (bigExit ? 30 : 12) * k1;
+  const lens = [
+    ...fx.map((e) => ({ js: (t) => t < e.t0 ? 0 : 0.6 * Math.max(0, 1 - (t - e.t0) / 0.45) ** 2, ff: `0.6*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.45),2)` })),
+    ...sOut ? [{ js: (t) => Math.min(1, Math.max(0, (t - (length3 - 0.25)) / 0.25)), ff: `min(1,max(0,(time-${n4(length3 - 0.25)})/0.25))` }] : [],
+    ...sIn ? [{ js: (t) => Math.max(0, 1 - t / 0.25), ff: "max(0,1-time/0.25)" }] : []
+  ];
   const zooms = [
-    ...effects.filter((e) => e.visual === "zoom" && !cut).map((e) => `0.18*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.35),2)`),
-    ...first ? [] : [`0.25*max(0,1-time/${dIn})`],
-    ...last ? [] : [`${bigExit ? 0.5 : 0.25}*max(0,(time-${n4(length3 - dOut)}+${n4(1 / FPS)})/${dOut})`]
+    ...effects.filter((e) => (e.visual === "zoom" || !wide && marks(e)) && !cut).map((e) => `0.18*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.35),2)`),
+    ...fx.map((e) => `0.18*gte(time,${e.t0})*pow(max(0,1-(time-${e.t0})/0.45),2)`),
+    ...first || sIn ? [] : [`0.25*max(0,1-time/${dIn})`],
+    ...last || sOut ? [] : [`${bigExit ? 0.5 : 0.25}*max(0,(time-${n4(length3 - dOut)}+${n4(1 / FPS)})/${dOut})`],
+    ...lens.length ? [`${n4(0.45 * 0.9)}*(${lens.map((l) => l.ff).join("+")})`] : []
+    // crops away the bulge's black corners
   ];
   const shakes = effects.filter((e) => e.visual === "shake").map((e) => `between(time,${e.t0},${n4(e.t0 + 0.3)})`);
   const shake = shakes.length ? `(${shakes.join("+")})` : "0";
@@ -50474,32 +50647,61 @@ function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = 
   const cmds = [];
   for (let k = 0; k < frames; k++) {
     const t = k / FPS;
-    if (!first && t < dIn) cmds.push(`${n4(Math.max(0, t - 1e-3))} gblur@b sigma ${n4(blurIn * (1 - t / dIn) + 0.1)};`);
-    else if (!last && t >= length3 - dOut - 1e-6) cmds.push(`${n4(t - 1e-3)} gblur@b sigma ${n4(blurOut * Math.min(1, (t - (length3 - dOut) + 1 / FPS) / dOut))};`);
+    if (!first && !sIn && t < dIn) cmds.push(`${n4(Math.max(0, t - 1e-3))} gblur@b sigma ${n4(blurIn * (1 - t / dIn) + 0.1)};`);
+    else if (!last && !sOut && t >= length3 - dOut - 1e-6) cmds.push(`${n4(t - 1e-3)} gblur@b sigma ${n4(blurOut * Math.min(1, (t - (length3 - dOut) + 1 / FPS) / dOut))};`);
   }
-  const chain = frame ? [`scale=${w}:${h}:force_original_aspect_ratio=decrease`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2`, "setsar=1"] : card ? ["crop='min(iw,ih)':'min(iw,ih)'", `scale=${w}:${h}`, "setsar=1"] : [`fps=${FPS}`, "crop='min(iw,ih)':'min(iw,ih)'", `scale=${SIZE}:${SIZE}`, "setsar=1"];
+  const blurs = cmds.length;
+  let before = 0;
+  for (let k = 0; lens.length && k < frames; k++) {
+    const v = 0.45 * lens.reduce((a, l) => a + l.js(k / FPS), 0);
+    if (v > 0 || before > 0) cmds.push(`${n4(Math.max(0, k / FPS - 1e-3))} lenscorrection@l k1 ${n4(v)}, lenscorrection@l k2 ${n4(v / 2)};`);
+    before = v;
+  }
+  const chain = split ? [] : frame ? [...FIT] : card ? ["crop='min(iw,ih)':'min(iw,ih)'", `scale=${w}:${h}`, "setsar=1"] : [`fps=${FPS}`, "crop='min(iw,ih)':'min(iw,ih)'", `scale=${SIZE}:${SIZE}`, "setsar=1"];
+  if (lens.length) chain.push(`sendcmd=f=${cmdsFile}`, "lenscorrection@l=k1=0:k2=0:i=bilinear");
   if (zooms.length || shakes.length) {
     chain.push(
       `zoompan=z='1+${[...zooms, `0.04*${shake}`].join("+")}':x='iw/2-(iw/zoom/2)+${shakePx}*sin(time*131.7)*${shake}':y='ih/2-(ih/zoom/2)+${shakePx}*sin(time*173.3+1.3)*${shake}':d=1:s=${w}x${h}:fps=${FPS}`
     );
   }
-  if (cmds.length) {
-    const window = [!first && `lt(t,${dIn})`, !last && `gte(t,${n4(length3 - dOut)})`].filter(Boolean).join("+");
-    chain.push(`sendcmd=f=${cmdsFile}`, `gblur@b=sigma=0.5:enable='${window}'`);
+  if (blurs) {
+    const window = [!first && !sIn && `lt(t,${dIn})`, !last && !sOut && `gte(t,${n4(length3 - dOut)})`].filter(Boolean).join("+");
+    chain.push(...lens.length ? [] : [`sendcmd=f=${cmdsFile}`], `gblur@b=sigma=0.5:enable='${window}'`);
   }
   if (flashes.length) {
     const amount = `min(1,${flashes.join("+")})`;
     chain.push(`eq=brightness='0.5*${amount}':contrast='1-${amount}':saturation='1-${amount}':eval=frame`);
   }
-  const video = frame || card && cardBackground === "blur" ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24,eq=brightness=-0.25[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=${frame ? "(W-w)/2:(H-h)/2" : `0:${CARD.y}`},format=yuv420p[v]` : card && cardBackground === "plain" ? `[0:v]fps=${FPS},${[...chain, `pad=1080:1920:0:${CARD.y}:color=${CARD.color}`, "format=yuv420p"].join(",")}[v]` : `[0:v]${card ? `fps=${FPS},` : ""}${[...chain, "format=yuv420p"].join(",")}[v]`;
+  const half = (x) => `crop=w='trunc(iw*0.475/2)*2':h='trunc(iw*0.475/1.125/2)*2':x='${x}':y='min(ih-oh,ih*0.08)',scale=1080:960,setsar=1`;
+  const crop = (c) => `crop=${c.w}:${c.h}:${c.x}:${c.y}`;
+  const autoPart = ({ start, end, layout: l, crops }, k) => {
+    const head = `[i${k}]trim=start=${n3(start)}:end=${n3(end)},setpts=PTS-STARTPTS`;
+    return l === "split" ? `${head},split=2[a${k}][b${k}];[a${k}]${crop(crops[0])},scale=1080:960,setsar=1[t${k}];[b${k}]${crop(crops[1])},scale=1080:960,setsar=1[u${k}];[t${k}][u${k}]vstack=inputs=2[s${k}]` : l === "single" ? `${head},${crop(crops[0])},scale=1080:1920,setsar=1[s${k}]` : `${head},split=2[bg${k}][fg${k}];[bg${k}]${BLUR_BG}[bv${k}];[fg${k}]${FIT.join(",")}[fv${k}];[bv${k}][fv${k}]overlay=(W-w)/2:(H-h)/2[s${k}]`;
+  };
+  const parts = segments ?? [{ start: 0, end: length3, layout: "frame", crops: [] }];
+  const wash = (e) => {
+    const weight = `gte(T,${e.t0})*max(0,1-(T-${e.t0})/0.5)`;
+    return `${e.visual === "correct" ? GREEN : RED}[@t];[@x][@t]blend=all_expr='A*(1-(${weight}))+B*(${weight})',format=yuv420p`;
+  };
+  const steps = [
+    ...fx.map((e) => (i, o) => `[${i}]split[${i}x][${i}y];[${i}y]${wash(e).replace(/@/g, i)}[${o}]`),
+    ...stretch ? [(i, o) => zoomBlur(i, o, sOut ? `1+2.2*pow(max(0,(time-${n4(length3 - 0.3)})/0.3),3)` : "1+2.2*pow(max(0,1-time/0.3),3)")] : []
+  ];
+  const out = steps.length ? "v0" : "v";
+  const video = auto ? `[0:v]fps=${FPS},split=${parts.length}${parts.map((_, k) => `[i${k}]`).join("")};${parts.map(autoPart).join(";")};${parts.map((_, k) => `[s${k}]`).join("")}concat=n=${parts.length}:v=1:a=0,${[...chain, "format=yuv420p"].join(",")}[${out}]` : split ? `[0:v]fps=${FPS},split=2[sl][sr];[sl]${half("iw/4-ow/2")}[st];[sr]${half("3*iw/4-ow/2")}[sb];${splitTop === "left" ? "[st][sb]" : "[sb][st]"}vstack=inputs=2,${[...chain, "format=yuv420p"].join(",")}[${out}]` : frame || card && cardBackground === "blur" ? `[0:v]fps=${FPS},split=2[bg][fg];[bg]${BLUR_BG}[bgv];[fg]${chain.join(",")}[fgv];[bgv][fgv]overlay=${frame ? "(W-w)/2:(H-h)/2" : `0:${CARD.y}`},format=yuv420p[${out}]` : card && cardBackground === "plain" ? `[0:v]fps=${FPS},${[...chain, `pad=1080:1920:0:${CARD.y}:color=${CARD.color}`, "format=yuv420p"].join(",")}[${out}]` : `[0:v]${card ? `fps=${FPS},` : ""}${[...chain, "format=yuv420p"].join(",")}[${out}]`;
   const sounds = silent ? [] : effects;
   const audio = [
     `[0:a]${STEREO}[a0]`,
     ...sounds.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=0.8[s${k}]`),
     sounds.length ? `[a0]${sounds.map((_, k) => `[s${k}]`).join("")}amix=inputs=${sounds.length + 1}:duration=first:normalize=0,alimiter=limit=0.95[aout]` : "[a0]anull[aout]"
   ];
-  return { graph: `${video};${audio.join(";")}`, cmds: cmds.length ? cmds.join("\n") + "\n" : "" };
+  const tail = steps.map((step, k) => step(`v${k}`, k === steps.length - 1 ? "v" : `v${k + 1}`));
+  return { graph: `${[video, ...tail].join(";")};${audio.join(";")}`, cmds: cmds.length ? cmds.join("\n") + "\n" : "" };
 }
+var zoomBlur = (i, o, z2) => {
+  const ks = [...Array(10).keys()];
+  return `[${i}]split=10${ks.map((k) => `[${i}z${k}]`).join("")};${ks.map((k) => `[${i}z${k}]zoompan=z='(${z2})*(1+0.025*${k}*min(1,(${z2})-1))':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d=1:s=1080x1920:fps=${FPS}[${i}m${k}]`).join(";")};${ks.map((k) => `[${i}m${k}]`).join("")}mix=inputs=10,format=yuv420p[${o}]`;
+};
 function boxArgs(o) {
   return [
     ...RUN,
@@ -50510,7 +50712,7 @@ function boxArgs(o) {
     o.file,
     ...o.soundFiles.flatMap((file) => ["-i", file]),
     "-filter_complex",
-    boxGraph(o.piece, o.cmdsFile, o.layout, o.cardBackground).graph,
+    boxGraph(o.piece, o.cmdsFile, o.layout, o.cardBackground, o.splitTop, o.segments).graph,
     "-map",
     "[v]",
     "-map",
@@ -50575,16 +50777,16 @@ var astatsArgs = (file, seek, length3) => [
 var rmsLevels = (stdout) => [...stdout.matchAll(/lavfi\.astats\.Overall\.RMS_level=(\S+)/g)].map((match) => Number(match[1].replace("inf", "Infinity")));
 function endSearch(clip, fileEnd) {
   const [lo, hi0] = endWindow(clip.lastWord, clip.nextWordStart);
-  const hi = Math.min(hi0, r32(fileEnd - 0.03));
-  return hi - lo < 0.04 ? { cut: r32((lo + hi) / 2) } : { from: lo, to: hi };
+  const hi = Math.min(hi0, r33(fileEnd - 0.03));
+  return hi - lo < 0.04 ? { cut: r33((lo + hi) / 2) } : { from: lo, to: hi };
 }
-var settleEmojis = (emojis, total2) => emojis.map((m, i) => ({ ...m, until: r32(Math.min(m.storyTime + 2.2, emojis[i + 1]?.storyTime ?? Infinity, total2)) }));
+var settleEmojis = (emojis, total2) => emojis.map((m, i) => ({ ...m, until: r33(Math.min(m.storyTime + 2.2, emojis[i + 1]?.storyTime ?? Infinity, total2)) }));
 function retime(story, ends) {
   const frames = story.clips.map((clip, i) => Math.max(1, Math.round((ends[i] - clip.start) * FPS)));
   const starts = frames.map((_, i) => frames.slice(0, i).reduce((a, b) => a + b, 0) / FPS);
-  const total2 = r32(frames.reduce((a, b) => a + b, 0) / FPS);
+  const total2 = r33(frames.reduce((a, b) => a + b, 0) / FPS);
   const issues = [...story.issues];
-  const clips = story.clips.map((clip, i) => ({ ...clip, end: r32(clip.start + frames[i] / FPS), storyStart: r32(starts[i]) }));
+  const clips = story.clips.map((clip, i) => ({ ...clip, end: r33(clip.start + frames[i] / FPS), storyStart: r33(starts[i]) }));
   const effects = story.effects.flatMap((effect) => {
     const old = story.clips[effect.clip];
     const inside = effect.storyTime - old.storyStart;
@@ -50592,11 +50794,11 @@ function retime(story, ends) {
       issues.push(`effect ${effect.sound} at ${effect.storyTime} s no longer fits clip ${effect.clip + 1} (${old.role}) after its end was refined; dropped.`);
       return [];
     }
-    return [{ ...effect, storyTime: r32(starts[effect.clip] + inside) }];
+    return [{ ...effect, storyTime: r33(starts[effect.clip] + inside) }];
   });
   const emojis = story.emojis.map((emoji) => {
     const k = Math.max(0, story.clips.filter((clip) => clip.storyStart <= emoji.storyTime + 1e-6).length - 1);
-    return { ...emoji, storyTime: r32(starts[k] + emoji.storyTime - story.clips[k].storyStart) };
+    return { ...emoji, storyTime: r33(starts[k] + emoji.storyTime - story.clips[k].storyStart) };
   });
   return { clips, effects, emojis: settleEmojis(emojis, total2), total: total2, issues };
 }
@@ -50614,11 +50816,11 @@ function soundPlan(story, seconds3) {
   const hook = story.clips[0]?.role === "hook";
   const transitions = story.clips.slice(1).map(({ storyStart: cut }, i) => {
     if (i === 0 && hook) {
-      const at3 = r32(cut - seconds3("reverse-whoosh"));
+      const at3 = r33(cut - seconds3("reverse-whoosh"));
       busy.push([Math.max(0, at3), cut]);
       return { sound: "reverse-whoosh", at: Math.max(0, at3), skip: Math.max(0, -at3), volume: VOLUME };
     }
-    const at2 = r32(cut - 0.1);
+    const at2 = r33(cut - 0.1);
     busy.push([at2, at2 + seconds3("whoosh")]);
     return { sound: "whoosh", at: at2, skip: 0, volume: VOLUME };
   });
@@ -50644,24 +50846,44 @@ function stickerChain(input, { at: at2, until }, y) {
     overlay: `overlay=x='${STICKER.x}-w/2':y='${y}-h/2+6*sin(2*PI*1.2*${u}+1)':eval=frame:enable='between(t,${n3(at2)},${n3(until)})'`
   };
 }
-function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "plain", fontsDir = "") {
+function markChain(input, { at: at2 }) {
+  const { w, canvas } = MARK;
+  const u = `(t-${n3(at2)})`;
+  const p = `min(1,${u}/${MARK.in})`;
+  const f = `(pow(2,-10*${p})*sin((${p}*10-0.75)*2*PI/3)+1)`;
+  const hold = n3(MARK.show - MARK.out);
+  const q2 = `(1-(${hold}-${u})/${MARK.out})`;
+  const scale = `if(lt(${u},${hold}),max(0.02,${f}),max(0.02,1-${q2}*${q2}))`;
+  const angle = `if(lt(${u},${hold}),-PI/2*(1-${f}),PI/5*${q2}*${q2})`;
+  return {
+    chain: `[${input}:v]format=rgba,scale=${w}:${w}:flags=lanczos,pad=${canvas}:${canvas}:${(canvas - w) / 2}:${(canvas - w) / 2}:color=black@0,setpts=PTS+${n3(at2)}/TB,rotate=a='${angle}':c=none:ow=${canvas}:oh=${canvas}:bilinear=1,scale=w='max(2,trunc(${canvas}*(${scale})/2)*2)':h=-1:eval=frame:flags=bilinear[e${input}]`,
+    overlay: `overlay=x='540-w/2':y='960-h/2':eval=frame:enable='between(t,${n3(at2)},${n3(at2 + MARK.show)})'`
+  };
+}
+function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "plain", fontsDir = "", marks = [], head) {
   const frame = layout !== "box";
   const still = !frame || layout === "card" && cardBackground === "texture";
   const base = still ? 2 : 1;
   const fonts = fontsDir === "" ? "" : `:fontsdir=${fontsDir.replace(/[\\:']/g, "\\$&")}`;
+  const start = head ? "bb" : "b0";
   const video = [
-    ...!still ? ["[0:v]setpts=PTS-STARTPTS[b0]"] : [
+    ...!still ? [`[0:v]setpts=PTS-STARTPTS[${start}]`] : [
       frame ? "[1:v]format=yuv420p[bg]" : `[1:v]format=yuv420p,ass=${FILES.particles}[bg]`,
       "[0:v]setpts=PTS-STARTPTS[box]",
-      frame ? `[bg][box]overlay=0:${CARD.y}:shortest=1[b0]` : `[bg][box]overlay=${BOX.x0}:${BOX.y0}:shortest=1,drawbox=x=${BOX.x0 - 4}:y=${BOX.y0 - 4}:w=${SIZE + 8}:h=${SIZE + 8}:color=white@0.85:t=4[b0]`
+      frame ? `[bg][box]overlay=0:${CARD.y}:shortest=1[${start}]` : `[bg][box]overlay=${BOX.x0}:${BOX.y0}:shortest=1,drawbox=x=${BOX.x0 - 4}:y=${BOX.y0 - 4}:w=${SIZE + 8}:h=${SIZE + 8}:color=white@0.85:t=4[${start}]`
     ],
+    ...head ? [`[bb][${base + stickers.length + marks.length}:v]overlay=x='540-w/2':y='${head.y}-h/2'[b0]`] : [],
     ...stickers.flatMap((sticker, j) => {
       const { chain, overlay } = stickerChain(base + j, sticker, frame ? FRAME_STICKER_Y : STICKER.y);
       return [chain, `[b${j}][e${base + j}]${overlay}[b${j + 1}]`];
     }),
-    `[b${stickers.length}]ass=${FILES.text}${fonts},format=yuv420p[v]`
+    ...marks.flatMap((mark, j) => {
+      const { chain, overlay } = markChain(base + stickers.length + j, mark);
+      return [chain, `[b${stickers.length + j}][e${base + stickers.length + j}]${overlay}[b${stickers.length + j + 1}]`];
+    }),
+    `[b${stickers.length + marks.length}]ass=${FILES.text}${fonts},format=yuv420p[v]`
   ];
-  const first = base + stickers.length;
+  const first = base + stickers.length + marks.length + (head ? 1 : 0);
   const sound = [
     `[0:a]asetpts=PTS-STARTPTS,${STEREO}[a0]`,
     ...audio.map(({ at: at2, skip, volume }, j) => `[${first + j}:a]${STEREO},${skip > 0 ? `atrim=start=${skip.toFixed(3)},asetpts=PTS-STARTPTS,` : ""}adelay=${Math.round(at2 * 1e3)}:all=1,volume=${volume}[s${j}]`),
@@ -50674,6 +50896,8 @@ function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "pl
     FILES.boxes,
     ...still ? ["-loop", "1", "-framerate", String(FPS), "-t", total2.toFixed(3), "-i", FILES.background] : [],
     ...stickers.flatMap(({ file, at: at2, until }) => ["-loop", "1", "-framerate", String(FPS), "-t", (until - at2 + 0.3).toFixed(3), "-i", file]),
+    ...marks.flatMap(({ file }) => ["-loop", "1", "-framerate", String(FPS), "-t", (MARK.show + 0.3).toFixed(3), "-i", file]),
+    ...head ? ["-loop", "1", "-framerate", String(FPS), "-t", total2.toFixed(3), "-i", head.file] : [],
     ...audio.flatMap(({ file }) => ["-i", file]),
     "-filter_complex",
     [...video, ...sound].join(";"),
@@ -50707,7 +50931,7 @@ function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "pl
 function particleEvents(story) {
   return [
     ...story.clips.slice(1).map((clip, i) => ({ t: clip.storyStart, kind: i === 0 && story.clips[0].role === "hook" ? "big" : "cut" })),
-    ...story.effects.map((effect) => ({ t: effect.storyTime, kind: effect.visual })),
+    ...story.effects.map((effect) => ({ t: effect.storyTime, kind: effect.visual === "correct" || effect.visual === "wrong" ? "zoom" : effect.visual })),
     ...story.emojis.map((emoji) => ({ t: emoji.storyTime, kind: "emoji", x: STICKER.x, y: STICKER.y }))
   ].sort((a, b) => a.t - b.t);
 }
@@ -50723,14 +50947,14 @@ function correctWord(text3, corrections, applied) {
 function storyCaptions(story, lines, corrections = [], applied) {
   return story.clips.flatMap((clip, i) => {
     const clipEnd = story.clips[i + 1]?.storyStart ?? story.total;
-    const spoken = lines.map(({ words: words2 }) => words2.filter((w) => (w.start + w.end) / 2 >= clip.start && (w.start + w.end) / 2 < clip.end).map((w) => ({ text: correctWord(w.text, corrections, applied), start: r32(clip.storyStart + w.start - clip.start), end: r32(clip.storyStart + w.end - clip.start) }))).filter((words2) => words2.length > 0).map((words2) => ({ start: words2[0].start, end: words2.at(-1).end, words: words2 }));
-    return captionChunks(spoken).map((chunk) => ({ ...chunk, start: r32(Math.max(chunk.start, clip.storyStart)), end: r32(Math.min(chunk.end, clipEnd)) }));
+    const spoken = lines.map(({ words: words2 }) => words2.filter((w) => (w.start + w.end) / 2 >= clip.start && (w.start + w.end) / 2 < clip.end).map((w) => ({ text: correctWord(w.text, corrections, applied), start: r33(clip.storyStart + w.start - clip.start), end: r33(clip.storyStart + w.end - clip.start) }))).filter((words2) => words2.length > 0).map((words2) => ({ start: words2[0].start, end: words2.at(-1).end, words: words2 }));
+    return captionChunks(spoken).map((chunk) => ({ ...chunk, start: r33(Math.max(chunk.start, clip.storyStart)), end: r33(Math.min(chunk.end, clipEnd)) }));
   });
 }
 function readSources(value) {
   if (!Array.isArray(value) || value.length === 0) throw new ExecutionFailure("video-edit job.clips must be a non-empty list of { role, file, offset, duration }.");
   return value.map((clip, i) => {
-    if (!isObject5(clip) || typeof clip.role !== "string" || !["hook", "intro", "beat", "payoff"].includes(clip.role) || !safeName(clip.file) || !num2(clip.offset) || !num2(clip.duration) || clip.duration <= 0) {
+    if (!isObject6(clip) || typeof clip.role !== "string" || !["hook", "intro", "beat", "payoff"].includes(clip.role) || !safeName(clip.file) || !num3(clip.offset) || !num3(clip.duration) || clip.duration <= 0) {
       throw new ExecutionFailure(`video-edit job.clips[${i}] needs a role (hook, intro, beat or payoff), a relative file name in the run folder, a numeric offset and a positive duration.`);
     }
     return { role: clip.role, file: clip.file, offset: clip.offset, duration: clip.duration };
@@ -50743,7 +50967,7 @@ function readLibrary(raw, path) {
   } catch {
     data = void 0;
   }
-  if (!Array.isArray(data) || !data.every((e) => isObject5(e) && typeof e.name === "string" && safeName(e.file) && num2(e.seconds) && e.seconds > 0)) {
+  if (!Array.isArray(data) || !data.every((e) => isObject6(e) && typeof e.name === "string" && safeName(e.file) && num3(e.seconds) && e.seconds > 0)) {
     throw new ExecutionFailure(`video-edit needs ${path} in the business state folder for sounds.`);
   }
   return new Map(data.map((e) => [e.name, { file: e.file, seconds: e.seconds }]));
@@ -50756,21 +50980,21 @@ function readWords(raw, file) {
   } catch {
     throw bad("is not valid JSON");
   }
-  if (!isObject5(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
+  if (!isObject6(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
   const lines = data.lines.map((line2, i) => {
-    if (!isObject5(line2) || !Array.isArray(line2.words) || !line2.words.every((w) => isObject5(w) && typeof w.text === "string" && num2(w.start) && num2(w.end))) {
+    if (!isObject6(line2) || !Array.isArray(line2.words) || !line2.words.every((w) => isObject6(w) && typeof w.text === "string" && num3(w.start) && num3(w.end))) {
       throw bad(`has a malformed line at index ${i}`);
     }
     return { words: line2.words };
   });
   if (!Array.isArray(data.sentences)) throw bad("needs a sentences array");
   const sentences = data.sentences.map((s, i) => {
-    if (!isObject5(s) || !num2(s.start) || !num2(s.end) || typeof s.text !== "string" || typeof s.speakerChange !== "boolean" || !Number.isInteger(s.first) || !Number.isInteger(s.last)) {
+    if (!isObject6(s) || !num3(s.start) || !num3(s.end) || typeof s.text !== "string" || typeof s.speakerChange !== "boolean" || !Number.isInteger(s.first) || !Number.isInteger(s.last)) {
       throw bad(`has a malformed sentence at index ${i}`);
     }
     return s;
   });
-  if (!Array.isArray(data.laughs) || !data.laughs.every(num2)) throw bad("needs a laughs array");
+  if (!Array.isArray(data.laughs) || !data.laughs.every(num3)) throw bad("needs a laughs array");
   return { lines, words: lines.flatMap((line2) => line2.words), sentences, laughs: data.laughs };
 }
 async function present(tools, file, timeoutMs) {
@@ -50783,7 +51007,7 @@ async function present(tools, file, timeoutMs) {
   }
 }
 async function checkStory(input, settings, tools) {
-  if (!isObject5(input)) throw new ExecutionFailure("video-edit needs a job object.");
+  if (!isObject6(input)) throw new ExecutionFailure("video-edit needs a job object.");
   const manifest = `${settings.soundsDir}/sounds.json`;
   const library = readLibrary(await tools.readText("state", manifest), manifest);
   const { agentErrors, ...job } = input;
@@ -50796,13 +51020,13 @@ async function checkStory(input, settings, tools) {
   return { output: job, port: "next" };
 }
 async function renderStory(input, settings, tools) {
-  if (!isObject5(input)) throw new ExecutionFailure("video-edit input must be a job object.");
+  if (!isObject6(input)) throw new ExecutionFailure("video-edit input must be a job object.");
   const timeoutMs = settings.renderTimeoutMs;
   const ffmpeg = (args) => tools.run("ffmpeg", args, { timeoutMs });
   const sfx = `${tools.stateDir}/${settings.soundsDir}`;
   const emojiPath = (name) => `${tools.stateDir}/${settings.emojiDir}/${emojiFile(name)}`;
   const sources = readSources(input.clips);
-  const wordsFile = isObject5(input.transcript) ? input.transcript.wordsFile : void 0;
+  const wordsFile = isObject6(input.transcript) ? input.transcript.wordsFile : void 0;
   if (!safeName(wordsFile)) throw new ExecutionFailure("video-edit needs job.transcript.wordsFile as a relative file name in the run folder.");
   const manifest = `${settings.soundsDir}/sounds.json`;
   const library = readLibrary(await tools.readText("state", manifest), manifest);
@@ -50815,7 +51039,7 @@ async function renderStory(input, settings, tools) {
   const story = normalizeStory(plan, words2, sentences, laughs);
   const files = matchSources(story.clips, sources);
   const card = settings.layout === "card";
-  const seed = settings.storySeed !== "" ? settings.storySeed : isObject5(input.source) && typeof input.source.id === "string" ? input.source.id : "";
+  const seed = settings.storySeed !== "" ? settings.storySeed : isObject6(input.source) && typeof input.source.id === "string" ? input.source.id : "";
   const picked = settings.cardBackgrounds[Math.floor(seededRandom(`${seed}-background`)() * settings.cardBackgrounds.length)];
   const cardBackground = picked === "plain" || picked === "blur" ? picked : "texture";
   const still = settings.layout === "box" || card && cardBackground === "texture";
@@ -50835,32 +51059,42 @@ async function renderStory(input, settings, tools) {
     ends.push(levels.length < 2 ? clip.end : quietestStart(levels, 0.02, search2.from));
   }
   const retimed = retime({ ...story, issues: [...story.issues, ...notes] }, ends);
-  const timed = card ? { ...retimed, emojis: [] } : retimed;
+  const timed = card || settings.layout === "split" || settings.layout === "auto" ? { ...retimed, emojis: [] } : retimed;
+  const analyses = /* @__PURE__ */ new Map();
+  if (settings.layout === "auto") {
+    for (const { file } of files) if (!analyses.has(file)) analyses.set(file, await analyseShots(file, `${tools.stateDir}/models/face_detection_yunet_2023mar.onnx`, tools, timeoutMs));
+  }
   const boxes = [];
   for (const [i, clip] of timed.clips.entries()) {
     const effects = timed.effects.filter((e) => e.clip === i).map((e) => ({ t0: n4(e.storyTime - clip.storyStart), sound: e.sound, visual: e.visual }));
-    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds, cut: !settings.storyTransitions };
+    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds, cut: !settings.storyTransitions, ...settings.hookTransition === "stretch" && settings.storyHook && i < 2 ? { stretch: i === 0 ? "out" : "in" } : {} };
     const cmdsFile = `story-box${i}.cmds`;
     const out = `story-box${i}.mp4`;
-    await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout, cardBackground).cmds);
+    const seek = r33(clip.start - files[i].offset);
+    const segments = settings.layout === "auto" ? planShots(analyses.get(files[i].file), seek, r33(seek + clip.end - clip.start), settings.splitTop, settings.faceTop) : void 0;
+    await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout, cardBackground, settings.splitTop, segments).cmds);
     await ffmpeg(boxArgs({
       file: files[i].file,
-      seek: r32(clip.start - files[i].offset),
+      seek,
       piece,
       soundFiles: !settings.storySounds ? [] : effects.map((e) => `${sfx}/${library.get(e.sound).file}`),
       cmdsFile,
       out,
       crf: settings.crf,
       layout: settings.layout,
-      cardBackground
+      cardBackground,
+      splitTop: settings.splitTop,
+      segments
     }));
     boxes.push(out);
   }
   await tools.writeText("run", FILES.list, concatList(boxes));
   await ffmpeg(concatArgs(FILES.list, FILES.boxes));
   if (still) await ffmpeg(backgroundArgs(background, FILES.background, card ? CARD_RECT : void 0));
+  const hits = timed.effects.flatMap((e) => e.visual === "correct" || e.visual === "wrong" ? [{ at: e.storyTime, name: MARKS[e.visual] }] : []);
   const available = /* @__PURE__ */ new Map();
-  for (const name of new Set(timed.emojis.map((m) => m.name))) {
+  const headEmoji = settings.headlineEmoji !== "" && plan.headline.trim() !== "" ? settings.headlineEmoji : "";
+  for (const name of /* @__PURE__ */ new Set([...timed.emojis.map((m) => m.name), ...hits.map((h) => h.name), ...headEmoji ? [headEmoji] : []])) {
     let found = await present(tools, emojiPath(name), timeoutMs);
     if (!found) await tools.writeText("state", `${settings.emojiDir}/.keep`, "");
     for (const url of found ? [] : emojiUrls(name)) {
@@ -50877,12 +51111,14 @@ async function renderStory(input, settings, tools) {
   const emojis = settleEmojis(timed.emojis.filter((m) => available.get(m.name)), timed.total);
   const done = { ...timed, emojis };
   if (settings.layout === "box") await tools.writeText("run", FILES.particles, particlesAss(particleEvents(done), seed));
-  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline, italic: settings.captionItalic, headlineDark: card && cardBackground === "plain", headlineFont: settings.headlineFont, ...card ? { headlineY: 280 } : {} };
+  const text3 = { font: settings.captionFont, headlineSize: settings.headlineSize, captionSize: settings.captionSize, outline: settings.captionOutline, italic: settings.captionItalic, captionColor: settings.captionColor, headlineStyle: settings.headlineStyle, headlineDark: card && cardBackground === "plain", headlineFont: settings.headlineFont, headlineY: card ? 280 : 240 };
+  const rows = headlineRows(plan.headline);
+  if (settings.headlineStyle === "box" && rows.length > 0) await renderHeadlineCard(rows, { family: settings.headlineFont || settings.captionFont, size: settings.headlineSize, emoji: headEmoji && available.get(headEmoji) ? emojiPath(headEmoji) : "" }, tools, timeoutMs);
   const applied = /* @__PURE__ */ new Map();
   await tools.writeText("run", FILES.text, storyTextAss(plan.headline, storyCaptions(done, lines, plan.corrections, applied), text3));
   const { transitions, pops } = settings.storySounds ? soundPlan(done, (sound) => library.get(sound).seconds) : { transitions: [], pops: [] };
   const audio = [...transitions, ...pops.filter((pop) => pop !== null)].map((a) => ({ ...a, file: `${sfx}/${library.get(a.sound).file}` }));
-  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" && settings.captionFont === "Roboto" ? "" : `${tools.stateDir}/fonts`));
+  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" && settings.captionFont === "Roboto" ? "" : `${tools.stateDir}/fonts`, hits.filter((h) => available.get(h.name)).map((h) => ({ file: emojiPath(h.name), at: h.at })), settings.headlineStyle === "box" && rows.length > 0 ? { file: CARD_FILE, y: Math.round(settings.headlinePosition * 1920) } : void 0));
   const short = {
     file: FILES.output,
     duration: done.total,
@@ -50925,29 +51161,35 @@ var DEFAULTS3 = {
   renderTimeoutMs: 6e5,
   background: "brick",
   layout: "box",
+  splitTop: "left",
+  faceTop: 0,
+  hookTransition: "blur",
   cardBackgrounds: ["plain"],
   headlineFont: "",
   storyHook: true,
   storySounds: true,
   storyTransitions: true,
   captionItalic: true,
+  captionColor: "#FFFFFF",
+  headlineStyle: "outline",
+  headlineEmoji: "",
   emojiDir: "emoji",
   storySeed: "",
   outputKey: "short"
 };
-var isObject6 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-var num3 = (value) => typeof value === "number" && Number.isFinite(value);
-var between = (min, max = Infinity) => (value) => num3(value) && value >= min && value <= max;
-var positive = (value) => num3(value) && value > 0;
-var even = (value) => Number.isInteger(value) && value >= 2 && value % 2 === 0;
+var isObject7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var num4 = (value) => typeof value === "number" && Number.isFinite(value);
+var between = (min, max = Infinity) => (value) => num4(value) && value >= min && value <= max;
+var positive = (value) => num4(value) && value > 0;
+var even2 = (value) => Number.isInteger(value) && value >= 2 && value % 2 === 0;
 var flag = (value) => typeof value === "boolean";
 var str = (value) => typeof value === "string";
 var safeName2 = (value) => typeof value === "string" && value !== "" && !/^[-/]/.test(value) && !value.split("/").includes("..");
 var folderName = (value) => typeof value === "string" && /^[a-z0-9][a-z0-9_-]*$/i.test(value);
 var RULES = {
   mode: [(value) => value === "short" || value === "story" || value === "check", "'short', 'story' or 'check'"],
-  width: [even, "an even integer"],
-  height: [even, "an even integer"],
+  width: [even2, "an even integer"],
+  height: [even2, "an even integer"],
   contentAspect: [(value) => typeof value === "string" && /^[1-9]\d*:[1-9]\d*$/.test(value), "a ratio such as 4:5"],
   saturation: [between(0, 3), "a number from 0 to 3"],
   removePauses: [flag, "true or false"],
@@ -50969,13 +51211,19 @@ var RULES = {
   crf: [between(0, 51), "a number from 0 to 51"],
   renderTimeoutMs: [positive, "a positive number of milliseconds"],
   background: [folderName, "a plain file name without the .jpg, such as brick"],
-  layout: [(value) => value === "box" || value === "frame" || value === "card", "'box', 'frame' or 'card'"],
+  layout: [(value) => value === "box" || value === "frame" || value === "card" || value === "split" || value === "auto", "'box', 'frame', 'card', 'split' or 'auto'"],
+  splitTop: [(value) => value === "left" || value === "right", "'left' or 'right'"],
+  faceTop: [between(0, 1920), "a number of pixels from 0 (off) to 1920"],
+  hookTransition: [(value) => value === "blur" || value === "stretch", "'blur' or 'stretch'"],
   cardBackgrounds: [(value) => Array.isArray(value) && value.length > 0 && value.every(folderName), "a non-empty list of 'plain', 'blur' or texture names (plain file names without the .jpg)"],
   headlineFont: [(value) => typeof value === "string" && /^[^,\r\n]*$/.test(value), "a font name without commas or line breaks, or empty"],
   storyHook: [flag, "true or false"],
   storySounds: [flag, "true or false"],
   storyTransitions: [flag, "true or false"],
   captionItalic: [flag, "true or false"],
+  captionColor: [(value) => typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value), "a #RRGGBB colour"],
+  headlineStyle: [(value) => value === "outline" || value === "box", "'outline' or 'box'"],
+  headlineEmoji: [(value) => value === "" || typeof value === "string" && EMOJI_NAME.test(value), "a lower-case emoji name such as loudly crying face, or empty"],
   emojiDir: [folderName, "a plain folder name"],
   storySeed: [str, "a string"],
   outputKey: [(value) => typeof value === "string" && value !== "", "a non-empty string"]
@@ -50997,16 +51245,16 @@ function readSettings(config) {
   return settings;
 }
 function readJob(input) {
-  if (!isObject6(input)) throw new ExecutionFailure("video-edit input must be a job object.");
+  if (!isObject7(input)) throw new ExecutionFailure("video-edit input must be a job object.");
   const { moment, clip, transcript } = input;
-  if (!isObject6(moment) || !num3(moment.start) || !num3(moment.end) || moment.end <= moment.start) {
+  if (!isObject7(moment) || !num4(moment.start) || !num4(moment.end) || moment.end <= moment.start) {
     throw new ExecutionFailure("video-edit needs job.moment with numeric start and end, end after start.");
   }
-  if (!isObject6(clip) || !num3(clip.offset) || !num3(clip.duration) || clip.duration <= 0) {
+  if (!isObject7(clip) || !num4(clip.offset) || !num4(clip.duration) || clip.duration <= 0) {
     throw new ExecutionFailure("video-edit needs job.clip with numeric offset and a positive duration.");
   }
   if (!safeName2(clip.file)) throw new ExecutionFailure("video-edit needs job.clip.file as a relative file name in the run folder.");
-  if (!isObject6(transcript) || !safeName2(transcript.wordsFile)) {
+  if (!isObject7(transcript) || !safeName2(transcript.wordsFile)) {
     throw new ExecutionFailure("video-edit needs job.transcript.wordsFile as a relative file name in the run folder.");
   }
   return {
@@ -51015,7 +51263,7 @@ function readJob(input) {
     wordsFile: transcript.wordsFile
   };
 }
-var lookup = (job, path) => path.split(".").reduce((value, key) => isObject6(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
+var lookup = (job, path) => path.split(".").reduce((value, key) => isObject7(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
 function headlineText(job, path) {
   const value = lookup(job, path);
   if (typeof value !== "string" || clean2(value) === "") throw new ExecutionFailure(`video-edit job.${path} (the headline) must be a non-empty string.`);
@@ -51035,7 +51283,7 @@ async function readLibrary2(tools, dir) {
   } catch {
     data = void 0;
   }
-  if (!Array.isArray(data) || !data.every((entry) => isObject6(entry) && typeof entry.name === "string" && safeName2(entry.file))) {
+  if (!Array.isArray(data) || !data.every((entry) => isObject7(entry) && typeof entry.name === "string" && safeName2(entry.file))) {
     throw new ExecutionFailure(`video-edit needs ${file} in the business state folder for sounds.`);
   }
   return data;
@@ -51048,9 +51296,9 @@ function parseLines(raw, file) {
   } catch {
     throw bad("is not valid JSON");
   }
-  if (!isObject6(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
+  if (!isObject7(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
   return data.lines.map((line2, index2) => {
-    const valid = isObject6(line2) && num3(line2.start) && num3(line2.end) && typeof line2.text === "string" && Array.isArray(line2.words) && line2.words.every((word) => isObject6(word) && num3(word.start) && num3(word.end));
+    const valid = isObject7(line2) && num4(line2.start) && num4(line2.end) && typeof line2.text === "string" && Array.isArray(line2.words) && line2.words.every((word) => isObject7(word) && num4(word.start) && num4(word.end));
     if (!valid) throw bad(`has a malformed line at index ${index2}`);
     return line2;
   });
@@ -51086,7 +51334,7 @@ function pickSounds(items, library, offset, segments, maxSounds) {
   const first = segments[0].start;
   const last = segments[segments.length - 1].end;
   return items.flatMap((item) => {
-    if (!isObject6(item) || !num3(item.at) || typeof item.sound !== "string") return [];
+    if (!isObject7(item) || !num4(item.at) || typeof item.sound !== "string") return [];
     const volume = item.volume === void 0 ? 1 : item.volume;
     const entry = library.find(({ name }) => name === item.sound);
     const time = item.at - offset;
@@ -51250,10 +51498,10 @@ var TITLE_FILE = "thumbnail-title.txt";
 var MAX_BYTES = 2e6;
 var ADVANCE = { I: 0.29, M: 0.88, W: 0.88, " ": 0.25, "!": 0.27, ".": 0.29, ",": 0.25, "'": 0.16, "-": 0.39 };
 var ADVANCE_DEFAULT = 0.68;
-var isObject7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
-var num4 = (value) => String(Math.round(value * 1e6) / 1e6);
+var isObject8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var num5 = (value) => String(Math.round(value * 1e6) / 1e6);
 function object(value, name) {
-  if (!isObject7(value)) throw new ExecutionFailure(`Thumbnail ${name} must be an object.`);
+  if (!isObject8(value)) throw new ExecutionFailure(`Thumbnail ${name} must be an object.`);
   return value;
 }
 function bounded(value, name, min, max = Infinity, integer = false) {
@@ -51317,7 +51565,7 @@ function frameTimes(moment, offset, count2) {
   return Array.from({ length: count2 }, (_, index2) => first + span * (index2 + 0.5) / count2 - offset);
 }
 async function candidates(job, settings, tools) {
-  const payoff = job.clip === void 0 && Array.isArray(job.clips) ? job.clips.find((item) => isObject7(item) && item.role === "payoff") : void 0;
+  const payoff = job.clip === void 0 && Array.isArray(job.clips) ? job.clips.find((item) => isObject8(item) && item.role === "payoff") : void 0;
   const clip = object(job.clip ?? payoff, "clip");
   const file = fileName2(clip.file, "clip.file");
   const offset = bounded(clip.offset, "clip.offset", 0);
@@ -51377,10 +51625,10 @@ function composeGraph(settings, focus, title) {
     const scaled = { width: Math.round(ARROW_SIZE.width * scale), height: Math.round(ARROW_SIZE.height * scale) };
     const tip = { x: Math.round(ARROW_TIP.x * scale), y: Math.round(ARROW_TIP.y * scale) };
     const reach = Math.ceil(Math.max(...[[0, 0], [scaled.width, 0], [0, scaled.height], [scaled.width, scaled.height]].map(([x, y]) => Math.hypot(x - tip.x, y - tip.y))));
-    const a = num4(angle);
+    const a = num5(angle);
     parts.push(
       `[1:v]format=rgba,scale=${scaled.width}:${scaled.height}:flags=lanczos,pad=${2 * reach}:${2 * reach}:${reach - tip.x}:${reach - tip.y}:color=black@0,rotate=a=${a}:ow=rotw(${a}):oh=roth(${a}):c=none[arrow]`,
-      `[${last}][arrow]overlay=x=${num4(target.x)}-overlay_w/2:y=${num4(target.y)}-overlay_h/2:format=gbrp[withArrow]`
+      `[${last}][arrow]overlay=x=${num5(target.x)}-overlay_w/2:y=${num5(target.y)}-overlay_h/2:format=gbrp[withArrow]`
     );
     last = "withArrow";
   }
@@ -51437,6 +51685,7 @@ var DEFAULTS5 = {
   categoryId: "23",
   madeForKids: false,
   containsSyntheticMedia: false,
+  paidPromotion: false,
   setCover: true,
   maxHashtags: 10,
   titleHashtags: true,
@@ -51444,7 +51693,7 @@ var DEFAULTS5 = {
   outputKey: "youtube"
 };
 var PRIVACIES = ["private", "unlisted", "public"];
-var isObject8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var isText = (value) => typeof value === "string" && value.trim() !== "";
 var reason2 = (error) => error instanceof Error ? error.message : String(error);
 function clipTitle(title) {
@@ -51492,6 +51741,7 @@ function readSettings3(config) {
   const categoryId = get("categoryId");
   const madeForKids = get("madeForKids");
   const containsSyntheticMedia = get("containsSyntheticMedia");
+  const paidPromotion = get("paidPromotion");
   const setCover = get("setCover");
   const maxHashtags = get("maxHashtags");
   const titleHashtags = get("titleHashtags");
@@ -51504,6 +51754,7 @@ function readSettings3(config) {
   if (typeof categoryId !== "string" || !/^\d+$/.test(categoryId)) throw new ExecutionFailure("YouTube publish setting categoryId must be a string of digits.");
   if (typeof madeForKids !== "boolean") throw new ExecutionFailure("YouTube publish setting madeForKids must be true or false.");
   if (typeof containsSyntheticMedia !== "boolean") throw new ExecutionFailure("YouTube publish setting containsSyntheticMedia must be true or false.");
+  if (typeof paidPromotion !== "boolean") throw new ExecutionFailure("YouTube publish setting paidPromotion must be true or false.");
   if (typeof setCover !== "boolean") throw new ExecutionFailure("YouTube publish setting setCover must be true or false.");
   if (typeof maxHashtags !== "number" || !Number.isInteger(maxHashtags) || maxHashtags < 0 || maxHashtags > 60) {
     throw new ExecutionFailure("YouTube publish setting maxHashtags must be a whole number from 0 to 60.");
@@ -51513,22 +51764,22 @@ function readSettings3(config) {
     throw new ExecutionFailure("YouTube publish setting publishAfterHours must be a number from 0 to 720.");
   }
   if (!isText(outputKey)) throw new ExecutionFailure("YouTube publish setting outputKey must be a non-empty string.");
-  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey };
+  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey };
 }
 function readJob2(input, needCover, maxHashtags, titleHashtags) {
-  if (!isObject8(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
+  if (!isObject9(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
   const { short, meta, thumbnail } = input;
-  if (!isObject8(short) || !isText(short.file)) throw new ExecutionFailure("YouTube publish input job.short.file must be a non-empty string.");
-  if (!isObject8(meta) || !isText(meta.title)) throw new ExecutionFailure("YouTube publish input job.meta.title must be a non-empty string.");
+  if (!isObject9(short) || !isText(short.file)) throw new ExecutionFailure("YouTube publish input job.short.file must be a non-empty string.");
+  if (!isObject9(meta) || !isText(meta.title)) throw new ExecutionFailure("YouTube publish input job.meta.title must be a non-empty string.");
   if (meta.description !== void 0 && typeof meta.description !== "string") throw new ExecutionFailure("YouTube publish input job.meta.description must be a string.");
   if (meta.tags !== void 0 && !Array.isArray(meta.tags)) throw new ExecutionFailure("YouTube publish input job.meta.tags must be an array.");
   if (meta.hashtags !== void 0 && !Array.isArray(meta.hashtags)) throw new ExecutionFailure("YouTube publish input job.meta.hashtags must be an array.");
   if (meta.comment !== void 0 && typeof meta.comment !== "string") throw new ExecutionFailure("YouTube publish input job.meta.comment must be a string.");
-  if (needCover && (!isObject8(thumbnail) || !isText(thumbnail.file))) throw new ExecutionFailure("YouTube publish input job.thumbnail.file must be a non-empty string.");
+  if (needCover && (!isObject9(thumbnail) || !isText(thumbnail.file))) throw new ExecutionFailure("YouTube publish input job.thumbnail.file must be a non-empty string.");
   return {
     job: input,
     file: short.file,
-    cover: isObject8(thumbnail) ? String(thumbnail.file) : "",
+    cover: isObject9(thumbnail) ? String(thumbnail.file) : "",
     title: withTitleHashtags(clipTitle(meta.title.trim()), titleHashtags ? cleanHashtags(meta.hashtags ?? [], maxHashtags) : []),
     description: withHashtags(meta.description ?? "", cleanHashtags(meta.hashtags ?? [], maxHashtags)),
     tags: cleanTags(meta.tags ?? []),
@@ -51553,8 +51804,8 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
       receipt = JSON.parse(saved);
     } catch {
     }
-    if (!isObject8(receipt) || receipt.handle === handle && receipt.file === file) {
-      if (!isObject8(receipt) || typeof receipt.videoId !== "string" || !/^[A-Za-z0-9_-]{6,20}$/.test(receipt.videoId)) {
+    if (!isObject9(receipt) || receipt.handle === handle && receipt.file === file) {
+      if (!isObject9(receipt) || typeof receipt.videoId !== "string" || !/^[A-Za-z0-9_-]{6,20}$/.test(receipt.videoId)) {
         throw new ExecutionFailure(`The upload receipt ${name} is unreadable, so nothing was uploaded; check the channel for a video that was already uploaded, then delete the receipt to upload again.`);
       }
       return receipt.videoId;
@@ -51571,11 +51822,11 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
 }
 async function execute13({ input, config, node }, { youtube, tools }) {
   if (!youtube) throw new ExecutionFailure("YouTube publish requires the youtube capability.");
-  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey } = readSettings3(config);
+  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey } = readSettings3(config);
   const { job, file, cover, title, description, tags, comment } = readJob2(input, setCover, maxHashtags, titleHashtags);
   await guard(() => youtube.verifyChannel(handle, { studio: setCover }));
   const publishAt = publishAfterHours > 0 ? new Date(Date.now() + publishAfterHours * 36e5).toISOString() : void 0;
-  const videoId = await uploadOnce(youtube, tools, node, handle, file, { title, description, tags, categoryId, madeForKids, containsSyntheticMedia, ...publishAt && { publishAt } });
+  const videoId = await uploadOnce(youtube, tools, node, handle, file, { title, description, tags, categoryId, madeForKids, containsSyntheticMedia, ...paidPromotion && { paidPromotion }, ...publishAt && { publishAt } });
   const state = await guard(
     () => youtube.waitForProcessing(handle, videoId),
     (why) => `Video ${videoId} uploaded but YouTube processing could not be confirmed (${why}); it stays private.`
@@ -51614,7 +51865,7 @@ var DEFAULTS6 = {
 var CAPTION_LIMIT = 2200;
 var USERNAME = /^@?([A-Za-z0-9._]{1,30})$/;
 var ID = /^[A-Za-z0-9_-]{1,64}$/;
-var isObject9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var isText2 = (value) => typeof value === "string" && value.trim() !== "";
 var reason3 = (error) => error instanceof Error ? error.message : String(error);
 function cleanHashtags2(items, max) {
@@ -51651,10 +51902,10 @@ function readSettings4(config) {
   return { username: match[1].toLowerCase(), shareToFeed, maxHashtags, outputKey };
 }
 function readJob3(input, maxHashtags) {
-  if (!isObject9(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
+  if (!isObject10(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
   const { short, meta = {} } = input;
-  if (!isObject9(short) || !isText2(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
-  if (!isObject9(meta)) throw new ExecutionFailure("Instagram publish input job.meta must be an object.");
+  if (!isObject10(short) || !isText2(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
+  if (!isObject10(meta)) throw new ExecutionFailure("Instagram publish input job.meta must be an object.");
   for (const key of ["title", "description"]) {
     if (meta[key] !== void 0 && typeof meta[key] !== "string") throw new ExecutionFailure(`Instagram publish input job.meta.${key} must be a string.`);
   }
@@ -51679,8 +51930,8 @@ async function readReceipt(tools, name, username, file) {
     receipt = JSON.parse(saved);
   } catch {
   }
-  if (isObject9(receipt) && (receipt.username !== username || receipt.file !== file)) return void 0;
-  const valid = isObject9(receipt) && typeof receipt.containerId === "string" && ID.test(receipt.containerId) && (receipt.mediaId === void 0 || typeof receipt.mediaId === "string" && ID.test(receipt.mediaId)) && (receipt.permalink === void 0 || typeof receipt.permalink === "string");
+  if (isObject10(receipt) && (receipt.username !== username || receipt.file !== file)) return void 0;
+  const valid = isObject10(receipt) && typeof receipt.containerId === "string" && ID.test(receipt.containerId) && (receipt.mediaId === void 0 || typeof receipt.mediaId === "string" && ID.test(receipt.mediaId)) && (receipt.permalink === void 0 || typeof receipt.permalink === "string");
   if (!valid) {
     throw new ExecutionFailure(`The Instagram receipt ${name} is unreadable, so nothing was uploaded; check @${username} for a Reel that was already posted, then delete the receipt to post again.`);
   }
@@ -51742,7 +51993,7 @@ var VOICES = ["kokoro", "elevenlabs"];
 var PORTS = ["next", "invalid", "missing"];
 var LOG_TAIL = 1e3;
 var ENGINE_DIR = decodeURIComponent(new URL("./shorts-engine/", import.meta.url).pathname);
-var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var whole = (value, min, max) => typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 function readSettings5(config) {
   const merged = { ...DEFAULTS7, ...config };
@@ -51764,8 +52015,8 @@ function readResult(text3) {
     parsed = text3 === void 0 ? void 0 : JSON.parse(text3);
   } catch {
   }
-  const log = isObject10(parsed) && typeof parsed.log === "string" ? parsed.log : "";
-  if (!isObject10(parsed) || typeof parsed.port !== "string" || !PORTS.includes(parsed.port) || !isObject10(parsed.output)) {
+  const log = isObject11(parsed) && typeof parsed.log === "string" ? parsed.log : "";
+  if (!isObject11(parsed) || typeof parsed.port !== "string" || !PORTS.includes(parsed.port) || !isObject11(parsed.output)) {
     throw new ExecutionFailure(`Shorts engine wrote no usable result (shorts-result.json).${log ? ` Log tail: ${log.slice(-LOG_TAIL)}` : ""}`);
   }
   return { port: parsed.port, output: parsed.output, log };
@@ -51773,7 +52024,7 @@ function readResult(text3) {
 async function execute15({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("Shorts module requires the tools capability.");
   const { mode, lane, timeoutMs, engine } = readSettings5(config);
-  if (!isObject10(input)) throw new ExecutionFailure("Shorts input must be a job object.");
+  if (!isObject11(input)) throw new ExecutionFailure("Shorts input must be a job object.");
   const job = lane === "" ? input : { ...input, lane };
   const at2 = (name) => `${tools.runDir}/${name}`;
   await tools.writeText("run", "shorts-job.json", JSON.stringify(job));
@@ -51880,9 +52131,9 @@ var printable = (value) => typeof value === "string" ? value : json(value);
 function shorten(text3, max) {
   return text3.length > max ? `${text3.slice(0, max - 1)}\u2026` : text3;
 }
-var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject12 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function summarizeOutput(input, output2) {
-  if (!isObject11(input) || !isObject11(output2)) return shorten(printable(output2), 300);
+  if (!isObject12(input) || !isObject12(output2)) return shorten(printable(output2), 300);
   const changed = Object.keys(output2).filter((key) => json(output2[key]) !== json(input[key])).map((key) => `${key}=${shorten(json(output2[key]), 120)}`);
   const removed = Object.keys(input).filter((key) => !(key in output2)).map((key) => `${key} removed`);
   return [...changed, ...removed].join(", ") || "no changes";
@@ -52291,7 +52542,7 @@ function createRunTools(options) {
     let real;
     if (path && isAbsolute(path)) real = await realpath2(path).catch(() => void 0);
     const ok = real !== void 0 && (await stat2(real)).isFile() && roots.some((root) => root !== void 0 && real.startsWith(root + sep2));
-    if (!ok) throw new ExecutionFailure(`${tool} may only run a script file inside the shorts engine (got ${JSON.stringify(path ?? "")}).`);
+    if (!ok) throw new ExecutionFailure(`${tool} may only run a script file inside a script root, the shorts engine or the video-edit scripts (got ${JSON.stringify(path ?? "")}).`);
   }
   async function run2(tool, args, runOptions = {}) {
     const { timeoutMs = defaultTimeoutMs2, signal } = runOptions;
@@ -55737,7 +55988,7 @@ function createYouTubeDataApi(options) {
       try {
         const size = (await source.stat()).size;
         if (size === 0) throw new ExecutionFailure("The video file is empty.");
-        const start = await timedFetch(fetchImpl, `${UPLOAD_URL}?uploadType=resumable&part=snippet,status`, {
+        const start = await timedFetch(fetchImpl, `${UPLOAD_URL}?uploadType=resumable&part=snippet,status${metadata.paidPromotion ? ",paidProductPlacementDetails" : ""}`, {
           method: "POST",
           headers: {
             authorization: `Bearer ${(await session(handle)).accessToken}`,
@@ -55747,7 +55998,8 @@ function createYouTubeDataApi(options) {
           },
           body: JSON.stringify({
             snippet: { title: metadata.title, description: metadata.description, tags: metadata.tags, categoryId: metadata.categoryId },
-            status: { privacyStatus: "private", ...metadata.publishAt ? { publishAt: metadata.publishAt } : {}, selfDeclaredMadeForKids: metadata.madeForKids, containsSyntheticMedia: metadata.containsSyntheticMedia }
+            status: { privacyStatus: "private", ...metadata.publishAt ? { publishAt: metadata.publishAt } : {}, selfDeclaredMadeForKids: metadata.madeForKids, containsSyntheticMedia: metadata.containsSyntheticMedia },
+            ...metadata.paidPromotion ? { paidProductPlacementDetails: { hasPaidProductPlacement: true } } : {}
           })
         }, REQUEST_TIMEOUT_MS3, "YouTube upload start");
         if (!start.ok) await httpFailure(start, "YouTube upload start");
@@ -56091,7 +56343,7 @@ async function createApp(options = {}) {
   const dataDir = resolve5(options.dataDir || process.env.AUTOBIZ_DATA_DIR || dirname5(databasePath));
   const repository = new WorkspaceRepository(databasePath);
   const configuredAgent = options.agent ?? createConfiguredAgent();
-  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), toolExecutables: toolExecutables(), scriptRoots: [shortsEngineDir()], networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
+  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), toolExecutables: toolExecutables(), scriptRoots: [shortsEngineDir(), videoEditScriptsDir()], networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
   repository.markActiveRunsInterrupted();
   const cloudSync = runnersRepo ? createCloudSync({ repo: runnersRepo, dataDir, repository, gh: options.cloudSync?.gh }) : void 0;
   app.decorate("workspaceRepository", repository);
@@ -56232,6 +56484,10 @@ function shortsEngineDir() {
   const bundled = fileURLToPath(new URL("./shorts-engine/", import.meta.url));
   return existsSync2(bundled) ? bundled : fileURLToPath(new URL("../../../modules/shorts/shorts-engine/", import.meta.url));
 }
+function videoEditScriptsDir() {
+  const bundled = fileURLToPath(new URL("./video-edit-python/", import.meta.url));
+  return existsSync2(bundled) ? bundled : fileURLToPath(new URL("../../../modules/video-edit/video-edit-python/", import.meta.url));
+}
 function toolExecutables(env = process.env) {
   const python = env.AUTOBIZ_PYTHON?.trim();
   return python ? { python3: python } : void 0;
@@ -56261,6 +56517,21 @@ function profileMarkdown(run2) {
 function failedInMediaFetch(run2) {
   const node = run2.workflow.nodes.find(({ id }) => id === run2.checkpoint?.nodeId);
   return run2.modules.find(({ id }) => id === node?.moduleId)?.kind === "media-fetch";
+}
+function publishedItems(run2) {
+  const found = [];
+  const walk = (value, title) => {
+    if (Array.isArray(value)) return value.forEach((item) => walk(item, title));
+    if (typeof value !== "object" || value === null) return;
+    const node = value;
+    const meta = node.meta;
+    const here = typeof meta?.title === "string" ? meta.title : title;
+    const [platform, url] = typeof node.videoId === "string" ? ["youtube", node.url] : typeof node.mediaId === "string" ? ["instagram", node.permalink] : [];
+    if (platform && typeof url === "string") found.push({ platform, url, ...here && { title: here } });
+    for (const child of Object.values(node)) walk(child, here);
+  };
+  walk(run2.output);
+  return found;
 }
 async function runHeadless(options) {
   const { snapshot, attempts = 1, pollMs = 1e3, out = () => void 0 } = options;
@@ -56306,7 +56577,7 @@ async function runHeadless(options) {
 }
 var usageText = "Usage: npm run runner -- <business.json> [--data <dir>] [--attempts <1-5>] [--between <shell command>]";
 var message = (error) => error instanceof Error ? error.message : String(error);
-async function runHeadlessCli({ argv, out, err, summaryFile }) {
+async function runHeadlessCli({ argv, out, err, summaryFile, publishedFile }) {
   const usage = (problem) => {
     err(`${problem}
 ${usageText}`);
@@ -56347,6 +56618,7 @@ ${usageText}`);
     const { ok, runs } = await runHeadless({ snapshot, dataDir, attempts, betweenAttempts, out });
     if (summaryFile && runs.length) await appendFile(summaryFile, `
 ${profileMarkdown(runs.at(-1))}`).catch((error) => err(`Cannot write block timings summary: ${message(error)}`));
+    if (publishedFile) await writeFile2(publishedFile, JSON.stringify(runs.length ? publishedItems(runs.at(-1)) : [])).catch((error) => err(`Cannot write the published list: ${message(error)}`));
     return ok ? 0 : 1;
   } catch (error) {
     err(message(error));
@@ -56355,7 +56627,7 @@ ${profileMarkdown(runs.at(-1))}`).catch((error) => err(`Cannot write block timin
 }
 
 // scripts/run-business.ts
-process.exitCode = await runHeadlessCli({ argv: process.argv.slice(2), out: console.log, err: console.error, summaryFile: process.env.GITHUB_STEP_SUMMARY });
+process.exitCode = await runHeadlessCli({ argv: process.argv.slice(2), out: console.log, err: console.error, summaryFile: process.env.GITHUB_STEP_SUMMARY, publishedFile: process.env.AUTOBIZ_PUBLISHED_FILE });
 /*! Bundled license information:
 
 toad-cache/dist/toad-cache.cjs:
