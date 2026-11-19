@@ -55846,7 +55846,7 @@ function checkId(id) {
   return id;
 }
 function createInstagramGraphApi(options) {
-  const { tokenDir, fetch: fetchImpl, pollMs = 15e3, processingTimeoutMs = 9e5, retryMs = 5e3, now = Date.now } = options;
+  const { tokenDir, fetch: fetchImpl, pollMs = 15e3, processingTimeoutMs = 9e5, retryDelaysMs = [2e4, 6e4], now = Date.now } = options;
   const sleep = options.sleep ?? ((ms) => new Promise((resolve7) => setTimeout(resolve7, ms)));
   async function session(username) {
     const name = instagramName(username);
@@ -55892,13 +55892,15 @@ function createInstagramGraphApi(options) {
         if (result?.success !== true) throw new ExecutionFailure("Instagram did not accept the video upload; nothing was published.");
         return { containerId };
       };
-      try {
-        return await once();
-      } catch (error) {
-        if (!(error instanceof UploadRetry)) throw error;
-        await sleep(retryMs);
-        return once();
+      for (const wait of retryDelaysMs) {
+        try {
+          return await once();
+        } catch (error) {
+          if (!(error instanceof UploadRetry)) throw error;
+          await sleep(wait);
+        }
       }
+      return once();
     },
     async waitForContainer(username, containerId) {
       checkId(containerId);
