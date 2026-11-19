@@ -1,0 +1,43 @@
+name: Instagram upload diagnostic (temporary)
+on: workflow_dispatch
+permissions:
+  actions: read
+  contents: read
+jobs:
+  diag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 44608054514
+          github-token: ${{ github.token }}
+          path: art
+      - name: Real video, node fetch and curl, never published
+        env:
+          INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN_PODCLIPPYHQ }}
+        run: |
+          umask 077
+          printf '%s' "$INSTAGRAM_TOKEN" > "$RUNNER_TEMP/ig.json"
+          V=$(find art -name short.mp4 | head -1); ls -l "$V" | awk '{print "video bytes", $5}'
+          cat > "$RUNNER_TEMP/d.mjs" <<'JS'
+          import { readFileSync } from 'node:fs'
+          import { execFileSync } from 'node:child_process'
+          const t = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/ig.json', 'utf8'))
+          const file = process.argv[2], v = readFileSync(file)
+          const auth = { authorization: `OAuth ${t.access_token}` }
+          const clean = (s) => String(s).split(t.access_token).join('[token]').replace(/\s+/g, ' ').slice(0, 500)
+          const container = async () => (await (await fetch(`https://graph.facebook.com/v26.0/${t.user_id}/media`, { method: 'POST', headers: { ...auth, 'content-type': 'application/json' }, body: JSON.stringify({ media_type: 'REELS', upload_type: 'resumable', caption: 'diagnostic, never published', share_to_feed: true }) })).json())
+          const a = await container()
+          const u = await fetch(a.uri, { method: 'POST', headers: { ...auth, offset: '0', file_size: String(v.length) }, body: v })
+          console.log('node fetch upload', u.status, clean(await u.text()))
+          const b = await container()
+          let out
+          try { out = execFileSync('curl', ['-sS', '-w', ' HTTP %{http_code}', '-X', 'POST', b.uri, '-H', `Authorization: OAuth ${t.access_token}`, '-H', 'offset: 0', '-H', `file_size: ${v.length}`, '--data-binary', '@' + file]).toString() } catch (e) { out = 'curl error ' + e.message }
+          console.log('curl upload', clean(out))
+          JS
+          node "$RUNNER_TEMP/d.mjs" "$V"
+          rm -f "$RUNNER_TEMP/ig.json"
