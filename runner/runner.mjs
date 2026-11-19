@@ -50594,7 +50594,7 @@ var EXIT = 0.2;
 var GREEN = "colorchannelmixer=rr=0.55:gg=1.25:bb=0.55:gb=0.1";
 var RED = "colorchannelmixer=rr=1.35:gg=0.45:bb=0.45:rg=0.1";
 var MARKS = { correct: "check mark button", wrong: "cross mark" };
-var MARK = { w: 420, canvas: 600, show: 1.05, in: 0.55, out: 0.2 };
+var MARK = { w: 420, canvas: 600, show: 1.05, in: 0.55, out: 0.2, y: 640 };
 var RUN = ["-y", "-v", "error", "-filter_threads", "2", "-filter_complex_threads", "2"];
 var THREADS = ["-threads", "4"];
 var X264 = ["-x264-params", "rc-lookahead=10"];
@@ -50682,7 +50682,7 @@ function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = 
   };
   const parts = segments ?? [{ start: 0, end: length3, layout: "frame", crops: [] }];
   const wash = (e) => {
-    const weight = `gte(T,${e.t0})*max(0,1-(T-${e.t0})/0.5)`;
+    const weight = `gte(T,${e.t0})*min(1,max(0,1-(T-${e.t0}-0.35)/0.55))`;
     return `${e.visual === "correct" ? GREEN : RED}[@t];[@x][@t]blend=all_expr='A*(1-(${weight}))+B*(${weight})',format=yuv420p`;
   };
   const steps = [
@@ -50854,12 +50854,12 @@ function markChain(input, { at: at2 }) {
   const p = `min(1,${u}/${MARK.in})`;
   const f = `(pow(2,-10*${p})*sin((${p}*10-0.75)*2*PI/3)+1)`;
   const hold = n3(MARK.show - MARK.out);
-  const q2 = `(1-(${hold}-${u})/${MARK.out})`;
+  const q2 = `((${u}-${hold})/${MARK.out})`;
   const scale = `if(lt(${u},${hold}),max(0.02,${f}),max(0.02,1-${q2}*${q2}))`;
   const angle = `if(lt(${u},${hold}),-PI/2*(1-${f}),PI/5*${q2}*${q2})`;
   return {
     chain: `[${input}:v]format=rgba,scale=${w}:${w}:flags=lanczos,pad=${canvas}:${canvas}:${(canvas - w) / 2}:${(canvas - w) / 2}:color=black@0,setpts=PTS+${n3(at2)}/TB,rotate=a='${angle}':c=none:ow=${canvas}:oh=${canvas}:bilinear=1,scale=w='max(2,trunc(${canvas}*(${scale})/2)*2)':h=-1:eval=frame:flags=bilinear[e${input}]`,
-    overlay: `overlay=x='540-w/2':y='960-h/2':eval=frame:enable='between(t,${n3(at2)},${n3(at2 + MARK.show)})'`
+    overlay: `overlay=x='540-w/2':y='${MARK.y}-h/2':eval=frame:enable='between(t,${n3(at2)},${n3(at2 + MARK.show)})'`
   };
 }
 function finalArgs(total2, stickers, audio, layout = "box", cardBackground = "plain", fontsDir = "", marks = [], head) {
