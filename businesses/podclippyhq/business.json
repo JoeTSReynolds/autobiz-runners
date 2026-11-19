@@ -130,7 +130,7 @@
             "y": 739
           },
           "config": {
-            "prompt": "Campaign brief (paid clipping campaign for Vi City, the guest): create engaging 9:16 clips from the Vi City podcast, opening with a strong hook in the first 1-2 seconds and highlighting his personality, music and stories through punchy cuts, zooms, readable captions and well-timed reactions. Keep each clip focused and natural, remove dead air without changing his meaning, keep Vi City visible and his dialogue clear, and keep his words in context. Write YouTube Shorts metadata for a clip of Vi City from the episode in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. The title is short, punchy clickbait in the style of \"Vi City said WHAT about Nigerians??? 💀\": it names Vi City and the TOPIC of the moment (a person, a group, a place or a thing people know, taken from what he actually talks about) and hides WHAT happened, so people tap to find out. It must make sense on its own to someone who knows nothing about the clip; never cut a quote off mid-sentence. Good shapes: \"Vi City said WHAT about <topic>??? 💀\", \"Vi City's <person> did WHAT??? 😭\", \"Vi City got DESTROYED by <topic>... 💀\", \"Why Vi City <does something surprising>??? 😭\", \"Vi City really thinks <topic> is...?? 💀\". Use one word in capitals (usually WHAT or the shock word), end with ??? or ?? or ... and exactly one emoji (💀 😭 😳 🤯 👀). At most 45 characters including the emoji. The title must be true to the clip: the topic is really in it, and nothing is claimed that he did not say or do. `titlePattern` is a one-word label of the shape you used (said-what, did-what, why, destroyed, thinks). Return only JSON: {\"title\": \"at most 45 characters including the emoji, no hashtags\", \"titlePattern\": \"said-what\" | \"did-what\" | \"why\" | \"destroyed\" | \"thinks\", \"description\": \"first line exactly: #ad @iamvicity ; then 1 to 2 sentences teasing the moment; then a last line crediting the source exactly as: Source: <source.title> - <source.channel> <source.url>. No hashtags except #ad.\", \"hashtags\": [\"6 to 10 words without the # sign, including vicity, podcast and shorts; letters and digits only\"], \"tags\": [\"5 to 8 lowercase search keywords including vi city\"], \"thumbnailText\": \"at most 3 words, uppercase\"}. If `agentErrors` is present, fix those problems.",
+            "prompt": "Campaign brief (paid clipping campaign for Vi City, the guest): create engaging 9:16 clips from the Vi City podcast, opening with a strong hook in the first 1-2 seconds and highlighting his personality, music and stories through punchy cuts, zooms, readable captions and well-timed reactions. Keep each clip focused and natural, remove dead air without changing his meaning, keep Vi City visible and his dialogue clear, and keep his words in context. Write YouTube Shorts metadata for a clip of Vi City from the episode in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. The title is short, punchy clickbait in the style of \"Vi City said WHAT about Nigerians??? 💀\": it names Vi City and the TOPIC of the moment (a person, a group, a place or a thing people know, taken from what he actually talks about) and hides WHAT happened, so people tap to find out. It must make sense on its own to someone who knows nothing about the clip; never cut a quote off mid-sentence. Good shapes: \"Vi City said WHAT about <topic>??? 💀\", \"Vi City's <person> did WHAT??? 😭\", \"Vi City got DESTROYED by <topic>... 💀\", \"Why Vi City <does something surprising>??? 😭\", \"Vi City really thinks <topic> is...?? 💀\". Use one word in capitals (usually WHAT or the shock word), end with ??? or ?? or ... and exactly one emoji (💀 😭 😳 🤯 👀). At most 45 characters including the emoji. The title must be true to the clip: the topic is really in it, and nothing is claimed that he did not say or do. `titlePattern` is a one-word label of the shape you used (said-what, did-what, why, destroyed, thinks). Return only JSON: {\"title\": \"at most 45 characters including the emoji, no hashtags\", \"titlePattern\": \"said-what\" | \"did-what\" | \"why\" | \"destroyed\" | \"thinks\", \"description\": \"first line exactly: #ad @vicityclips @iamvicity ; then 1 to 2 sentences teasing the moment; then a last line crediting the source exactly as: Source: <source.title> - <source.channel> <source.url>. No hashtags except #ad.\", \"hashtags\": [\"6 to 10 words without the # sign, including vicity, podcast and shorts; letters and digits only\"], \"tags\": [\"5 to 8 lowercase search keywords including vi city\"], \"thumbnailText\": \"at most 3 words, uppercase\"}. If `agentErrors` is present, fix those problems.",
             "format": "json",
             "inputKeys": [
               "source",
@@ -152,7 +152,7 @@
           "id": "done",
           "moduleId": "output",
           "position": {
-            "x": 1515,
+            "x": 1810,
             "y": 739
           },
           "config": {}
@@ -249,6 +249,21 @@
             "maxHashtags": 10,
             "titleHashtags": false,
             "paidPromotion": true
+          }
+        },
+        {
+          "id": "instagram",
+          "moduleId": "instagram-publish",
+          "position": {
+            "x": 1515,
+            "y": 739
+          },
+          "config": {
+            "username": "podclippyhq",
+            "shareToFeed": true,
+            "maxHashtags": 5,
+            "paidPartnership": true,
+            "disclosure": "#ad @vicityclips @iamvicity"
           }
         }
       ],
@@ -410,8 +425,14 @@
           "target": "publish"
         },
         {
-          "id": "publish--next--done",
+          "id": "publish--next--instagram",
           "source": "publish",
+          "sourcePort": "next",
+          "target": "instagram"
+        },
+        {
+          "id": "instagram--next--done",
+          "source": "instagram",
           "sourcePort": "next",
           "target": "done"
         }
@@ -465,7 +486,7 @@
       ]
     },
     "createdAt": "2026-11-19T00:50:55.049Z",
-    "updatedAt": "2026-11-19T18:01:52.257Z"
+    "updatedAt": "2026-11-19T18:52:56.720Z"
   },
   "modules": [
     {
@@ -1785,6 +1806,18 @@
           "default": true
         },
         {
+          "key": "paidPartnership",
+          "label": "Paid partnership label",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "disclosure",
+          "label": "Disclosure first line (max 100, empty = off)",
+          "type": "string",
+          "default": ""
+        },
+        {
           "key": "maxHashtags",
           "label": "Most hashtags (0-30)",
           "type": "number",
@@ -1800,6 +1833,8 @@
       "defaults": {
         "username": "",
         "shareToFeed": true,
+        "paidPartnership": false,
+        "disclosure": "",
         "maxHashtags": 5,
         "outputKey": "instagram"
       },

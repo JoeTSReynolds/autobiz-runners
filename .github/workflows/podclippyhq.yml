@@ -120,6 +120,13 @@ jobs:
           umask 077
           mkdir -p data/state/youtube-tokens
           printf '%s' "$YOUTUBE_TOKEN" > data/state/youtube-tokens/podclippyhq.json
+      - name: Write Instagram credentials for podclippyhq
+        env:
+          INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN_PODCLIPPYHQ }}
+        run: |
+          umask 077
+          mkdir -p data/state/instagram-tokens
+          printf '%s' "$INSTAGRAM_TOKEN" > data/state/instagram-tokens/podclippyhq.json
       - name: Write yt-dlp cookies
         env:
           YTDLP_COOKIES: ${{ secrets.YTDLP_COOKIES }}
@@ -143,6 +150,7 @@ jobs:
           AUTOBIZ_PYTHON: ${{ github.workspace }}/.venv-video/bin/python
         run: node runner/runner.mjs businesses/podclippyhq/business.json --data data
       - name: Notify the phone
+        if: always()
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}

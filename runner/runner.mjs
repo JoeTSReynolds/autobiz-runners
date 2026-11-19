@@ -47322,6 +47322,8 @@ function starterModules() {
     seeded("instagram-publish", "Instagram publish", "Uploads the Short as a Reel and publishes it to the configured Instagram account.", [
       field("username", "Instagram username", "string", ""),
       field("shareToFeed", "Share to feed", "boolean", true),
+      field("paidPartnership", "Paid partnership label", "boolean", false),
+      field("disclosure", "Disclosure first line (max 100, empty = off)", "string", ""),
       field("maxHashtags", "Most hashtags (0-30)", "number", 5),
       field("outputKey", "Output key", "string", "instagram")
     ], ["next"]),
@@ -51859,6 +51861,8 @@ async function execute13({ input, config, node }, { youtube, tools }) {
 var DEFAULTS6 = {
   username: "",
   shareToFeed: true,
+  paidPartnership: false,
+  disclosure: "",
   maxHashtags: 5,
   outputKey: "instagram"
 };
@@ -51877,31 +51881,37 @@ function cleanHashtags2(items, max) {
   }
   return [...kept.values()];
 }
-function buildCaption(title, description, hashtags) {
-  const text3 = [title.trim(), description.trim()].filter((part) => part !== "").join("\n\n");
-  if (hashtags.length === 0) return text3.slice(0, CAPTION_LIMIT).trimEnd();
-  const line2 = hashtags.map((tag) => `#${tag}`).join(" ");
-  const body = text3.slice(0, Math.max(0, CAPTION_LIMIT - line2.length - 2)).trimEnd();
-  return body === "" ? line2 : `${body}
-
-${line2}`;
+function buildCaption(disclosure, title, description, hashtags) {
+  const [first = "", ...rest] = description.trim().split("\n");
+  const desc = disclosure !== "" && first.trim() === disclosure ? rest.join("\n").trim() : description.trim();
+  const text3 = [title.trim(), desc].filter((part) => part !== "").join("\n\n");
+  const tail = hashtags.map((tag) => `#${tag}`).join(" ");
+  const reserved = (disclosure === "" ? 0 : disclosure.length + 2) + (tail === "" ? 0 : tail.length + 2);
+  const body = text3.slice(0, Math.max(0, CAPTION_LIMIT - reserved)).trimEnd();
+  return [disclosure, body, tail].filter((part) => part !== "").join("\n\n");
 }
 function readSettings4(config) {
   const get = (key) => config[key] === void 0 ? DEFAULTS6[key] : config[key];
   const username = get("username");
   const shareToFeed = get("shareToFeed");
+  const paidPartnership = get("paidPartnership");
+  const disclosure = get("disclosure");
   const maxHashtags = get("maxHashtags");
   const outputKey = get("outputKey");
   const match = typeof username === "string" ? USERNAME.exec(username) : null;
   if (!match) throw new ExecutionFailure("Instagram publish setting username must be an Instagram username (1 to 30 letters, digits, dots or underscores, with or without @).");
   if (typeof shareToFeed !== "boolean") throw new ExecutionFailure("Instagram publish setting shareToFeed must be true or false.");
+  if (typeof paidPartnership !== "boolean") throw new ExecutionFailure("Instagram publish setting paidPartnership must be true or false.");
+  if (typeof disclosure !== "string" || disclosure.trim().length > 100 || /[\r\n]/.test(disclosure)) {
+    throw new ExecutionFailure("Instagram publish setting disclosure must be text of at most 100 characters on one line (empty turns it off).");
+  }
   if (typeof maxHashtags !== "number" || !Number.isInteger(maxHashtags) || maxHashtags < 0 || maxHashtags > 30) {
     throw new ExecutionFailure("Instagram publish setting maxHashtags must be a whole number from 0 to 30.");
   }
   if (!isText2(outputKey)) throw new ExecutionFailure("Instagram publish setting outputKey must be a non-empty string.");
-  return { username: match[1].toLowerCase(), shareToFeed, maxHashtags, outputKey };
+  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), maxHashtags, outputKey };
 }
-function readJob3(input, maxHashtags) {
+function readJob3(input, disclosure, maxHashtags) {
   if (!isObject10(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
   const { short, meta = {} } = input;
   if (!isObject10(short) || !isText2(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
@@ -51910,7 +51920,7 @@ function readJob3(input, maxHashtags) {
     if (meta[key] !== void 0 && typeof meta[key] !== "string") throw new ExecutionFailure(`Instagram publish input job.meta.${key} must be a string.`);
   }
   if (meta.hashtags !== void 0 && !Array.isArray(meta.hashtags)) throw new ExecutionFailure("Instagram publish input job.meta.hashtags must be an array.");
-  const caption = buildCaption(String(meta.title ?? ""), String(meta.description ?? ""), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
+  const caption = buildCaption(disclosure, String(meta.title ?? ""), String(meta.description ?? ""), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
   return { job: input, file: short.file, caption };
 }
 async function guard2(step, wrap2) {
@@ -51940,8 +51950,8 @@ async function readReceipt(tools, name, username, file) {
 async function execute14({ input, config, node }, { instagram, tools }) {
   if (!instagram) throw new ExecutionFailure("Instagram publish requires the instagram capability.");
   if (!tools) throw new ExecutionFailure("Instagram publish requires the tools capability, which keeps the receipt that stops a retried run from posting twice.");
-  const { username, shareToFeed, maxHashtags, outputKey } = readSettings4(config);
-  const { job, file, caption } = readJob3(input, maxHashtags);
+  const { username, shareToFeed, paidPartnership, disclosure, maxHashtags, outputKey } = readSettings4(config);
+  const { job, file, caption } = readJob3(input, disclosure, maxHashtags);
   const name = `instagram-reel-${node.id.replace(/[^A-Za-z0-9_-]/g, "_")}.json`;
   const save = (receipt2, wrap2) => guard2(() => tools.writeText("run", name, JSON.stringify({ username, file, ...receipt2 })), wrap2);
   const done = ({ mediaId, permalink }) => ({ output: { ...job, [outputKey]: { username, mediaId, ...permalink ? { permalink } : {} } }, port: "next" });
@@ -51955,7 +51965,7 @@ async function execute14({ input, config, node }, { instagram, tools }) {
   let containerId = receipt?.containerId;
   let status = containerId ? await settle(containerId) : void 0;
   if (!containerId || status === "ERROR" || status === "EXPIRED") {
-    containerId = (await guard2(() => instagram.createReel(username, file, { caption, shareToFeed }))).containerId;
+    containerId = (await guard2(() => instagram.createReel(username, file, { caption, shareToFeed, ...paidPartnership ? { isPaidPartnership: true } : {} }))).containerId;
     const uploaded = containerId;
     await save({ containerId }, (why) => `The video was uploaded to container ${uploaded} but its receipt could not be saved (${why}); nothing was published.`);
     status = await settle(containerId);
@@ -55837,7 +55847,7 @@ function createInstagramGraphApi(options) {
       await checkAccount(fetchImpl, token, userId, name, expired);
       return { userId };
     },
-    async createReel(username, file, { caption, shareToFeed }) {
+    async createReel(username, file, { caption, shareToFeed, isPaidPartnership }) {
       if (!isAbsolute2(file)) throw new ExecutionFailure("The video file path must be absolute.");
       const bytes = await readFile5(file).catch(() => void 0);
       if (!bytes) throw new ExecutionFailure("The video file cannot be read.");
@@ -55847,7 +55857,8 @@ function createInstagramGraphApi(options) {
         media_type: "REELS",
         upload_type: "resumable",
         caption,
-        share_to_feed: shareToFeed
+        share_to_feed: shareToFeed,
+        ...isPaidPartnership ? { is_paid_partnership: true } : {}
       }, expired);
       const containerId = created?.id;
       if (typeof containerId !== "string" || !NUMERIC_ID.test(containerId)) throw new ExecutionFailure("Instagram returned no container id; nothing was published.");
@@ -56530,7 +56541,7 @@ function publishedItems(run2) {
     if (platform && typeof url === "string") found.push({ platform, url, ...here && { title: here } });
     for (const child of Object.values(node)) walk(child, here);
   };
-  walk(run2.output);
+  walk(run2.output ?? run2.checkpoint?.input);
   return found;
 }
 async function runHeadless(options) {
