@@ -157,41 +157,33 @@ function viewsToMinimum(terms, platform) {
   return t && t.rate > 0 ? Math.ceil(t.minPayout / t.rate * 1e3) : Infinity;
 }
 var passesMinimum = ({ terms }, { maxViewsToMinimum = 2e3 } = {}) => viewsToMinimum(terms, "youtube") <= maxViewsToMinimum;
-async function draftRecord(page, candidate, channel) {
-  const { text, cards, links } = await page.evaluate(() => {
-    const all = [...document.querySelectorAll("[data-card-shell]")];
-    const card = (name) => all.find((c) => c.querySelector("span:not(:empty)")?.textContent?.trim() === name);
-    const paras = (name) => [...card(name)?.querySelectorAll("p") ?? []].map((p) => ({ label: p.textContent.trim(), next: p.nextElementSibling?.textContent ?? "" }));
-    return {
-      text: { brief: paras("Brief").map((p) => p.label).join("\n"), requirements: paras("Creator requirements").map((p) => p.label).join("\n") },
-      cards: Object.fromEntries(["Instagram", "TikTok", "YouTube"].map((n) => [n.toLowerCase(), paras(n)])),
-      links: [...card("Reference materials")?.querySelectorAll("a[href]") ?? []].map((a) => ({ url: a.getAttribute("href"), title: a.textContent.trim() }))
-    };
-  });
-  const money = (t) => Number(t.replace(/[^0-9.]/g, ""));
-  const rates = {};
-  for (const [name, p] of Object.entries(cards)) {
-    const next = (label) => money(p.find((x) => x.label === label)?.next ?? "");
-    if (p.length) rates[name] = { rate: next("Per 1K views"), minPayout: next("Min payout"), maxPayout: next("Max payout") };
-  }
+var entities = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
+var plain = (html) => html.replace(/<[^>]*>/g, " ").replace(/&(?:amp|lt|gt|quot|#39);/g, (e) => entities[e]).replace(/[ \t]+/g, " ").replace(/ ?\n ?/g, "\n").trim();
+function draftFromCampaign(json, candidate, channel) {
+  const o = json?.data ?? json ?? {};
+  const cfg = o.configuration ?? {}, caption = cfg.rules?.caption ?? {};
+  const refs = cfg.referenceMaterial ?? [];
+  const urls = refs.map((r) => String(r.url ?? ""));
   const sources = [];
-  for (const { url, title } of links) {
-    const id = /(?:youtube\.com|youtu\.be)\//.test(url) ? postKey(url) : "";
-    if (id && !sources.some((x) => x.id === id)) sources.push({ id, url, title, channel: "", duration: 0 });
+  for (const url of urls.filter((u) => /(?:youtube\.com|youtu\.be)\//.test(u))) {
+    const id = postKey(url);
+    if (id && !sources.some((x) => x.id === id)) sources.push({ id, url, title: String(o.name ?? ""), channel: "", duration: 0 });
   }
+  const rates = {};
+  for (const p of cfg.payoutModel ?? []) rates[String(p.platform)] = { rate: p.rate / 100, minPayout: p.minPayout / 100, maxPayout: p.maxPayout / 100 };
   return {
     id: candidate.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || candidate.id.slice(0, 8),
     url: candidate.url,
     channel,
     active: false,
-    brief: text.brief,
-    requirements: text.requirements,
-    checklist: "",
+    brief: String(cfg.content?.guidelines ?? "").trim(),
+    requirements: plain(String(cfg.creator?.description ?? "")),
+    checklist: (cfg.rules?.reviewerOnly ?? []).join("\n"),
     featured: "",
-    disclosure: "",
+    disclosure: ["#ad", ...caption.hashtags ?? [], ...caption.mentions ?? []].join(" "),
     rates,
     sources,
-    driveLinks: links.filter((l) => /^https:\/\/drive\.google\.com\//.test(l.url)).map((l) => l.url),
+    driveLinks: urls.filter((u) => /^https:\/\/(?:drive|docs)\.google\.com\//.test(u)),
     needsSourceInfo: true
   };
 }
@@ -240,17 +232,6 @@ async function joinCampaign(page, url, waitMs = 2e4) {
   } catch (error) {
     return { joined: false, reason: (error instanceof Error ? error.message : String(error)).split("\n")[0].slice(0, 300) };
   }
-}
-async function readSubmitChecklist(page, url) {
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
-  await submitButton(page).click();
-  const dialog = page.getByRole("dialog").filter({ hasText: /Before you submit|linked accounts|read the requirements/ }).first();
-  const hold = dialog.getByRole("button", { name: "Hold to confirm" });
-  await hold.or(dialog.locator("input[type=url]")).first().waitFor({ timeout: 15e3 });
-  const text = await hold.isVisible() ? (await dialog.innerText()).replace("Hold to confirm", "").replace(/\n\s*\n+/g, "\n").trim() : "";
-  await page.keyboard.press("Escape");
-  if (await dialog.isVisible()) await dialog.getByRole("button", { name: /cancel|close/i }).first().click({ timeout: 3e3 }).catch(() => void 0);
-  return text;
 }
 async function fitCheck(candidates, ask, n = 5) {
   const top = candidates.slice(0, n);
@@ -310,7 +291,7 @@ async function knownRecords(dir) {
 async function scout(env, deps) {
   const { BUSINESSES_DIR = "businesses", SCOUT_STATE = "data/scout/seen.json", SCOUT_OUT = "scout-out" } = env;
   const join_ = env.SCOUT_JOIN === "1", maxJoins = Number(env.SCOUT_MAX_JOINS ?? 2), recheckMs = Number(env.SCOUT_RECHECK_DAYS ?? 14) * 864e5;
-  const site = deps.site ?? { joinCampaign, draftRecord, readSubmitChecklist };
+  const site = deps.site ?? { joinCampaign };
   const notes = [];
   const page = await deps.openPage();
   try {
@@ -355,11 +336,8 @@ async function scout(env, deps) {
           continue;
         }
         mark(id, "joined");
-        const record = await site.draftRecord(page, c, "podcast");
-        record.checklist = await site.readSubmitChecklist(page, c.url).catch((error) => {
-          notes.push(`${c.title}: checklist not read (${message(error)})`);
-          return "";
-        });
+        const record = draftFromCampaign(await deps.fetchCampaign(c.id), c, "podcast");
+        if (!record.sources.length) notes.push(`${c.title}: no YouTube source in the reference materials (needs a source before it can go live)`);
         await write(join2(SCOUT_OUT, "proposed", `${record.id}.json`), `${JSON.stringify(record, null, 2)}
 `);
         drafted.push({ id: record.id, title: c.title, url: c.url });
@@ -396,6 +374,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL2(process.argv[1]).href)
     },
     fetchJson: async (url) => (await fetch(url, { signal: AbortSignal.timeout(2e4) })).json(),
     fetchPublic: async (url) => (await fetch(url, { signal: AbortSignal.timeout(2e4) })).text(),
+    async fetchCampaign(id) {
+      const state = await readJson(process.env.CR_SESSION_FILE ?? "");
+      const cookie = (state.cookies ?? []).filter((c) => c.domain.endsWith("contentrewards.com")).map((c) => `${c.name}=${c.value}`).join("; ");
+      const res = await fetch(`https://contentrewards.com/api/campaign/campaigns/${id}`, { headers: { cookie }, signal: AbortSignal.timeout(2e4) });
+      if (!res.ok) throw new Error(`campaign details HTTP ${res.status}`);
+      return res.json();
+    },
     ask: async (prompt) => (await run("claude", ["-p", prompt, "--model", process.env.SCOUT_MODEL || "claude-haiku-5-5"], { timeout: 18e4, maxBuffer: 1e7 })).stdout,
     now: Date.now
   };
