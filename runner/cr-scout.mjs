@@ -219,7 +219,7 @@ var submitButton = (page) => page.getByRole("button", { name: "Submit clip", exa
 async function joinCampaign(page, url, waitMs = 2e4) {
   try {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
-    const submit = submitButton(page), join3 = page.getByRole("button", { name: "Join Campaign" }), signIn = page.getByRole("link", { name: "Sign in" });
+    const submit = submitButton(page), join3 = page.getByRole("button", { name: "Join Campaign" }).first(), signIn = page.getByRole("link", { name: "Sign in" });
     await submit.or(join3).or(signIn).first().waitFor({ timeout: 3e4 });
     if (page.url().includes("/login") || await signIn.count()) return { joined: false, reason: "logged out" };
     if (await submit.count()) return { joined: true, already: true };
@@ -326,7 +326,7 @@ async function scout(env, deps) {
     const retired = (await audit(records, deps.fetchPublic)).filter((a) => a.retire).map((a) => ({ id: a.id, reason: a.reason }));
     const seen = await readJson(SCOUT_STATE).catch(() => ({}));
     const known = new Set(records.map((r) => uuidOf(r.url)));
-    const fresh = rank(all).filter((c) => !known.has(c.id) && !(seen[c.id] && deps.now() - Date.parse(seen[c.id].at) < recheckMs));
+    const fresh = rank(all).filter((c) => !known.has(c.id) && !(seen[c.id] && seen[c.id].verdict !== "failed" && deps.now() - Date.parse(seen[c.id].at) < recheckMs));
     const suggested = fresh.filter((c) => routeChannel(c) === "gaming").slice(0, 5);
     const isPodcast = (c) => c.categories.some((n) => /podcast/i.test(n));
     const eligible = fresh.filter((c) => routeChannel(c) === "podcast" && passesMinimum(c)).sort((a, b) => Number(isPodcast(b)) - Number(isPodcast(a)));
