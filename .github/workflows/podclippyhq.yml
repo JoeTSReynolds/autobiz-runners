@@ -136,6 +136,13 @@ jobs:
             printf '%s' "$YTDLP_COOKIES" | base64 -d | gunzip > "$RUNNER_TEMP/yt-cookies.txt"
             echo "YTDLP_COOKIES_FILE=$RUNNER_TEMP/yt-cookies.txt" >> "$GITHUB_ENV"
           fi
+      - name: Write Content Rewards session
+        env:
+          CR_SESSION: ${{ secrets.CR_SESSION }}
+        run: |
+          if [ -n "$CR_SESSION" ]; then
+            (umask 077; printf '%s' "$CR_SESSION" > "$RUNNER_TEMP/cr-session.json")
+          fi
       - name: "Run PodClippyHQ"
         env:
           AUTOBIZ_RUN_TIMEOUT_MS: '3600000'
@@ -147,6 +154,7 @@ jobs:
           YOUTUBE_DATA_API_CLIENT_ID: ${{ secrets.YOUTUBE_DATA_API_CLIENT_ID }}
           YOUTUBE_DATA_API_CLIENT_SECRET: ${{ secrets.YOUTUBE_DATA_API_CLIENT_SECRET }}
           AUTOBIZ_PUBLISHED_FILE: ${{ runner.temp }}/published.json
+          CR_SESSION_FILE: ${{ runner.temp }}/cr-session.json
           AUTOBIZ_PYTHON: ${{ github.workspace }}/.venv-video/bin/python
         run: node runner/runner.mjs businesses/podclippyhq/business.json --data data
       - name: Submit to Content Rewards
@@ -162,8 +170,6 @@ jobs:
           CR_CHROME: /usr/bin/google-chrome
         run: |
           if [ -z "$CR_SESSION" ] || [ ! -f "$PUBLISHED" ]; then exit 0; fi
-          trap 'rm -f "$CR_SESSION_FILE"' EXIT
-          (umask 077; printf '%s' "$CR_SESSION" > "$CR_SESSION_FILE")
           node runner/cr-submit.mjs
       - name: Notify the phone
         if: always()
@@ -190,6 +196,7 @@ jobs:
         if: always()
         run: |
           rm -rf data/state/youtube-tokens data/state/instagram-tokens data/studio-cookies.sqlite
+          rm -f "$RUNNER_TEMP/cr-session.json"
           find data/state -type d \( -name Cache -o -name 'Code Cache' -o -name GPUCache -o -name CacheStorage \) -prune -exec rm -rf {} + 2>/dev/null || true
       - uses: actions/cache/save@v4
         if: always()

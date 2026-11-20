@@ -13,8 +13,10 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
     await page.goto(campaignUrl, { waitUntil: "domcontentloaded", timeout: 3e4 });
     const open = page.getByRole("button", { name: "Submit clip", exact: true });
     const signIn = page.getByRole("link", { name: "Sign in" });
-    await open.or(signIn).first().waitFor({ timeout: 3e4 });
+    const limit = page.getByText("Clip limit reached");
+    await open.or(signIn).or(limit).first().waitFor({ timeout: 3e4 });
     if (page.url().includes("/login") || await signIn.count()) return { submitted: false, reason: "logged out" };
+    if (await limit.count() && !(await open.count() && await open.isEnabled())) return { submitted: false, reason: "campaign clip limit reached (too many clips waiting for review)" };
     await open.click();
     const dialog = page.getByRole("dialog").filter({ hasText: /Before you submit|linked accounts|read the requirements/ }).first();
     const hold = dialog.getByRole("button", { name: "Hold to confirm" });
@@ -31,8 +33,12 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
     const box = dialog.locator("input[type=checkbox]");
     if (!await box.isChecked()) await box.evaluate((input) => input.click());
     if (!await box.isChecked()) return { submitted: false, reason: "could not tick the requirements checkbox" };
+    const send = dialog.getByRole("button", { name: "Submit clip", exact: true });
+    for (const end = Date.now() + 2e4; await send.isDisabled(); await page.waitForTimeout(500)) {
+      if (Date.now() > end) return { submitted: false, reason: "Content Rewards would not accept the link (submit stayed disabled)" };
+    }
     const before = new Set((await dialog.innerText()).split("\n").map((line) => line.trim()));
-    await dialog.getByRole("button", { name: "Submit clip", exact: true }).click();
+    await send.click();
     const key = postKey(clipUrl);
     const listed = async () => {
       const r = await page.request.get(new URL("/api/submission/submissions?limit=50&creatorView=true&retainer=false", campaignUrl).href).catch(() => void 0);

@@ -8013,7 +8013,7 @@ var require_thread_stream = __commonJS({
     var { version } = require_package();
     var { EventEmitter } = __require("events");
     var { Worker } = __require("worker_threads");
-    var { join: join10 } = __require("path");
+    var { join: join11 } = __require("path");
     var { pathToFileURL } = __require("url");
     var { wait } = require_wait();
     var {
@@ -8056,7 +8056,7 @@ var require_thread_stream = __commonJS({
     function createWorker(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join10(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join11(__dirname, "lib", "worker.js");
       const worker = new Worker(toExecute, {
         ...opts.workerOpts,
         trackUnmanagedFds: false,
@@ -8459,7 +8459,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = __require("module");
     var getCallers = require_caller();
-    var { join: join10, isAbsolute: isAbsolute4, sep: sep3 } = __require("node:path");
+    var { join: join11, isAbsolute: isAbsolute4, sep: sep3 } = __require("node:path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -8522,7 +8522,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join10(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join11(__dirname, "worker.js");
         options.targets = targets.filter((dest) => dest.target).map((dest) => {
           return {
             ...dest,
@@ -8540,7 +8540,7 @@ var require_transport = __commonJS({
           });
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-worker"] || join10(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join11(__dirname, "worker.js");
         options.pipelines = [pipeline.map((dest) => {
           return {
             ...dest,
@@ -8562,7 +8562,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join10(__dirname, "..", "file.js");
+          return join11(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -9520,8 +9520,8 @@ var require_safe_stable_stringify = __commonJS({
     }
     function configure(options) {
       options = { ...options };
-      const fail4 = getStrictOption(options);
-      if (fail4) {
+      const fail5 = getStrictOption(options);
+      if (fail5) {
         if (options.bigint === void 0) {
           options.bigint = false;
         }
@@ -9552,7 +9552,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join10 = ",";
+            let join11 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -9566,7 +9566,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join10 = `,
+                join11 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -9574,13 +9574,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join10;
+                res += join11;
               }
               const tmp = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join10}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join11}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -9601,7 +9601,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join10 = `,
+              join11 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -9615,13 +9615,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join10;
+                separator = join11;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join10;
+              separator = join11;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -9632,7 +9632,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
+            return isFinite(value) ? String(value) : fail5 ? fail5(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9643,7 +9643,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail4 ? fail4(value) : void 0;
+            return fail5 ? fail5(value) : void 0;
         }
       }
       function stringifyArrayReplacer(key, value, stack, replacer, spacer, indentation) {
@@ -9662,7 +9662,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join10 = ",";
+            let join11 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -9675,7 +9675,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join10 = `,
+                join11 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -9683,13 +9683,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join10;
+                res += join11;
               }
               const tmp = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join10}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join11}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -9702,7 +9702,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join10 = `,
+              join11 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -9711,7 +9711,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join10;
+                separator = join11;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -9723,7 +9723,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
+            return isFinite(value) ? String(value) : fail5 ? fail5(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9734,7 +9734,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail4 ? fail4(value) : void 0;
+            return fail5 ? fail5(value) : void 0;
         }
       }
       function stringifyIndent(key, value, stack, spacer, indentation) {
@@ -9769,20 +9769,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join11 = `,
+              const join12 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i = 0;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyIndent(String(i), value[i], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join11;
+                res2 += join12;
               }
               const tmp = stringifyIndent(String(i), value[i], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join11}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join12}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -9798,16 +9798,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join10 = `,
+            const join11 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join10, maximumBreadth);
+              res += stringifyTypedArray(value, join11, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join10;
+              separator = join11;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -9818,13 +9818,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join10;
+                separator = join11;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join10;
+              separator = join11;
             }
             if (separator !== "") {
               res = `
@@ -9835,7 +9835,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
+            return isFinite(value) ? String(value) : fail5 ? fail5(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9846,7 +9846,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail4 ? fail4(value) : void 0;
+            return fail5 ? fail5(value) : void 0;
         }
       }
       function stringifySimple(key, value, stack) {
@@ -9931,7 +9931,7 @@ ${originalIndentation}`;
             return `{${res}}`;
           }
           case "number":
-            return isFinite(value) ? String(value) : fail4 ? fail4(value) : "null";
+            return isFinite(value) ? String(value) : fail5 ? fail5(value) : "null";
           case "boolean":
             return value === true ? "true" : "false";
           case "undefined":
@@ -9942,7 +9942,7 @@ ${originalIndentation}`;
             }
           // fallthrough
           default:
-            return fail4 ? fail4(value) : void 0;
+            return fail5 ? fail5(value) : void 0;
         }
       }
       function stringify2(value, replacer, space) {
@@ -22295,8 +22295,8 @@ var require_parse = __commonJS({
           const vts = (0, util_1.useFunc)(gen, timestamp_1.default);
           const { allowDate, parseDate } = self.opts;
           const notValid = allowDate ? (0, codegen_1._)`!${vts}(${data}, true)` : (0, codegen_1._)`!${vts}(${data})`;
-          const fail4 = parseDate ? (0, codegen_1.or)(notValid, (0, codegen_1._)`(${data} = new Date(${data}), false)`, (0, codegen_1._)`isNaN(${data}.valueOf())`) : notValid;
-          gen.if(fail4, () => parsingError(cxt, (0, codegen_1.str)`invalid timestamp`));
+          const fail5 = parseDate ? (0, codegen_1.or)(notValid, (0, codegen_1._)`(${data} = new Date(${data}), false)`, (0, codegen_1._)`isNaN(${data}.valueOf())`) : notValid;
+          gen.if(fail5, () => parsingError(cxt, (0, codegen_1.str)`invalid timestamp`));
           break;
         }
         case "float32":
@@ -22342,10 +22342,10 @@ var require_parse = __commonJS({
       skipWhitespace(cxt);
       gen.if((0, codegen_1._)`"-0123456789".indexOf(${jsonSlice(1)}) < 0`, () => jsonSyntaxError(cxt), () => parseWith(cxt, parseJson_1.parseJsonNumber, maxDigits));
     }
-    function parseBooleanToken(bool, fail4) {
+    function parseBooleanToken(bool, fail5) {
       return (cxt) => {
         const { gen, data } = cxt;
-        tryParseToken(cxt, `${bool}`, () => fail4(cxt), () => gen.assign(data, bool));
+        tryParseToken(cxt, `${bool}`, () => fail5(cxt), () => gen.assign(data, bool));
       };
     }
     function parseRef(cxt) {
@@ -22378,14 +22378,14 @@ var require_parse = __commonJS({
     function parseToken4(cxt, tok) {
       tryParseToken(cxt, tok, jsonSyntaxError);
     }
-    function tryParseToken(cxt, tok, fail4, success2) {
+    function tryParseToken(cxt, tok, fail5, success2) {
       const { gen } = cxt;
       const n = tok.length;
       skipWhitespace(cxt);
       gen.if((0, codegen_1._)`${jsonSlice(n)} === ${tok}`, () => {
         gen.add(names_1.default.jsonPos, n);
         success2 === null || success2 === void 0 ? void 0 : success2(cxt);
-      }, () => fail4(cxt));
+      }, () => fail5(cxt));
     }
     function skipWhitespace({ gen, char: c }) {
       gen.code((0, codegen_1._)`while((${c}=${names_1.default.json}[${names_1.default.jsonPos}],${c}===" "||${c}==="\\n"||${c}==="\\r"||${c}==="\\t"))${names_1.default.jsonPos}++;`);
@@ -32682,19 +32682,19 @@ var require_sets_lookup = __commonJS({
     var Sets = __importStar(require_sets());
     var types_1 = require_types4();
     function setToLookup(tokens) {
-      let lookup3 = {};
+      let lookup4 = {};
       let len = 0;
       for (const token of tokens) {
         if (token.type === types_1.types.CHAR) {
-          lookup3[token.value] = true;
+          lookup4[token.value] = true;
         }
         if (token.type === types_1.types.RANGE) {
-          lookup3[`${token.from}-${token.to}`] = true;
+          lookup4[`${token.from}-${token.to}`] = true;
         }
         len += 1;
       }
       return {
-        lookup: () => Object.assign({}, lookup3),
+        lookup: () => Object.assign({}, lookup4),
         len
       };
     }
@@ -32740,11 +32740,11 @@ var require_write_set_tokens = __commonJS({
       return charCode === 94 ? "\\^" : charCode === 92 ? "\\\\" : charCode === 93 ? "\\]" : charCode === 45 ? "\\-" : String.fromCharCode(charCode);
     }
     exports.setChar = setChar;
-    function isSameSet(set, { lookup: lookup3, len }) {
+    function isSameSet(set, { lookup: lookup4, len }) {
       if (len !== set.length) {
         return false;
       }
-      const map = lookup3();
+      const map = lookup4();
       for (const elem of set) {
         if (elem.type === types_1.types.SET) {
           return false;
@@ -34315,7 +34315,7 @@ var require_find_my_way = __commonJS({
       const newRoutes = this.routes.filter(predicate);
       this._rebuild(newRoutes);
     };
-    Router.prototype.lookup = function lookup3(req, res, ctx, done) {
+    Router.prototype.lookup = function lookup4(req, res, ctx, done) {
       if (typeof ctx === "function") {
         done = ctx;
         ctx = void 0;
@@ -42462,7 +42462,7 @@ var require_send = __commonJS({
     var { parseTokenList } = require_parseTokenList();
     var { createHttpError } = require_createHttpError();
     var extname2 = path.extname;
-    var join10 = path.join;
+    var join11 = path.join;
     var normalize = path.normalize;
     var resolve7 = path.resolve;
     var sep3 = path.sep;
@@ -42549,7 +42549,7 @@ var require_send = __commonJS({
           return { statusCode: 403 };
         }
         parts = path2.split(sep3);
-        path2 = normalize(join10(root, path2));
+        path2 = normalize(join11(root, path2));
       } else {
         if (UP_PATH_REGEXP.test(path2)) {
           debug('malicious path "%s"', path2);
@@ -42832,7 +42832,7 @@ var require_send = __commonJS({
       let err;
       for (let i = 0; i < options.index.length; i++) {
         const index2 = options.index[i];
-        const p = join10(path2, index2);
+        const p = join11(path2, index2);
         const { error, stat: stat4 } = await tryStat(p);
         if (error) {
           err = error;
@@ -44298,14 +44298,14 @@ var require_static = __commonJS({
 // apps/server/src/headless.ts
 import { spawnSync } from "node:child_process";
 import { appendFile, mkdir as mkdir4, readFile as readFile7, rename as rename3, writeFile as writeFile2 } from "node:fs/promises";
-import { join as join9, resolve as resolve6 } from "node:path";
+import { join as join10, resolve as resolve6 } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 // apps/server/src/app.ts
 var import_fastify = __toESM(require_fastify(), 1);
 var import_static2 = __toESM(require_static(), 1);
-import { existsSync as existsSync2 } from "node:fs";
-import { dirname as dirname5, join as join8, resolve as resolve5 } from "node:path";
+import { existsSync as existsSync3 } from "node:fs";
+import { dirname as dirname5, join as join9, resolve as resolve5 } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // packages/contracts/src/index.ts
@@ -47162,7 +47162,7 @@ function moduleDefinition(id, name, description, kind, fields, defaults, outputs
   return { id, name, description, kind, version: 1, fields, defaults, outputs, logging: { ...logging } };
 }
 function seeded(kind, name, description, fields, ports) {
-  const labels = { next: "Next", missing: "Missing" };
+  const labels = { next: "Next", missing: "Missing", full: "Full", failed: "Failed" };
   return moduleDefinition(kind, name, description, kind, fields, Object.fromEntries(fields.map((item) => [item.key, item.default])), ports.map((id) => ({ id, label: labels[id] ?? id })));
 }
 function starterModules() {
@@ -47215,7 +47215,7 @@ function starterModules() {
       field("channel", "Channel (empty: any)", "string", ""),
       field("outputKey", "Campaign key", "string", "campaign"),
       field("sourceKey", "Source key", "string", "source")
-    ], ["next"]),
+    ], ["next", "full"]),
     seeded("media-fetch", "Media fetch", "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).", [
       field("mode", "Mode", "select", "search", ["search", "captions", "section", "sections", "download", "index", "locate", "frinkiac"]),
       field("queries", "Search queries", "json", ["ytsearch20:{show} full episode", "ytsearch20:{show} uncropped uncut full episode"]),
@@ -47332,7 +47332,8 @@ function starterModules() {
       field("maxHashtags", "Most hashtags", "number", 10),
       field("titleHashtags", "Hashtags in title", "boolean", true),
       field("publishAfterHours", "Publish after hours (0-720, 0 = now)", "number", 0),
-      field("outputKey", "Output key", "string", "youtube")
+      field("outputKey", "Output key", "string", "youtube"),
+      field("onlyWhen", "Publish only when (path=value or path!=value, empty = always)", "string", "")
     ], ["next"]),
     seeded("instagram-publish", "Instagram publish", "Uploads the Short as a Reel and publishes it to the configured Instagram account.", [
       field("username", "Instagram username", "string", ""),
@@ -47341,8 +47342,9 @@ function starterModules() {
       field("disclosure", "Disclosure first line (max 100, empty = off)", "string", ""),
       field("disclosureKey", "Disclosure (job path, wins over the text)", "string", ""),
       field("maxHashtags", "Most hashtags (0-30)", "number", 5),
-      field("outputKey", "Output key", "string", "instagram")
-    ], ["next"]),
+      field("outputKey", "Output key", "string", "instagram"),
+      field("onFailure", "When publishing fails", "select", "throw", ["throw", "port"])
+    ], ["next", "failed"]),
     seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, records what was published, and publishes its sources page.", [
       field("mode", "Mode", "select", "feeds", ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site", "refresh", "people", "route", "mediaplan", "verify", "brollpick", "music", "probe", "assets", "cut", "gate"]),
       field("lane", "Lane (empty keeps job.lane)", "string", ""),
@@ -49105,7 +49107,7 @@ function validate(record2, index2) {
   if (record2.rates !== void 0 && !isObject3(record2.rates)) bad("rates");
   return record2;
 }
-function execute10({ input, config, settings }) {
+async function execute10({ input, config, settings }, capabilities = {}) {
   const settingsKey = setting(config, "settingsKey");
   const channel = setting(config, "channel", true);
   const outputKey = setting(config, "outputKey");
@@ -49115,9 +49117,21 @@ function execute10({ input, config, settings }) {
   if (!Array.isArray(list3)) fail(`settings.${settingsKey} must be a list of campaign records`);
   const candidates2 = list3.map((record2, index2) => isObject3(record2) && record2.active === false ? void 0 : validate(record2, index2)).filter((record2) => !!record2 && record2.active === true && (channel === "" || record2.channel === channel));
   if (candidates2.length === 0) fail(`no active campaign${channel ? ` for channel "${channel}"` : ""}`);
-  const campaign = candidates2[Math.floor(Math.random() * candidates2.length)];
+  let rooms = {};
+  let roomError;
+  const crId = (record2) => /\/campaigns\/([0-9a-f-]{36})/i.exec(record2.url)?.[1] ?? record2.id;
+  if (capabilities.contentRewards) try {
+    rooms = await capabilities.contentRewards.intake(candidates2.map(crId));
+  } catch (error) {
+    roomError = error instanceof Error ? error.message : String(error);
+  }
+  const roomOf = (record2) => rooms[crId(record2)]?.room ?? "unknown";
+  const open3 = candidates2.filter((record2) => roomOf(record2) !== "full");
+  if (open3.length === 0) return { output: { ...input, campaignsFull: candidates2.map((record2) => ({ id: record2.id, reason: rooms[crId(record2)].reason })) }, port: "full" };
+  const best = open3.some((record2) => roomOf(record2) !== "one") ? open3.filter((record2) => roomOf(record2) !== "one") : open3;
+  const campaign = best[Math.floor(Math.random() * best.length)];
   const sources = campaign.sources;
-  return { output: { ...input, [outputKey]: campaign, [sourceKey]: sources[Math.floor(Math.random() * sources.length)] }, port: "next" };
+  return { output: { ...input, [outputKey]: { ...campaign, room: roomOf(campaign) }, [sourceKey]: sources[Math.floor(Math.random() * sources.length)], ...roomError !== void 0 && { campaignRoomError: roomError } }, port: "next" };
 }
 
 // modules/media-fetch/index.ts
@@ -51754,11 +51768,13 @@ var DEFAULTS6 = {
   maxHashtags: 10,
   titleHashtags: true,
   publishAfterHours: 0,
-  outputKey: "youtube"
+  outputKey: "youtube",
+  onlyWhen: ""
 };
 var PRIVACIES = ["private", "unlisted", "public"];
 var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var isText2 = (value) => typeof value === "string" && value.trim() !== "";
+var lookup2 = (job, path) => path.split(".").reduce((value, key) => isObject10(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
 var reason2 = (error) => error instanceof Error ? error.message : String(error);
 function clipTitle(title) {
   if (title.length <= 100) return title;
@@ -51811,6 +51827,9 @@ function readSettings3(config) {
   const titleHashtags = get("titleHashtags");
   const publishAfterHours = get("publishAfterHours");
   const outputKey = get("outputKey");
+  const onlyWhen = get("onlyWhen");
+  const condition = typeof onlyWhen === "string" ? /^(\w+(?:\.\w+)*)(!?)=(.*)$/s.exec(onlyWhen) : null;
+  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('YouTube publish setting onlyWhen must be empty, "path=value" or "path!=value" with a dotted path of letters, digits and _.');
   if (typeof channelHandle !== "string" || !/^@[A-Za-z0-9._-]{3,100}$/.test(channelHandle)) {
     throw new ExecutionFailure("YouTube publish setting channelHandle must look like @handle (3 to 100 letters, digits, dots, dashes or underscores).");
   }
@@ -51828,7 +51847,7 @@ function readSettings3(config) {
     throw new ExecutionFailure("YouTube publish setting publishAfterHours must be a number from 0 to 720.");
   }
   if (!isText2(outputKey)) throw new ExecutionFailure("YouTube publish setting outputKey must be a non-empty string.");
-  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey };
+  return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey, condition };
 }
 function readJob2(input, needCover, maxHashtags, titleHashtags) {
   if (!isObject10(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
@@ -51886,7 +51905,8 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
 }
 async function execute14({ input, config, node }, { youtube, tools }) {
   if (!youtube) throw new ExecutionFailure("YouTube publish requires the youtube capability.");
-  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey } = readSettings3(config);
+  const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey, condition } = readSettings3(config);
+  if (condition && String(lookup2(input, condition[1]) ?? "") === condition[3] === (condition[2] === "!")) return { output: { ...input, youtubeSkipped: condition[0] }, port: "next" };
   const { job, file, cover, title, description, tags, comment } = readJob2(input, setCover, maxHashtags, titleHashtags);
   await guard(() => youtube.verifyChannel(handle, { studio: setCover }));
   const publishAt = publishAfterHours > 0 ? new Date(Date.now() + publishAfterHours * 36e5).toISOString() : void 0;
@@ -51927,14 +51947,15 @@ var DEFAULTS7 = {
   disclosure: "",
   disclosureKey: "",
   maxHashtags: 5,
-  outputKey: "instagram"
+  outputKey: "instagram",
+  onFailure: "throw"
 };
 var CAPTION_LIMIT = 2200;
 var USERNAME = /^@?([A-Za-z0-9._]{1,30})$/;
 var ID = /^[A-Za-z0-9_-]{1,64}$/;
 var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var isText3 = (value) => typeof value === "string" && value.trim() !== "";
-var lookup2 = (job, path) => path.split(".").reduce((value, key) => isObject11(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
+var lookup3 = (job, path) => path.split(".").reduce((value, key) => isObject11(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
 var oneLine = (value) => typeof value === "string" && value.trim().length <= 100 && !/[\r\n]/.test(value);
 var reason3 = (error) => error instanceof Error ? error.message : String(error);
 function cleanHashtags2(items, max) {
@@ -51964,6 +51985,7 @@ function readSettings4(config) {
   const disclosureKey = get("disclosureKey");
   const maxHashtags = get("maxHashtags");
   const outputKey = get("outputKey");
+  const onFailure = get("onFailure");
   const match = typeof username === "string" ? USERNAME.exec(username) : null;
   if (!match) throw new ExecutionFailure("Instagram publish setting username must be an Instagram username (1 to 30 letters, digits, dots or underscores, with or without @).");
   if (typeof shareToFeed !== "boolean") throw new ExecutionFailure("Instagram publish setting shareToFeed must be true or false.");
@@ -51976,7 +51998,8 @@ function readSettings4(config) {
     throw new ExecutionFailure("Instagram publish setting maxHashtags must be a whole number from 0 to 30.");
   }
   if (!isText3(outputKey)) throw new ExecutionFailure("Instagram publish setting outputKey must be a non-empty string.");
-  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), disclosureKey: disclosureKey.trim(), maxHashtags, outputKey };
+  if (onFailure !== "throw" && onFailure !== "port") throw new ExecutionFailure("Instagram publish setting onFailure must be 'throw' or 'port'.");
+  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), disclosureKey: disclosureKey.trim(), maxHashtags, outputKey, onFailure };
 }
 function readJob3(input, settings) {
   const { disclosureKey, maxHashtags } = settings;
@@ -51989,7 +52012,7 @@ function readJob3(input, settings) {
   }
   if (meta.hashtags !== void 0 && !Array.isArray(meta.hashtags)) throw new ExecutionFailure("Instagram publish input job.meta.hashtags must be an array.");
   let disclosure = settings.disclosure;
-  const keyed = disclosureKey === "" ? void 0 : lookup2(input, disclosureKey);
+  const keyed = disclosureKey === "" ? void 0 : lookup3(input, disclosureKey);
   if (keyed !== void 0 && !oneLine(keyed)) throw new ExecutionFailure(`Instagram publish input job.${disclosureKey} (the disclosure) must be text of at most 100 characters on one line.`);
   if (typeof keyed === "string" && keyed.trim() !== "") disclosure = keyed.trim();
   const caption = buildCaption(disclosure, String(meta.title ?? ""), String(meta.description ?? ""), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
@@ -52004,6 +52027,11 @@ async function guard2(step, wrap2) {
     throw new ExecutionFailure(wrap2 ? wrap2(reason3(error)) : reason3(error));
   }
 }
+var PortFailure = class extends ExecutionFailure {
+};
+var soft = (step) => step().catch((error) => {
+  throw error instanceof ExecutionFailure && !(error instanceof ExecutionLimitFailure) ? new PortFailure(error.message) : error;
+});
 async function readReceipt(tools, name, username, file) {
   const saved = await guard2(() => tools.readText("run", name));
   if (saved === void 0) return void 0;
@@ -52019,7 +52047,15 @@ async function readReceipt(tools, name, username, file) {
   }
   return receipt;
 }
-async function execute15({ input, config, node }, { instagram, tools }) {
+async function execute15(request, capabilities) {
+  try {
+    return await publishReel(request, capabilities);
+  } catch (error) {
+    if (!(error instanceof PortFailure) || request.config.onFailure !== "port") throw error;
+    return { output: { ...request.input, instagramError: error.message }, port: "failed" };
+  }
+}
+async function publishReel({ input, config, node }, { instagram, tools }) {
   if (!instagram) throw new ExecutionFailure("Instagram publish requires the instagram capability.");
   if (!tools) throw new ExecutionFailure("Instagram publish requires the tools capability, which keeps the receipt that stops a retried run from posting twice.");
   const { username, shareToFeed, paidPartnership, outputKey, ...caps } = readSettings4(config);
@@ -52027,17 +52063,17 @@ async function execute15({ input, config, node }, { instagram, tools }) {
   const name = `instagram-reel-${node.id.replace(/[^A-Za-z0-9_-]/g, "_")}.json`;
   const save = (receipt2, wrap2) => guard2(() => tools.writeText("run", name, JSON.stringify({ username, file, ...receipt2 })), wrap2);
   const done = ({ mediaId, permalink }) => ({ output: { ...job, [outputKey]: { username, mediaId, ...permalink ? { permalink } : {} } }, port: "next" });
-  const settle = (containerId2) => guard2(
+  const settle = (containerId2) => soft(() => guard2(
     () => instagram.waitForContainer(username, containerId2),
     (why) => `Instagram is still processing container ${containerId2} (${why}); nothing is published yet. Run it again to carry on.`
-  );
+  ));
   await guard2(() => instagram.verifyAccount(username));
   const receipt = await readReceipt(tools, name, username, file);
   if (receipt?.mediaId) return done({ mediaId: receipt.mediaId, permalink: receipt.permalink });
   let containerId = receipt?.containerId;
   let status = containerId ? await settle(containerId) : void 0;
   if (!containerId || status === "ERROR" || status === "EXPIRED") {
-    containerId = (await guard2(() => instagram.createReel(username, file, { caption, shareToFeed, ...paidPartnership ? { isPaidPartnership: true } : {} }))).containerId;
+    containerId = (await soft(() => guard2(() => instagram.createReel(username, file, { caption, shareToFeed, ...paidPartnership ? { isPaidPartnership: true } : {} })))).containerId;
     const uploaded = containerId;
     await save({ containerId }, (why) => `The video was uploaded to container ${uploaded} but its receipt could not be saved (${why}); nothing was published.`);
     status = await settle(containerId);
@@ -52045,12 +52081,12 @@ async function execute15({ input, config, node }, { instagram, tools }) {
   if (status === "PUBLISHED") {
     throw new ExecutionFailure(`Container ${containerId} is already published on @${username}, but its media id was not saved; check the account. Delete ${name} from the run folder to post again.`);
   }
-  if (status !== "FINISHED") throw new ExecutionFailure(`Instagram could not process the video in container ${containerId} (${status}); nothing was published.`);
+  if (status !== "FINISHED") throw new PortFailure(`Instagram could not process the video in container ${containerId} (${status}); nothing was published.`);
   const ready = containerId;
-  const published = await guard2(
+  const published = await soft(() => guard2(
     () => instagram.publish(username, ready),
     (why) => `Publishing container ${ready} to @${username} failed (${why}); run it again to retry: the block checks the container first, so it will not post twice.`
-  );
+  ));
   await save(
     { containerId: ready, ...published },
     (why) => `Reel ${published.mediaId} is published on @${username}, but its receipt could not be saved (${why}); check the account before running this again.`
@@ -52134,7 +52170,7 @@ var moduleRegistry = deepFreeze({
   error: { execute: execute7, capabilities: [] },
   composite: { execute: execute8, capabilities: ["executeWorkflow"] },
   random: { execute: execute9, capabilities: [] },
-  campaign: { execute: execute10, capabilities: [] },
+  campaign: { execute: execute10, capabilities: ["contentRewards"] },
   "media-fetch": { execute: execute11, capabilities: ["tools"] },
   "video-edit": { execute: execute12, capabilities: ["tools"] },
   thumbnail: { execute: execute13, capabilities: ["tools"] },
@@ -52200,6 +52236,9 @@ function boundInstagram(instagram, signal, deadline) {
     waitForContainer: (username, containerId) => runBounded(instagram.waitForContainer(username, containerId), signal, deadline, Infinity),
     publish: (username, containerId) => runBounded(instagram.publish(username, containerId), signal, deadline, Infinity)
   };
+}
+function boundContentRewards(contentRewards, signal, deadline) {
+  return { intake: (ids) => runBounded(contentRewards.intake(ids), signal, deadline, Infinity) };
 }
 
 // packages/runtime/src/logging.ts
@@ -52434,7 +52473,7 @@ async function executeNode(module, node, input, config, context, depth) {
   if (registration.capabilities.includes("executeWorkflow") && depth >= maxCompositeDepth) {
     throw new ExecutionLimitFailure(`Composite nesting exceeds the maximum depth of ${maxCompositeDepth}.`);
   }
-  const { agent, approve, tools, youtube, instagram, signal, agentTimeoutMs } = context.options;
+  const { agent, approve, tools, youtube, instagram, contentRewards, signal, agentTimeoutMs } = context.options;
   const available = {
     agent: agent && ((prompt, value, settings, images) => runBounded(agent(prompt, value, settings, images), signal, context.deadline, agentTimeoutMs)),
     // waiting on a person is not run time: the wait has no deadline and the clock resumes with what was left
@@ -52449,6 +52488,7 @@ async function executeNode(module, node, input, config, context, depth) {
     tools: tools && boundTools(tools, signal, context.deadline),
     youtube: youtube && boundYouTube(youtube, signal, context.deadline),
     instagram: instagram && boundInstagram(instagram, signal, context.deadline),
+    contentRewards: contentRewards && boundContentRewards(contentRewards, signal, context.deadline),
     executeWorkflow: (graph, value) => executeGraph(graph, value, context, depth + 1)
   };
   const capabilities = Object.freeze(Object.fromEntries(registration.capabilities.map((key) => [key, available[key]])));
@@ -52973,6 +53013,7 @@ var RunService = class {
         tools: media2 && createRunTools({ runDir, stateDir: join3(media2.dataDir, "state", "businesses", storageKey(run2.businessId)), executables: media2.toolExecutables, scriptRoots: media2.scriptRoots, networkResetCommand: media2.networkResetCommand }),
         youtube: media2?.youtube?.(runDir),
         instagram: media2?.instagram?.(runDir),
+        contentRewards: media2?.contentRewards?.(),
         timeoutMs: this.timeoutMs,
         agentTimeoutMs: this.agentTimeoutMs,
         startAt,
@@ -55729,6 +55770,49 @@ function createCloudSync({ repo, dataDir, repository, gh = ghCli, now = Date.now
   };
 }
 
+// apps/server/src/content-rewards.ts
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import { join as join5 } from "node:path";
+var fail4 = (what) => {
+  throw new ExecutionFailure(`Content Rewards intake check failed (${what}).`);
+};
+var idList = (ids) => ids.join(",");
+function reasonFull(row) {
+  if (row.clipLimitReached) return "clip limit reached";
+  if (row.creatorMaxReached) return "creator maximum reached";
+  if (row.held) return "held";
+  if (row.intake !== "open") return "intake closed";
+  if (row.joinRequired) return "join required";
+}
+function createContentRewards({ dataDir, env, fetch: fetch2 }) {
+  const file = env.CR_SESSION_FILE || join5(dataDir, "state", "content-rewards", "session.json");
+  if (!existsSync2(file)) return void 0;
+  return {
+    async intake(ids) {
+      let cookie;
+      try {
+        const { cookies } = JSON.parse(readFileSync2(file, "utf8"));
+        cookie = cookies.filter(({ domain }) => domain.endsWith("contentrewards.com")).map(({ name, value }) => `${name}=${value}`).join("; ");
+      } catch {
+        return fail4("unreadable session file");
+      }
+      let body;
+      try {
+        const response = await fetch2(`https://contentrewards.com/api/submission/submissions/intake?campaignIds=${idList(ids)}`, { headers: { cookie, accept: "application/json" }, signal: AbortSignal.timeout(15e3) });
+        if (!response.ok) return fail4(`HTTP ${response.status}`);
+        body = await response.json();
+      } catch (error) {
+        throw error instanceof ExecutionFailure ? error : fail4("request failed");
+      }
+      if (!Array.isArray(body.data)) return fail4("unexpected reply");
+      return Object.fromEntries(body.data.filter((row) => typeof row.campaignId === "string").map((row) => {
+        const reason4 = reasonFull(row);
+        return [row.campaignId, reason4 ? { room: "full", reason: reason4 } : { room: row.almostFull ? "one" : "open" }];
+      }));
+    }
+  };
+}
+
 // apps/server/src/instagram/capability.ts
 function createInstagramCapability({ api, runDir }) {
   return { ...api, createReel: async (username, file, options) => api.createReel(username, await resolveRunFile(runDir, file), options) };
@@ -55765,11 +55849,11 @@ async function readJson2(response, what) {
 
 // apps/server/src/instagram/tokens.ts
 import { lstat as lstat4, readFile as readFile4 } from "node:fs/promises";
-import { join as join6 } from "node:path";
+import { join as join7 } from "node:path";
 
 // apps/server/src/youtube/tokens.ts
 import { chmod, lstat as lstat3, mkdir as mkdir2, open, readFile as readFile3, rename as rename2, unlink as unlink2 } from "node:fs/promises";
-import { dirname as dirname4, join as join5, resolve as resolve3 } from "node:path";
+import { dirname as dirname4, join as join6, resolve as resolve3 } from "node:path";
 var TOKEN_URL = "https://oauth2.googleapis.com/token";
 var REQUEST_TIMEOUT_MS = 3e4;
 var HANDLE_NAME = /^[A-Za-z0-9._-]{3,100}$/;
@@ -55778,7 +55862,7 @@ function channelName(handle) {
   if (!HANDLE_NAME.test(name)) throw new ExecutionFailure("Invalid YouTube channel handle.");
   return name;
 }
-var tokenFile = (tokenDir, handle) => join5(tokenDir, `${channelName(handle)}.json`);
+var tokenFile = (tokenDir, handle) => join6(tokenDir, `${channelName(handle)}.json`);
 function parseToken2(text3) {
   try {
     const value = JSON.parse(text3);
@@ -55833,7 +55917,7 @@ function instagramName(username) {
   if (!match) throw new ExecutionFailure("Invalid Instagram username.");
   return match[1].toLowerCase();
 }
-var tokenFile2 = (tokenDir, username) => join6(tokenDir, `${instagramName(username)}.json`);
+var tokenFile2 = (tokenDir, username) => join7(tokenDir, `${instagramName(username)}.json`);
 function parseToken3(text3) {
   try {
     const value = JSON.parse(text3);
@@ -56201,7 +56285,7 @@ function createYouTubeDataApi(options) {
 // apps/server/src/youtube/studio.ts
 import { spawn as spawn3 } from "node:child_process";
 import { lstat as lstat5, mkdir as mkdir3, readFile as readFile6, stat as stat3 } from "node:fs/promises";
-import { join as join7, resolve as resolve4 } from "node:path";
+import { join as join8, resolve as resolve4 } from "node:path";
 import Database2 from "better-sqlite3";
 var EDITOR_INPUT = "ytcp-video-thumbnail-editor input[type=file]";
 var SELECTED = "ytcp-video-thumbnail-editor ytcp-thumbnail-uploader[selected]";
@@ -56217,12 +56301,12 @@ var TOOL_TIMEOUT_MS = 3e4;
 var COMPARE_SIZE = 64;
 var MAX_MEAN_DIFFERENCE = 12;
 function run(command, args, stdin) {
-  return new Promise((done, fail4) => {
+  return new Promise((done, fail5) => {
     const child = spawn3(command, args, { stdio: [stdin ? "pipe" : "ignore", "pipe", "ignore"], signal: AbortSignal.timeout(TOOL_TIMEOUT_MS) });
     const chunks = [];
     child.stdout?.on("data", (chunk) => chunks.push(chunk));
     child.stdin?.on("error", () => void 0);
-    child.on("error", () => fail4(new ExecutionFailure(`${command} is unavailable or timed out; install ffmpeg and rerun`)));
+    child.on("error", () => fail5(new ExecutionFailure(`${command} is unavailable or timed out; install ffmpeg and rerun`)));
     child.on("close", (code) => done({ code, stdout: Buffer.concat(chunks) }));
     child.stdin?.end(stdin);
   });
@@ -56348,7 +56432,7 @@ function createStudioCoverSetter(options) {
   async function profileDir(handle) {
     const name = HANDLE.exec(handle)?.[1];
     if (!name) throw new ExecutionFailure("invalid YouTube channel handle");
-    const dir = join7(profileRoot, edgeExecutable ? `${name}-edge` : name);
+    const dir = join8(profileRoot, edgeExecutable ? `${name}-edge` : name);
     const info = await lstat5(dir).catch(() => null);
     if (info && !info.isDirectory()) throw new ExecutionFailure("Studio browser profile must be a directory");
     await mkdir3(dir, { recursive: true, mode: 448 });
@@ -56457,7 +56541,7 @@ async function createApp(options = {}) {
   const dataDir = resolve5(options.dataDir || process.env.AUTOBIZ_DATA_DIR || dirname5(databasePath));
   const repository = new WorkspaceRepository(databasePath);
   const configuredAgent = options.agent ?? createConfiguredAgent();
-  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), toolExecutables: toolExecutables(), scriptRoots: [shortsEngineDir(), videoEditScriptsDir()], networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
+  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), contentRewards: () => createContentRewards({ dataDir, env: process.env, fetch }), toolExecutables: toolExecutables(), scriptRoots: [shortsEngineDir(), videoEditScriptsDir()], networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
   repository.markActiveRunsInterrupted();
   const cloudSync = runnersRepo ? createCloudSync({ repo: runnersRepo, dataDir, repository, gh: options.cloudSync?.gh }) : void 0;
   app.decorate("workspaceRepository", repository);
@@ -56566,7 +56650,7 @@ async function createApp(options = {}) {
   });
   await app.register(artifactRoutes, { dataDir, repository });
   const webRoot = resolve5("dist/web");
-  if (existsSync2(webRoot)) {
+  if (existsSync3(webRoot)) {
     await app.register(import_static2.default, { root: webRoot, prefix: "/", wildcard: false });
     app.get("/*", async (request, reply) => {
       if (request.url.startsWith("/api/")) return reply.code(404).send({ error: "API route not found." });
@@ -56579,15 +56663,15 @@ function isRequestError(error) {
   return error instanceof Error;
 }
 function createInstagram(dataDir) {
-  const api = createInstagramGraphApi({ tokenDir: join8(dataDir, "state", "instagram-tokens"), fetch });
+  const api = createInstagramGraphApi({ tokenDir: join9(dataDir, "state", "instagram-tokens"), fetch });
   return (runDir) => createInstagramCapability({ api, runDir });
 }
 function createYouTube(dataDir, env = process.env) {
   const settings = youtubeSettingsFromEnv(env);
   if (!settings) return void 0;
-  const api = createYouTubeDataApi({ ...settings, tokenDir: join8(dataDir, "state", "youtube-tokens"), fetch });
+  const api = createYouTubeDataApi({ ...settings, tokenDir: join9(dataDir, "state", "youtube-tokens"), fetch });
   const studio = createStudioCoverSetter({
-    profileRoot: join8(dataDir, "state", "youtube-studio"),
+    profileRoot: join9(dataDir, "state", "youtube-studio"),
     edgeExecutable: env.YOUTUBE_STUDIO_EDGE_EXECUTABLE || void 0,
     firefoxCookies: env.YOUTUBE_STUDIO_FIREFOX_COOKIES || void 0,
     headless: env.YOUTUBE_STUDIO_HEADLESS !== "0"
@@ -56596,11 +56680,11 @@ function createYouTube(dataDir, env = process.env) {
 }
 function shortsEngineDir() {
   const bundled = fileURLToPath(new URL("./shorts-engine/", import.meta.url));
-  return existsSync2(bundled) ? bundled : fileURLToPath(new URL("../../../modules/shorts/shorts-engine/", import.meta.url));
+  return existsSync3(bundled) ? bundled : fileURLToPath(new URL("../../../modules/shorts/shorts-engine/", import.meta.url));
 }
 function videoEditScriptsDir() {
   const bundled = fileURLToPath(new URL("./video-edit-python/", import.meta.url));
-  return existsSync2(bundled) ? bundled : fileURLToPath(new URL("../../../modules/video-edit/video-edit-python/", import.meta.url));
+  return existsSync3(bundled) ? bundled : fileURLToPath(new URL("../../../modules/video-edit/video-edit-python/", import.meta.url));
 }
 function toolExecutables(env = process.env) {
   const python = env.AUTOBIZ_PYTHON?.trim();
@@ -56652,9 +56736,9 @@ function publishedItems(run2) {
 async function runHeadless(options) {
   const { snapshot, attempts = 1, pollMs = 1e3, out = () => void 0 } = options;
   const dataDir = resolve6(options.dataDir);
-  const runsDir = join9(dataDir, "runs");
+  const runsDir = join10(dataDir, "runs");
   await mkdir4(runsDir, { recursive: true });
-  const app = await createApp({ dbPath: join9(dataDir, "runner.sqlite"), dataDir });
+  const app = await createApp({ dbPath: join10(dataDir, "runner.sqlite"), dataDir });
   try {
     const workspace = await call(app, "GET", "/api/workspace", 200);
     await call(app, "PUT", "/api/workspace", 200, { ...workspace, businesses: [snapshot.business], modules: snapshot.modules, blueprints: [], templates: [] });
@@ -56667,8 +56751,8 @@ async function runHeadless(options) {
         printed = run2.logs.length;
         const json2 = JSON.stringify(run2, null, 2);
         if (json2 !== saved) {
-          await writeFile2(join9(runsDir, `${id}.json.tmp`), json2);
-          await rename3(join9(runsDir, `${id}.json.tmp`), join9(runsDir, `${id}.json`));
+          await writeFile2(join10(runsDir, `${id}.json.tmp`), json2);
+          await rename3(join10(runsDir, `${id}.json.tmp`), join10(runsDir, `${id}.json`));
           saved = json2;
         }
         if (finished.has(run2.status)) return run2;
