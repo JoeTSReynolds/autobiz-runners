@@ -52096,7 +52096,7 @@ async function publishReel({ input, config, node }, { instagram, tools }) {
     () => instagram.waitForContainer(username, containerId2),
     (why) => `Instagram is still processing container ${containerId2} (${why}); nothing is published yet. Run it again to carry on.`
   ));
-  await guard2(() => instagram.verifyAccount(username));
+  await soft(() => guard2(() => instagram.verifyAccount(username)));
   const receipt = await readReceipt(tools, name, username, file);
   if (receipt?.mediaId) return done({ mediaId: receipt.mediaId, permalink: receipt.permalink });
   let containerId = receipt?.containerId;
