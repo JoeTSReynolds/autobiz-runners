@@ -47214,7 +47214,8 @@ function starterModules() {
       field("settingsKey", "Settings key", "string", "campaigns"),
       field("channel", "Channel (empty: any)", "string", ""),
       field("outputKey", "Campaign key", "string", "campaign"),
-      field("sourceKey", "Source key", "string", "source")
+      field("sourceKey", "Source key", "string", "source"),
+      field("withdrawAfterHours", "Withdraw pending clips after (hours, 0 = never)", "number", 48)
     ], ["next", "full"]),
     seeded("media-fetch", "Media fetch", "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).", [
       field("mode", "Mode", "select", "search", ["search", "captions", "section", "sections", "download", "index", "locate", "frinkiac"]),
@@ -47237,6 +47238,7 @@ function starterModules() {
       field("hotspotsPerKind", "Hotspots per signal", "number", 4),
       field("transcriptUnit", "Transcript unit", "select", "line", ["line", "sentence"]),
       field("transcribeUpTo", "Transcribe uncaptioned videos up to (s)", "number", 0),
+      field("transcribeTimeoutMs", "Whisper time limit for Drive sources (ms)", "number", 36e5),
       field("padding", "Section padding (s)", "number", 2),
       field("maxHeight", "Maximum video height", "number", 1080),
       field("minMoment", "Shortest moment (s)", "number", 5),
@@ -49077,7 +49079,7 @@ function execute9({ input, config }) {
 }
 
 // modules/campaign/index.ts
-var DEFAULTS2 = { settingsKey: "campaigns", channel: "", outputKey: "campaign", sourceKey: "source" };
+var DEFAULTS2 = { settingsKey: "campaigns", channel: "", outputKey: "campaign", sourceKey: "source", withdrawAfterHours: 48 };
 var isObject3 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var isHttps = (value) => typeof value === "string" && /^https:\/\/\S+$/.test(value);
 var isText = (value) => typeof value === "string";
@@ -49112,6 +49114,8 @@ async function execute10({ input, config, settings }, capabilities = {}) {
   const channel = setting(config, "channel", true);
   const outputKey = setting(config, "outputKey");
   const sourceKey = setting(config, "sourceKey");
+  const hours = config.withdrawAfterHours === void 0 ? DEFAULTS2.withdrawAfterHours : config.withdrawAfterHours;
+  if (typeof hours !== "number" || !Number.isFinite(hours) || hours < 0) fail("setting withdrawAfterHours must be a finite number of hours, 0 or more");
   if (!isObject3(input)) throw new ExecutionFailure("Campaign input must be a plain object (the job).");
   const list3 = settings[settingsKey] ?? [];
   if (!Array.isArray(list3)) fail(`settings.${settingsKey} must be a list of campaign records`);
@@ -49120,6 +49124,13 @@ async function execute10({ input, config, settings }, capabilities = {}) {
   let rooms = {};
   let roomError;
   const crId = (record2) => /\/campaigns\/([0-9a-f-]{36})/i.exec(record2.url)?.[1] ?? record2.id;
+  let withdrawn = [], withdrawFailed = [], withdrawError;
+  if (capabilities.contentRewards && hours > 0) try {
+    ({ withdrawn, failed: withdrawFailed } = await capabilities.contentRewards.withdrawStale(candidates2.map(crId), hours));
+  } catch (error) {
+    withdrawError = error instanceof Error ? error.message : String(error);
+  }
+  const withdrawInfo = { ...withdrawn.length > 0 && { clipsWithdrawn: withdrawn }, ...withdrawFailed.length > 0 && { clipsWithdrawFailed: withdrawFailed }, ...withdrawError !== void 0 && { campaignWithdrawError: withdrawError } };
   if (capabilities.contentRewards) try {
     rooms = await capabilities.contentRewards.intake(candidates2.map(crId));
   } catch (error) {
@@ -49127,11 +49138,11 @@ async function execute10({ input, config, settings }, capabilities = {}) {
   }
   const roomOf = (record2) => rooms[crId(record2)]?.room ?? "unknown";
   const open3 = candidates2.filter((record2) => roomOf(record2) !== "full");
-  if (open3.length === 0) return { output: { ...input, campaignsFull: candidates2.map((record2) => ({ id: record2.id, reason: rooms[crId(record2)].reason })) }, port: "full" };
+  if (open3.length === 0) return { output: { ...input, campaignsFull: candidates2.map((record2) => ({ id: record2.id, reason: rooms[crId(record2)].reason })), ...withdrawInfo }, port: "full" };
   const best = open3.some((record2) => roomOf(record2) !== "one") ? open3.filter((record2) => roomOf(record2) !== "one") : open3;
   const campaign = best[Math.floor(Math.random() * best.length)];
   const sources = campaign.sources;
-  return { output: { ...input, [outputKey]: { ...campaign, room: roomOf(campaign) }, [sourceKey]: sources[Math.floor(Math.random() * sources.length)], ...roomError !== void 0 && { campaignRoomError: roomError } }, port: "next" };
+  return { output: { ...input, [outputKey]: { ...campaign, room: roomOf(campaign) }, [sourceKey]: sources[Math.floor(Math.random() * sources.length)], ...roomError !== void 0 && { campaignRoomError: roomError }, ...withdrawInfo }, port: "next" };
 }
 
 // modules/media-fetch/index.ts
@@ -49161,6 +49172,8 @@ var DEFAULTS3 = {
   transcriptUnit: "line",
   transcribeUpTo: 0,
   // seconds; a video this short with no captions is transcribed with whisper instead of rejected (0 = never)
+  transcribeTimeoutMs: 36e5,
+  // whisper on a Google Drive source (no length guard there); the YouTube fallback keeps downloadTimeoutMs
   // section (maxHeight and downloadTimeoutMs also apply to download and sections)
   padding: 2,
   maxHeight: 1080,
@@ -49202,6 +49215,8 @@ var DEFAULTS3 = {
 };
 var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", sections: "clips", download: "video", index: "index", locate: "source", frinkiac: "source" };
 var WHISPER_MODEL = "base.en";
+var DRIVE = /^https:\/\/drive\.google\.com\/(?:file\/d\/|uc\?(?:[^#]*&)?id=)[\w-]+/;
+var isDrive = (url) => DRIVE.test(url);
 var WORDS_FILE = "captions.words.json";
 var TRANSCRIPT_FILE = "transcript.txt";
 var HOTSPOTS_FILE = "hotspots.txt";
@@ -49226,10 +49241,10 @@ function positional(value, name) {
   if (value.startsWith("-")) throw new ExecutionFailure(`media-fetch ${name} must not start with "-".`);
   return value;
 }
-function archiveArgs(config, tools) {
+function archiveArgs(config, tools, url = "") {
   const value = config.archive ?? DEFAULTS3.archive;
   if (typeof value !== "boolean") throw new ExecutionFailure("media-fetch setting archive must be true or false.");
-  return value ? ["--download-archive", `${tools.stateDir}/archive.txt`] : [];
+  return value && !isDrive(url) ? ["--download-archive", `${tools.stateDir}/archive.txt`] : [];
 }
 function momentsFile(config) {
   const file = config.momentsFile ?? DEFAULTS3.momentsFile;
@@ -49586,9 +49601,10 @@ var captions = async (job, config, tools, outputKey) => {
   const momentsName = momentsFile(config);
   const rejected = rejectedSources(job);
   const missing = () => ({ output: { ...job, rejectedSources: [...rejected, id] }, port: "missing" });
-  const transcribe = async () => {
+  const drive = isDrive(url);
+  const transcribe = async (whisperTimeoutMs = downloadTimeoutMs) => {
     await tools.run("yt-dlp", ["-f", "ba[ext=m4a]/ba", "-o", "captions-audio", "--no-warnings", "--", url], { timeoutMs: downloadTimeoutMs });
-    await tools.run("whisper-ctranslate2", ["captions-audio", "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", "--word_timestamps", "True", "--output_format", "json", "--output_dir", "."], { timeoutMs: downloadTimeoutMs });
+    await tools.run("whisper-ctranslate2", ["captions-audio", "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", "--word_timestamps", "True", "--output_format", "json", "--output_dir", "."], { timeoutMs: whisperTimeoutMs });
     const spoken = await tools.readText("run", "captions-audio.json");
     if (spoken === void 0) throw new Error("whisper wrote no captions-audio.json");
     await tools.writeText("run", `captions.${languages[0]}.json3`, whisperToJson3(spoken));
@@ -49604,6 +49620,17 @@ var captions = async (job, config, tools, outputKey) => {
       return missing();
     }
     await tools.writeText("run", `captions.${languages[0]}.json3`, srtToJson3(await tools.readText("run", "captions.srt") ?? ""));
+  } else if (drive) {
+    const cacheFile = `transcripts/${id}.json3`;
+    const cached = await tools.readText("state", cacheFile);
+    if (cached) await tools.writeText("run", `captions.${languages[0]}.json3`, cached);
+    else try {
+      await transcribe(count(config, "transcribeTimeoutMs", true));
+      await tools.writeText("state", cacheFile, await tools.readText("run", `captions.${languages[0]}.json3`) ?? "");
+    } catch (error) {
+      if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure && !/^\S+ exceeded its \d+ ms time limit/.test(error.message)) throw error;
+      return missing();
+    }
   } else try {
     const infoArgs = !hotspots ? [] : ["--write-info-json", ...commentsToScan > 0 ? ["--write-comments", "--extractor-args", `youtube:max_comments=${commentsToScan},all,0,0;comment_sort=top`] : []];
     await yt2(["--skip-download", "--write-subs", "--write-auto-subs", "--sub-langs", languages.join(","), "--sub-format", "json3", ...infoArgs, "-o", "captions", "--no-warnings", "--", url], timeout);
@@ -49666,7 +49693,7 @@ async function probe(tools, file, timeoutMs) {
   if (!hasVideo) throw new ExecutionFailure(`media-fetch ${file} has no video stream; yt-dlp saved audio only.`);
   return length3;
 }
-var sectionFormat = (maxHeight) => `bv*[height<=${maxHeight}][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=${maxHeight}][vcodec^=avc1]+ba/b[height<=${maxHeight}]`;
+var sectionFormat = (maxHeight, url = "") => isDrive(url) ? `bv*[height<=${maxHeight}]+ba/b[height<=${maxHeight}]` : `bv*[height<=${maxHeight}][vcodec^=avc1][protocol^=m3u8]+ba/bv*[height<=${maxHeight}][vcodec^=avc1]+ba/b[height<=${maxHeight}]`;
 var section = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
   const padding = count(config, "padding");
@@ -49680,7 +49707,7 @@ var section = async (job, config, tools, outputKey) => {
   }
   const from = round(Math.max(0, start - padding));
   const to = round(duration === void 0 ? end + padding : Math.min(duration, end + padding));
-  await yt2(["-f", sectionFormat(maxHeight), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools), "-o", "section.%(ext)s", "--no-warnings", "--", url], timeoutMs);
+  await yt2(["-f", sectionFormat(maxHeight, url), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools, url), "-o", "section.%(ext)s", "--no-warnings", "--", url], timeoutMs);
   const length3 = await probe(tools, CLIP_FILE, timeoutMs);
   return { output: { ...job, [outputKey]: { file: CLIP_FILE, offset: from, duration: length3 } }, port: "next" };
 };
@@ -49739,7 +49766,7 @@ var sections = async (job, config, tools, outputKey) => {
       }
       continue;
     }
-    const args = ["-f", sectionFormat(maxHeight), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools), "-o", `${prefix}%(section_start).3f.%(ext)s`, "--no-warnings", "--", url];
+    const args = ["-f", sectionFormat(maxHeight, url), ...[...downloads].flatMap(([from, to]) => ["--download-sections", `*${from}-${to}`]), "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools, url), "-o", `${prefix}%(section_start).3f.%(ext)s`, "--no-warnings", "--", url];
     try {
       await yt2(args, timeoutMs);
     } catch (error) {
@@ -51806,6 +51833,7 @@ function withTitleHashtags(title, hashtags) {
   if (/#[\p{L}\p{N}_]/u.test(title)) return title;
   return hashtags.slice(0, 2).reduce((t, tag) => `${t} #${tag}`.length <= 100 ? `${t} #${tag}` : t, title);
 }
+var withoutDriveLinks = (text3) => text3.replace(/[ \t]*https?:\/\/(drive|docs)\.google\.com\/\S*/gi, "");
 function withHashtags(description, hashtags) {
   if (hashtags.length === 0) return description.slice(0, 5e3);
   const line2 = hashtags.map((tag) => `#${tag}`).join(" ");
@@ -51864,9 +51892,9 @@ function readJob2(input, needCover, maxHashtags, titleHashtags) {
     file: short.file,
     cover: isObject10(thumbnail) ? String(thumbnail.file) : "",
     title: withTitleHashtags(clipTitle(meta.title.trim()), titleHashtags ? cleanHashtags(meta.hashtags ?? [], maxHashtags) : []),
-    description: withHashtags(meta.description ?? "", cleanHashtags(meta.hashtags ?? [], maxHashtags)),
+    description: withHashtags(withoutDriveLinks(meta.description ?? ""), cleanHashtags(meta.hashtags ?? [], maxHashtags)),
     tags: cleanTags(meta.tags ?? []),
-    comment: (meta.comment ?? "").trim().slice(0, 1e3)
+    comment: withoutDriveLinks(meta.comment ?? "").trim().slice(0, 1e3)
   };
 }
 async function guard(step, wrap2) {
@@ -51967,6 +51995,7 @@ function cleanHashtags2(items, max) {
   }
   return [...kept.values()];
 }
+var withoutDriveLinks2 = (text3) => text3.replace(/[ \t]*https?:\/\/(drive|docs)\.google\.com\/\S*/gi, "");
 function buildCaption(disclosure, title, description, hashtags) {
   const [first = "", ...rest] = description.trim().split("\n");
   const desc = disclosure !== "" && first.trim() === disclosure ? rest.join("\n").trim() : description.trim();
@@ -52015,7 +52044,7 @@ function readJob3(input, settings) {
   const keyed = disclosureKey === "" ? void 0 : lookup3(input, disclosureKey);
   if (keyed !== void 0 && !oneLine(keyed)) throw new ExecutionFailure(`Instagram publish input job.${disclosureKey} (the disclosure) must be text of at most 100 characters on one line.`);
   if (typeof keyed === "string" && keyed.trim() !== "") disclosure = keyed.trim();
-  const caption = buildCaption(disclosure, String(meta.title ?? ""), String(meta.description ?? ""), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
+  const caption = buildCaption(disclosure, String(meta.title ?? ""), withoutDriveLinks2(String(meta.description ?? "")), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
   return { job: input, file: short.file, caption };
 }
 async function guard2(step, wrap2) {
@@ -52238,7 +52267,7 @@ function boundInstagram(instagram, signal, deadline) {
   };
 }
 function boundContentRewards(contentRewards, signal, deadline) {
-  return { intake: (ids) => runBounded(contentRewards.intake(ids), signal, deadline, Infinity) };
+  return { intake: (ids) => runBounded(contentRewards.intake(ids), signal, deadline, Infinity), withdrawStale: (ids, hours) => runBounded(contentRewards.withdrawStale(ids, hours), signal, deadline, Infinity) };
 }
 
 // packages/runtime/src/logging.ts
@@ -55771,7 +55800,7 @@ function createCloudSync({ repo, dataDir, repository, gh = ghCli, now = Date.now
 }
 
 // apps/server/src/content-rewards.ts
-import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import { existsSync as existsSync2, readFileSync as readFileSync2, writeFileSync as writeFileSync2 } from "node:fs";
 import { join as join5 } from "node:path";
 var fail4 = (what) => {
   throw new ExecutionFailure(`Content Rewards intake check failed (${what}).`);
@@ -55787,19 +55816,51 @@ function reasonFull(row) {
 function createContentRewards({ dataDir, env, fetch: fetch2 }) {
   const file = env.CR_SESSION_FILE || join5(dataDir, "state", "content-rewards", "session.json");
   if (!existsSync2(file)) return void 0;
+  const readState = () => {
+    try {
+      return JSON.parse(readFileSync2(file, "utf8"));
+    } catch {
+      return fail4("unreadable session file");
+    }
+  };
+  const readCookie = () => readState().cookies.filter(({ domain }) => domain.endsWith("contentrewards.com")).map(({ name, value }) => `${name}=${value}`).join("; ");
+  const renew = async () => {
+    const state = readState();
+    let set;
+    try {
+      const response = await fetch2("https://contentrewards.com/c/dashboard", { headers: { cookie: readCookie() }, redirect: "manual", signal: AbortSignal.timeout(15e3) });
+      set = response.ok ? response.headers.getSetCookie() : [];
+    } catch {
+      return false;
+    }
+    if (set.length === 0) return false;
+    for (const line2 of set) {
+      const [pair = "", ...attributes] = line2.split(";");
+      const eq = pair.indexOf("=");
+      if (eq < 1) continue;
+      const name = pair.slice(0, eq).trim(), value = pair.slice(eq + 1).trim();
+      const maxAge = attributes.map((a) => /^\s*max-age=(\d+)/i.exec(a)).find(Boolean);
+      const expires = maxAge ? Math.floor(Date.now() / 1e3) + Number(maxAge[1]) : -1;
+      const existing = state.cookies.find((c) => c.name === name && c.domain.endsWith("contentrewards.com"));
+      if (existing) Object.assign(existing, { value, expires });
+      else state.cookies.push({ name, value, domain: "contentrewards.com", path: "/", expires, httpOnly: true, secure: true, sameSite: "Lax" });
+    }
+    writeFileSync2(file, JSON.stringify(state), { mode: 384 });
+    return true;
+  };
+  const get = async (url, failWith) => {
+    const send = () => fetch2(url, { headers: { cookie: readCookie(), accept: "application/json" }, signal: AbortSignal.timeout(15e3) });
+    let response = await send();
+    if (response.status === 401 && await renew()) response = await send();
+    if (response.status === 401) return failWith("session expired: run npm run cr:connect and update the CR_SESSION secret");
+    if (!response.ok) return failWith(`HTTP ${response.status}`);
+    return response;
+  };
   return {
     async intake(ids) {
-      let cookie;
-      try {
-        const { cookies } = JSON.parse(readFileSync2(file, "utf8"));
-        cookie = cookies.filter(({ domain }) => domain.endsWith("contentrewards.com")).map(({ name, value }) => `${name}=${value}`).join("; ");
-      } catch {
-        return fail4("unreadable session file");
-      }
       let body;
       try {
-        const response = await fetch2(`https://contentrewards.com/api/submission/submissions/intake?campaignIds=${idList(ids)}`, { headers: { cookie, accept: "application/json" }, signal: AbortSignal.timeout(15e3) });
-        if (!response.ok) return fail4(`HTTP ${response.status}`);
+        const response = await get(`https://contentrewards.com/api/submission/submissions/intake?campaignIds=${idList(ids)}`, fail4);
         body = await response.json();
       } catch (error) {
         throw error instanceof ExecutionFailure ? error : fail4("request failed");
@@ -55809,6 +55870,38 @@ function createContentRewards({ dataDir, env, fetch: fetch2 }) {
         const reason4 = reasonFull(row);
         return [row.campaignId, reason4 ? { room: "full", reason: reason4 } : { room: row.almostFull ? "one" : "open" }];
       }));
+    },
+    async withdrawStale(ids, minAgeHours) {
+      const listFail = (what) => {
+        throw new ExecutionFailure(`Content Rewards clip list failed (${what}).`);
+      };
+      let body;
+      try {
+        const response = await get("https://contentrewards.com/api/submission/submissions?limit=50&creatorView=true&retainer=false", listFail);
+        body = await response.json();
+      } catch (error) {
+        throw error instanceof ExecutionFailure ? error : listFail("request failed");
+      }
+      if (!Array.isArray(body.data)) return listFail("unexpected reply");
+      const stale = body.data.flatMap((item) => {
+        const views = Number(item.socialMediaPost?.views);
+        const viewsToMinimum = Number(item.cpmTerms?.viewsToMinimum);
+        const age = (Date.now() - Date.parse(item.createdAt ?? "")) / 36e5;
+        return typeof item.id === "string" && typeof item.campaignId === "string" && ids.includes(item.campaignId) && item.status === "pending" && !item.isDeleted && !item.flagged && !item.adjudicationLocked && age >= minAgeHours && Number.isFinite(views) && Number.isFinite(viewsToMinimum) && views < viewsToMinimum && item.socialMediaPost?.views != null && item.cpmTerms?.viewsToMinimum != null ? [{ id: item.id, campaignId: item.campaignId, postUrl: String(item.socialMediaPost?.postUrl ?? ""), views, viewsToMinimum }] : [];
+      });
+      const cookie = readCookie();
+      const withdrawn = [];
+      const failed2 = [];
+      for (const clip of stale) {
+        try {
+          const response = await fetch2(`https://contentrewards.com/api/submission/submissions/${encodeURIComponent(clip.id)}/own`, { method: "DELETE", headers: { cookie, accept: "application/json", origin: "https://contentrewards.com" }, signal: AbortSignal.timeout(15e3) });
+          if (response.ok) withdrawn.push(clip);
+          else failed2.push({ id: clip.id, reason: `HTTP ${response.status}` });
+        } catch {
+          failed2.push({ id: clip.id, reason: "request failed" });
+        }
+      }
+      return { withdrawn, failed: failed2 };
     }
   };
 }

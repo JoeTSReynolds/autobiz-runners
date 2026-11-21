@@ -384,7 +384,19 @@ if (process.argv[1] && import.meta.url === pathToFileURL2(process.argv[1]).href)
     ask: async (prompt) => (await run("claude", ["-p", prompt, "--model", process.env.SCOUT_MODEL || "claude-haiku-5-5"], { timeout: 18e4, maxBuffer: 1e7 })).stdout,
     now: Date.now
   };
-  await scout(process.env, real).catch((error) => {
+  const renewSession = async () => {
+    const file = process.env.CR_SESSION_FILE;
+    if (!file) return;
+    const page = await real.openPage();
+    try {
+      await page.goto("https://contentrewards.com/c/dashboard", { waitUntil: "domcontentloaded", timeout: 6e4 });
+      if (page.url().includes("/login")) throw new Error("Content Rewards session expired: run npm run cr:connect and update the CR_SESSION secret");
+      await page.context().storageState({ path: file });
+    } finally {
+      await page.close();
+    }
+  };
+  await renewSession().then(() => scout(process.env, real)).catch((error) => {
     console.error(`Campaign scout failed: ${message(error)}`);
     process.exitCode = 1;
   });

@@ -139,7 +139,7 @@
             "y": 40
           },
           "config": {
-            "prompt": "This is a paid clipping campaign; `campaign` holds its rules. `campaign.brief` and `campaign.requirements` are the brand's instructions and `campaign.checklist` is what its reviewers check before paying (it wins if they disagree). `campaign.featured` is the person the clips must feature: keep them on screen, keep their words in context and never twist what they meant. Write YouTube Shorts metadata for a clip of `campaign.featured` from the episode in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. The title is short, punchy clickbait in the style of \"<featured> said WHAT about Nigerians??? 💀\": it names `campaign.featured` and the TOPIC of the moment (a person, a group, a place or a thing people know, taken from what he actually talks about) and hides WHAT happened, so people tap to find out. It must make sense on its own to someone who knows nothing about the clip; never cut a quote off mid-sentence. Good shapes: \"<featured> said WHAT about <topic>??? 💀\", \"<featured>'s <person> did WHAT??? 😭\", \"<featured> got DESTROYED by <topic>... 💀\", \"Why <featured> <does something surprising>??? 😭\", \"<featured> really thinks <topic> is...?? 💀\". Use one word in capitals (usually WHAT or the shock word), end with ??? or ?? or ... and exactly one emoji (💀 😭 😳 🤯 👀). At most 45 characters including the emoji. The title must be true to the clip: the topic is really in it, and nothing is claimed that he did not say or do. `titlePattern` is a one-word label of the shape you used (said-what, did-what, why, destroyed, thinks). Return only JSON: {\"title\": \"at most 45 characters including the emoji, no hashtags\", \"titlePattern\": \"said-what\" | \"did-what\" | \"why\" | \"destroyed\" | \"thinks\", \"description\": \"first line exactly `campaign.disclosure`; then 1 to 2 sentences teasing the moment; then a last line crediting the source exactly as: Source: <source.title> - <source.channel> <source.url>. No hashtags except #ad.\", \"hashtags\": [\"6 to 10 words without the # sign, including the featured person's name without spaces, podcast and shorts; letters and digits only\"], \"tags\": [\"5 to 8 lowercase search keywords including the featured person's name\"], \"thumbnailText\": \"at most 3 words, uppercase\"}. If `agentErrors` is present, fix those problems.",
+            "prompt": "This is a paid clipping campaign; `campaign` holds its rules. `campaign.brief` and `campaign.requirements` are the brand's instructions and `campaign.checklist` is what its reviewers check before paying (it wins if they disagree). `campaign.featured` is the person the clips must feature: keep them on screen, keep their words in context and never twist what they meant. Write YouTube Shorts metadata for a clip of `campaign.featured` from the episode in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. The title is short, punchy clickbait in the style of \"<featured> said WHAT about Nigerians??? 💀\": it names `campaign.featured` and the TOPIC of the moment (a person, a group, a place or a thing people know, taken from what he actually talks about) and hides WHAT happened, so people tap to find out. It must make sense on its own to someone who knows nothing about the clip; never cut a quote off mid-sentence. Good shapes: \"<featured> said WHAT about <topic>??? 💀\", \"<featured>'s <person> did WHAT??? 😭\", \"<featured> got DESTROYED by <topic>... 💀\", \"Why <featured> <does something surprising>??? 😭\", \"<featured> really thinks <topic> is...?? 💀\". Use one word in capitals (usually WHAT or the shock word), end with ??? or ?? or ... and exactly one emoji (💀 😭 😳 🤯 👀). At most 45 characters including the emoji. The title must be true to the clip: the topic is really in it, and nothing is claimed that he did not say or do. `titlePattern` is a one-word label of the shape you used (said-what, did-what, why, destroyed, thinks). Return only JSON: {\"title\": \"at most 45 characters including the emoji, no hashtags\", \"titlePattern\": \"said-what\" | \"did-what\" | \"why\" | \"destroyed\" | \"thinks\", \"description\": \"first line exactly `campaign.disclosure`; then 1 to 2 sentences teasing the moment; then a last line crediting the source exactly as: Source: <source.title> - <source.channel>, followed by a space and <source.url> only when it is a youtube.com or youtu.be link (never include any other link, such as Google Drive). No hashtags except #ad.\", \"hashtags\": [\"6 to 10 words without the # sign, including the featured person's name without spaces, podcast and shorts; letters and digits only\"], \"tags\": [\"5 to 8 lowercase search keywords including the featured person's name\"], \"thumbnailText\": \"at most 3 words, uppercase\"}. If `agentErrors` is present, fix those problems.",
             "format": "json",
             "inputKeys": [
               "campaign",
@@ -532,7 +532,7 @@
       ]
     },
     "createdAt": "2026-11-19T00:50:55.049Z",
-    "updatedAt": "2026-11-19T22:15:05.117Z"
+    "updatedAt": "2026-11-21T14:33:50.103Z"
   },
   "modules": [
     {
@@ -899,13 +899,20 @@
           "label": "Source key",
           "type": "string",
           "default": "source"
+        },
+        {
+          "key": "withdrawAfterHours",
+          "label": "Withdraw pending clips after (hours, 0 = never)",
+          "type": "number",
+          "default": 48
         }
       ],
       "defaults": {
         "settingsKey": "campaigns",
         "channel": "",
         "outputKey": "campaign",
-        "sourceKey": "source"
+        "sourceKey": "source",
+        "withdrawAfterHours": 48
       },
       "outputs": [
         {
@@ -1090,6 +1097,12 @@
           "label": "Transcribe uncaptioned videos up to (s)",
           "type": "number",
           "default": 0
+        },
+        {
+          "key": "transcribeTimeoutMs",
+          "label": "Whisper time limit for Drive sources (ms)",
+          "type": "number",
+          "default": 3600000
         },
         {
           "key": "padding",
@@ -1300,6 +1313,7 @@
         "hotspotsPerKind": 4,
         "transcriptUnit": "line",
         "transcribeUpTo": 0,
+        "transcribeTimeoutMs": 3600000,
         "padding": 2,
         "maxHeight": 1080,
         "minMoment": 5,
