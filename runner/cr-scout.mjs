@@ -135,9 +135,9 @@ async function joinCampaign(page, url, waitMs = 2e4) {
 }
 async function fitCheck(candidates, ask, n = 5) {
   const top = candidates.slice(0, n);
-  const prompt = `Our pipeline makes YouTube Shorts and Instagram Reels from long-form video. For each campaign below, decide whether we can clip it well. Podcast lane: long-form talking-head video with clear speech. Reject gameplay, trailers, music videos, product demos without talking, and non-English content.
+  const prompt = `Our pipeline makes YouTube Shorts and Instagram Reels from long-form video. For each campaign below, decide whether we can clip it well. Podcast lane: long-form talking-head video with clear speech. Reject gameplay, trailers, music videos, product demos without talking, and non-English content. We post from a new page with few followers, the clips are fully automated (no human editor), and nobody appears or speaks on camera for us. So also reject campaigns whose rules need any of: an existing or established account, or a follower minimum; the creator's face on camera, a voiceover or reactions; no automated or AI clipping; a brand logo or watermark kept on screen; a specific sound or song.
 
-${top.map((c) => JSON.stringify({ id: c.id, title: c.title, categories: c.categories, description: c.description?.slice(0, 400) })).join("\n")}
+${top.map((c) => JSON.stringify({ id: c.id, title: c.title, categories: c.categories, description: c.description?.slice(0, 400), ...c.rules ? { rules: c.rules.slice(0, 1200) } : {} })).join("\n")}
 
 Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "..."}], one entry per campaign.`;
   let verdicts = [];
@@ -215,7 +215,17 @@ async function scout(env, deps) {
       seen[id] = { verdict, at: new Date(deps.now()).toISOString() };
     };
     const drafted = [], wouldJoin = [];
-    const top = eligible.slice(0, 10), fits = top.length ? await fitCheck(top, deps.ask, 10) : [];
+    const top = eligible.slice(0, 10);
+    const details = /* @__PURE__ */ new Map();
+    for (const c of top) {
+      try {
+        const json = await deps.fetchCampaign(c.id), r = draftFromCampaign(json, c, "podcast");
+        details.set(c.id, json);
+        c.rules = [...new Set([r.brief, r.requirements, r.checklist].filter(Boolean))].join("\n");
+      } catch {
+      }
+    }
+    const fits = top.length ? await fitCheck(top, deps.ask, 10) : [];
     const judged = fits.filter((f) => f.reason !== "no valid verdict");
     if (top.length && judged.length < fits.length) notes.push(`Fit check gave no usable answer for ${fits.length - judged.length} of ${fits.length} campaigns; they will be asked again next run`);
     for (const f of judged.filter((f2) => !f2.fit)) {
@@ -236,7 +246,7 @@ async function scout(env, deps) {
           continue;
         }
         mark(id, "joined");
-        const record = draftFromCampaign(await deps.fetchCampaign(c.id), c, "podcast");
+        const record = draftFromCampaign(details.get(c.id) ?? await deps.fetchCampaign(c.id), c, "podcast");
         if (!record.sources.length) notes.push(`${c.title}: no YouTube source in the reference materials (needs a source before it can go live)`);
         await write(join(SCOUT_OUT, "proposed", `${record.id}.json`), `${JSON.stringify(record, null, 2)}
 `);
