@@ -7,9 +7,8 @@
     "settings": {
       "runner": {
         "at": [
-          "11:23",
-          "16:23",
-          "20:23"
+          "12:23",
+          "19:23"
         ],
         "tz": "Europe/London",
         "model": "claude-haiku-5-5",
@@ -43,6 +42,38 @@
               "title": "Vi City Talks $500K Lawsuit, Toxic Relationships & Music Industry Truths | Live With Carisha",
               "channel": "THE BIG FACTS NETWORK",
               "duration": 4658
+            }
+          ]
+        },
+        {
+          "id": "harry-jowsey",
+          "channel": "podcast",
+          "active": true,
+          "url": "https://contentrewards.com/c/campaigns/b5d13a1d-a29a-4fc4-baa0-1407fdaba23a",
+          "featured": "Joe Gorga (the guest) with host Harry Jowsey",
+          "disclosure": "#ad #harryjowsey #themob @harryjowsey @hulu",
+          "brief": "Harry Jowsey is a TV star and podcast host. On his podcast Boyfriend Material he talks with celebrities and gets the inside scoop on drama and talking points. Clip the best moments of the Boyfriend Material podcast episode with Joe Gorga: funny, real or wild, so people want to hear the rest. Only this episode's footage. Add on-screen auto captions that match the speech for the whole clip. B-roll is allowed only 3 seconds at a time and must add to what is said; sound effects are allowed when they make sense. Not wanted: long clips with no hook, clips where you cannot hear him, NSFW or off-topic videos.",
+          "requirements": "Caption must include #harryjowsey and #themob and mention @harryjowsey and @hulu. No explicit content.",
+          "checklist": "Use only the Joe Gorga interview from the linked folder (no outside episodes)\nAdd captions / subtitles on screen\nMust tag @harryjowsey @hulu\nMust use #harryjowsey and #themob",
+          "rates": {
+            "instagram": {
+              "rate": 1,
+              "minPayout": 1,
+              "maxPayout": 250
+            },
+            "youtube": {
+              "rate": 1,
+              "minPayout": 2,
+              "maxPayout": 250
+            }
+          },
+          "sources": [
+            {
+              "id": "1DubiL1JfIv4zws6rq1HM1A2khKWxDeaw",
+              "url": "https://drive.google.com/file/d/1DubiL1JfIv4zws6rq1HM1A2khKWxDeaw/view",
+              "title": "Boyfriend Material with Harry Jowsey: Joe Gorga",
+              "channel": "Boyfriend Material",
+              "duration": 3281
             }
           ]
         }
@@ -532,7 +563,7 @@
       ]
     },
     "createdAt": "2026-11-19T00:50:55.049Z",
-    "updatedAt": "2026-11-21T14:33:50.103Z"
+    "updatedAt": "2026-11-21T23:28:27.204Z"
   },
   "modules": [
     {

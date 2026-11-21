@@ -5,6 +5,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
+
+// scripts/content-rewards-post-key.ts
+function postKey(url) {
+  return /(?:shorts\/|[?&]v=|youtu\.be\/)([\w-]{11})/.exec(url)?.[1] ?? /instagram\.com\/(?:reel|p)\/([\w-]+)/.exec(url)?.[1] ?? "";
+}
+
+// scripts/content-rewards-submit.ts
 var CAMPAIGN = /^https:\/\/contentrewards\.com\/c\/campaigns\/[0-9a-f-]{36}$/i;
 var ERROR = /can['’]t|invalid|already|\bnot\b|error|failed/i;
 var ITEM_MS = 9e4;
@@ -62,9 +69,6 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
   } finally {
     if (shot) await page.screenshot({ path: shot }).catch(() => void 0);
   }
-}
-function postKey(url) {
-  return /(?:shorts\/|[?&]v=|youtu\.be\/)([\w-]{11})/.exec(url)?.[1] ?? /instagram\.com\/(?:reel|p)\/([\w-]+)/.exec(url)?.[1] ?? "";
 }
 async function submitAll(env) {
   const { CR_SESSION_FILE, CR_CAMPAIGN_URL = "", PUBLISHED, CR_RESULT_FILE, CR_SHOTS_DIR } = env;
