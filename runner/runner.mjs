@@ -47336,8 +47336,9 @@ function starterModules() {
       field("titleHashtags", "Hashtags in title", "boolean", true),
       field("publishAfterHours", "Publish after hours (0-720, 0 = now)", "number", 0),
       field("outputKey", "Output key", "string", "youtube"),
-      field("onlyWhen", "Publish only when (path=value or path!=value, empty = always)", "string", "")
-    ], ["next"]),
+      field("onlyWhen", "Publish only when (path=value or path!=value, empty = always)", "string", ""),
+      field("onFailure", "When the channel check or upload fails", "select", "throw", ["throw", "port"])
+    ], ["next", "failed"]),
     seeded("instagram-publish", "Instagram publish", "Uploads the Short as a Reel and publishes it to the configured Instagram account.", [
       field("username", "Instagram username", "string", ""),
       field("shareToFeed", "Share to feed", "boolean", true),
@@ -47348,7 +47349,8 @@ function starterModules() {
       field("preambleKey", "Caption opening text (job path, empty = off)", "string", ""),
       field("maxHashtags", "Most hashtags (0-30)", "number", 5),
       field("outputKey", "Output key", "string", "instagram"),
-      field("onFailure", "When publishing fails", "select", "throw", ["throw", "port"])
+      field("onFailure", "When publishing fails", "select", "throw", ["throw", "port"]),
+      field("onlyWhen", "Publish only when (path=value or path!=value, empty = always)", "string", "")
     ], ["next", "failed"]),
     seeded("shorts", "Shorts", "Newsroom Shorts engine: fetches a lane's feeds, reads source pages, checks facts, finds free images, assembles the brief, compiles, checks, voices and renders the storyboard, records what was published, and publishes its sources page.", [
       field("mode", "Mode", "select", "feeds", ["feeds", "posts", "story", "nextpart", "sources", "facts", "images", "brief", "render", "record", "site", "refresh", "people", "route", "mediaplan", "verify", "brollpick", "music", "probe", "assets", "cut", "gate"]),
@@ -51971,7 +51973,8 @@ var DEFAULTS6 = {
   titleHashtags: true,
   publishAfterHours: 0,
   outputKey: "youtube",
-  onlyWhen: ""
+  onlyWhen: "",
+  onFailure: "throw"
 };
 var PRIVACIES = ["private", "unlisted", "public"];
 var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -52032,6 +52035,8 @@ function readSettings3(config) {
   const outputKey = get("outputKey");
   const onlyWhen = get("onlyWhen");
   const condition = typeof onlyWhen === "string" ? /^(\w+(?:\.\w+)*)(!?)=(.*)$/s.exec(onlyWhen) : null;
+  const onFailure = get("onFailure");
+  if (onFailure !== "throw" && onFailure !== "port") throw new ExecutionFailure("YouTube publish setting onFailure must be 'throw' or 'port'.");
   if (onlyWhen !== "" && !condition) throw new ExecutionFailure('YouTube publish setting onlyWhen must be empty, "path=value" or "path!=value" with a dotted path of letters, digits and _.');
   if (typeof channelHandle !== "string" || !/^@[A-Za-z0-9._-]{3,100}$/.test(channelHandle)) {
     throw new ExecutionFailure("YouTube publish setting channelHandle must look like @handle (3 to 100 letters, digits, dots, dashes or underscores).");
@@ -52081,6 +52086,16 @@ async function guard(step, wrap2) {
     throw new ExecutionFailure(wrap2 ? wrap2(reason2(error)) : reason2(error));
   }
 }
+var PortFailure = class extends ExecutionFailure {
+  constructor(original) {
+    super(original.message);
+    this.original = original;
+  }
+  original;
+};
+var soft = (step) => step().catch((error) => {
+  throw error instanceof ExecutionFailure && !(error instanceof ExecutionLimitFailure) ? new PortFailure(error) : error;
+});
 async function uploadOnce(youtube, tools, node, handle, file, metadata) {
   const name = `youtube-upload-${node.id.replace(/[^A-Za-z0-9_-]/g, "_")}.json`;
   const saved = tools && await guard(() => tools.readText("run", name));
@@ -52097,7 +52112,7 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
       return receipt.videoId;
     }
   }
-  const { videoId } = await guard(() => youtube.upload(handle, file, metadata));
+  const { videoId } = await soft(() => guard(() => youtube.upload(handle, file, metadata)));
   if (tools) {
     await guard(
       () => tools.writeText("run", name, JSON.stringify({ handle, file, videoId })),
@@ -52106,12 +52121,21 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
   }
   return videoId;
 }
-async function execute14({ input, config, node }, { youtube, tools }) {
+async function execute14(request, capabilities) {
+  try {
+    return await publishVideo(request, capabilities);
+  } catch (error) {
+    if (!(error instanceof PortFailure)) throw error;
+    if (request.config.onFailure !== "port") throw error.original;
+    return { output: { ...request.input, youtubeError: error.message }, port: "failed" };
+  }
+}
+async function publishVideo({ input, config, node }, { youtube, tools }) {
   if (!youtube) throw new ExecutionFailure("YouTube publish requires the youtube capability.");
   const { channelHandle: handle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey, condition } = readSettings3(config);
   if (condition && String(lookup2(input, condition[1]) ?? "") === condition[3] === (condition[2] === "!")) return { output: { ...input, youtubeSkipped: condition[0] }, port: "next" };
   const { job, file, cover, title, description, tags, comment } = readJob2(input, setCover, maxHashtags, titleHashtags);
-  await guard(() => youtube.verifyChannel(handle, { studio: setCover }));
+  await soft(() => guard(() => youtube.verifyChannel(handle, { studio: setCover })));
   const publishAt = publishAfterHours > 0 ? new Date(Date.now() + publishAfterHours * 36e5).toISOString() : void 0;
   const videoId = await uploadOnce(youtube, tools, node, handle, file, { title, description, tags, categoryId, madeForKids, containsSyntheticMedia, ...paidPromotion && { paidPromotion }, ...publishAt && { publishAt } });
   const state = await guard(
@@ -52153,7 +52177,8 @@ var DEFAULTS7 = {
   preambleKey: "",
   maxHashtags: 5,
   outputKey: "instagram",
-  onFailure: "throw"
+  onFailure: "throw",
+  onlyWhen: ""
 };
 var CAPTION_LIMIT = 2200;
 var USERNAME = /^@?([A-Za-z0-9._]{1,30})$/;
@@ -52195,6 +52220,9 @@ function readSettings4(config) {
   const maxHashtags = get("maxHashtags");
   const outputKey = get("outputKey");
   const onFailure = get("onFailure");
+  const onlyWhen = get("onlyWhen");
+  const condition = typeof onlyWhen === "string" ? /^(\w+(?:\.\w+)*)(!?)=(.*)$/s.exec(onlyWhen) : null;
+  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('Instagram publish setting onlyWhen must be empty, "path=value" or "path!=value" with a dotted path of letters, digits and _.');
   const match = typeof username === "string" ? USERNAME.exec(username) : null;
   if (!match) throw new ExecutionFailure("Instagram publish setting username must be an Instagram username (1 to 30 letters, digits, dots or underscores, with or without @).");
   if (typeof shareToFeed !== "boolean") throw new ExecutionFailure("Instagram publish setting shareToFeed must be true or false.");
@@ -52210,7 +52238,7 @@ function readSettings4(config) {
   }
   if (!isText3(outputKey)) throw new ExecutionFailure("Instagram publish setting outputKey must be a non-empty string.");
   if (onFailure !== "throw" && onFailure !== "port") throw new ExecutionFailure("Instagram publish setting onFailure must be 'throw' or 'port'.");
-  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), disclosureKey: disclosureKey.trim(), disclosureAt, preambleKey: preambleKey.trim(), maxHashtags, outputKey, onFailure };
+  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), disclosureKey: disclosureKey.trim(), disclosureAt, preambleKey: preambleKey.trim(), maxHashtags, outputKey, onFailure, condition };
 }
 function readJob3(input, settings) {
   const { disclosureKey, disclosureAt, preambleKey, maxHashtags } = settings;
@@ -52240,10 +52268,10 @@ async function guard2(step, wrap2) {
     throw new ExecutionFailure(wrap2 ? wrap2(reason3(error)) : reason3(error));
   }
 }
-var PortFailure = class extends ExecutionFailure {
+var PortFailure2 = class extends ExecutionFailure {
 };
-var soft = (step) => step().catch((error) => {
-  throw error instanceof ExecutionFailure && !(error instanceof ExecutionLimitFailure) ? new PortFailure(error.message) : error;
+var soft2 = (step) => step().catch((error) => {
+  throw error instanceof ExecutionFailure && !(error instanceof ExecutionLimitFailure) ? new PortFailure2(error.message) : error;
 });
 async function readReceipt(tools, name, username, file) {
   const saved = await guard2(() => tools.readText("run", name));
@@ -52264,29 +52292,30 @@ async function execute15(request, capabilities) {
   try {
     return await publishReel(request, capabilities);
   } catch (error) {
-    if (!(error instanceof PortFailure) || request.config.onFailure !== "port") throw error;
+    if (!(error instanceof PortFailure2) || request.config.onFailure !== "port") throw error;
     return { output: { ...request.input, instagramError: error.message }, port: "failed" };
   }
 }
 async function publishReel({ input, config, node }, { instagram, tools }) {
   if (!instagram) throw new ExecutionFailure("Instagram publish requires the instagram capability.");
   if (!tools) throw new ExecutionFailure("Instagram publish requires the tools capability, which keeps the receipt that stops a retried run from posting twice.");
-  const { username, shareToFeed, paidPartnership, outputKey, ...caps } = readSettings4(config);
+  const { username, shareToFeed, paidPartnership, outputKey, condition, ...caps } = readSettings4(config);
+  if (condition && String(lookup3(input, condition[1]) ?? "") === condition[3] === (condition[2] === "!")) return { output: { ...input, instagramSkipped: condition[0] }, port: "next" };
   const { job, file, caption } = readJob3(input, caps);
   const name = `instagram-reel-${node.id.replace(/[^A-Za-z0-9_-]/g, "_")}.json`;
   const save = (receipt2, wrap2) => guard2(() => tools.writeText("run", name, JSON.stringify({ username, file, ...receipt2 })), wrap2);
   const done = ({ mediaId, permalink }) => ({ output: { ...job, [outputKey]: { username, mediaId, ...permalink ? { permalink } : {} } }, port: "next" });
-  const settle = (containerId2) => soft(() => guard2(
+  const settle = (containerId2) => soft2(() => guard2(
     () => instagram.waitForContainer(username, containerId2),
     (why) => `Instagram is still processing container ${containerId2} (${why}); nothing is published yet. Run it again to carry on.`
   ));
-  await soft(() => guard2(() => instagram.verifyAccount(username)));
+  await soft2(() => guard2(() => instagram.verifyAccount(username)));
   const receipt = await readReceipt(tools, name, username, file);
   if (receipt?.mediaId) return done({ mediaId: receipt.mediaId, permalink: receipt.permalink });
   let containerId = receipt?.containerId;
   let status = containerId ? await settle(containerId) : void 0;
   if (!containerId || status === "ERROR" || status === "EXPIRED") {
-    containerId = (await soft(() => guard2(() => instagram.createReel(username, file, { caption, shareToFeed, ...paidPartnership ? { isPaidPartnership: true } : {} })))).containerId;
+    containerId = (await soft2(() => guard2(() => instagram.createReel(username, file, { caption, shareToFeed, ...paidPartnership ? { isPaidPartnership: true } : {} })))).containerId;
     const uploaded = containerId;
     await save({ containerId }, (why) => `The video was uploaded to container ${uploaded} but its receipt could not be saved (${why}); nothing was published.`);
     status = await settle(containerId);
@@ -52294,9 +52323,9 @@ async function publishReel({ input, config, node }, { instagram, tools }) {
   if (status === "PUBLISHED") {
     throw new ExecutionFailure(`Container ${containerId} is already published on @${username}, but its media id was not saved; check the account. Delete ${name} from the run folder to post again.`);
   }
-  if (status !== "FINISHED") throw new PortFailure(`Instagram could not process the video in container ${containerId} (${status}); nothing was published.`);
+  if (status !== "FINISHED") throw new PortFailure2(`Instagram could not process the video in container ${containerId} (${status}); nothing was published.`);
   const ready = containerId;
-  const published = await soft(() => guard2(
+  const published = await soft2(() => guard2(
     () => instagram.publish(username, ready),
     (why) => `Publishing container ${ready} to @${username} failed (${why}); run it again to retry: the block checks the container first, so it will not post twice.`
   ));

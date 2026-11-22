@@ -2,9 +2,15 @@
 name: "GamingClippyHQ"
 on:
   schedule:
+    - cron: '41 9 * * *'
+      timezone: 'Europe/London'
     - cron: '41 13 * * *'
       timezone: 'Europe/London'
+    - cron: '11 17 * * *'
+      timezone: 'Europe/London'
     - cron: '41 20 * * *'
+      timezone: 'Europe/London'
+    - cron: '11 23 * * *'
       timezone: 'Europe/London'
   workflow_dispatch:
 concurrency:
