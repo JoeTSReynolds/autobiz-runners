@@ -113,6 +113,7 @@ function draftFromCampaign(json, candidate, channel) {
 }
 function goLiveProblem(r) {
   if (!r.sources.length) return "no usable source (YouTube video or Twitch)";
+  if (r.sources.some((s) => /[?&]t=/.test(s.url))) return "footage limited to timestamps (needs a human check)";
   if (!/^[\p{L}\p{N}][\p{L}\p{N} .'&_-]{1,59}$/u.test(r.featured)) return "no featured person";
   if (r.disclosure.length > 100 || !/^#ad(?: [#@][\p{L}\p{N}_.]+)*$/u.test(r.disclosure)) return `bad disclosure (${r.disclosure.slice(0, 60)})`;
   return null;
@@ -293,7 +294,19 @@ async function scout(env, deps) {
         unfit.add(f.id);
         notes.push(`${top.find((x) => x.id === f.id).title}: not a fit (${f.reason})`);
       }
-      for (const { id } of fits.filter((f) => f.fit).slice(0, max)) {
+      const ready = [];
+      for (const f of fits.filter((x) => x.fit)) {
+        if (ready.length >= max) break;
+        const c = top.find((x) => x.id === f.id);
+        if (env.SCOUT_AUTO && details.has(f.id) && !(await confirmSources(draftFromCampaign(details.get(f.id), c, channel).sources, deps.fetchPublic)).length) {
+          mark(f.id, "unfit");
+          unfit.add(f.id);
+          notes.push(`${c.title}: not joined: no usable source (YouTube video or Twitch)`);
+          continue;
+        }
+        ready.push(f);
+      }
+      for (const { id } of ready) {
         const c = top.find((x) => x.id === id);
         if (!join_) {
           wouldJoin.push({ title: c.title, url: c.url });
