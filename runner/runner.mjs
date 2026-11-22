@@ -47343,6 +47343,8 @@ function starterModules() {
       field("paidPartnership", "Paid partnership label", "boolean", false),
       field("disclosure", "Disclosure first line (max 100, empty = off)", "string", ""),
       field("disclosureKey", "Disclosure (job path, wins over the text)", "string", ""),
+      field("disclosureAt", "Disclosure position", "select", "start", ["start", "end"]),
+      field("preambleKey", "Caption opening text (job path, empty = off)", "string", ""),
       field("maxHashtags", "Most hashtags (0-30)", "number", 5),
       field("outputKey", "Output key", "string", "instagram"),
       field("onFailure", "When publishing fails", "select", "throw", ["throw", "port"])
@@ -52144,6 +52146,8 @@ var DEFAULTS7 = {
   paidPartnership: false,
   disclosure: "",
   disclosureKey: "",
+  disclosureAt: "start",
+  preambleKey: "",
   maxHashtags: 5,
   outputKey: "instagram",
   onFailure: "throw"
@@ -52166,14 +52170,15 @@ function cleanHashtags2(items, max) {
   return [...kept.values()];
 }
 var withoutDriveLinks2 = (text3) => text3.replace(/[ \t]*https?:\/\/(drive|docs)\.google\.com\/\S*/gi, "");
-function buildCaption(disclosure, title, description, hashtags) {
-  const [first = "", ...rest] = description.trim().split("\n");
-  const desc = disclosure !== "" && first.trim() === disclosure ? rest.join("\n").trim() : description.trim();
+function buildCaption(disclosure, at2, preamble, title, description, hashtags) {
+  const desc = description.trim().split("\n").filter((line2) => disclosure === "" || line2.trim() !== disclosure).join("\n").trim();
   const text3 = [title.trim(), desc].filter((part) => part !== "").join("\n\n");
   const tail = hashtags.map((tag) => `#${tag}`).join(" ");
   const reserved = (disclosure === "" ? 0 : disclosure.length + 2) + (tail === "" ? 0 : tail.length + 2);
   const body = text3.slice(0, Math.max(0, CAPTION_LIMIT - reserved)).trimEnd();
-  return [disclosure, body, tail].filter((part) => part !== "").join("\n\n");
+  const lead = preamble.slice(0, Math.max(0, CAPTION_LIMIT - reserved - body.length - 2)).trimEnd();
+  const parts = at2 === "end" ? [lead, body, tail, disclosure] : [lead, disclosure, body, tail];
+  return parts.filter((part) => part !== "").join("\n\n");
 }
 function readSettings4(config) {
   const get = (key) => config[key] === void 0 ? DEFAULTS7[key] : config[key];
@@ -52182,6 +52187,8 @@ function readSettings4(config) {
   const paidPartnership = get("paidPartnership");
   const disclosure = get("disclosure");
   const disclosureKey = get("disclosureKey");
+  const disclosureAt = get("disclosureAt");
+  const preambleKey = get("preambleKey");
   const maxHashtags = get("maxHashtags");
   const outputKey = get("outputKey");
   const onFailure = get("onFailure");
@@ -52193,15 +52200,17 @@ function readSettings4(config) {
     throw new ExecutionFailure("Instagram publish setting disclosure must be text of at most 100 characters on one line (empty turns it off).");
   }
   if (typeof disclosureKey !== "string") throw new ExecutionFailure("Instagram publish setting disclosureKey must be a string (a dotted path into the job, empty = off).");
+  if (disclosureAt !== "start" && disclosureAt !== "end") throw new ExecutionFailure("Instagram publish setting disclosureAt must be 'start' or 'end'.");
+  if (typeof preambleKey !== "string") throw new ExecutionFailure("Instagram publish setting preambleKey must be a string (a dotted path into the job, empty = off).");
   if (typeof maxHashtags !== "number" || !Number.isInteger(maxHashtags) || maxHashtags < 0 || maxHashtags > 30) {
     throw new ExecutionFailure("Instagram publish setting maxHashtags must be a whole number from 0 to 30.");
   }
   if (!isText3(outputKey)) throw new ExecutionFailure("Instagram publish setting outputKey must be a non-empty string.");
   if (onFailure !== "throw" && onFailure !== "port") throw new ExecutionFailure("Instagram publish setting onFailure must be 'throw' or 'port'.");
-  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), disclosureKey: disclosureKey.trim(), maxHashtags, outputKey, onFailure };
+  return { username: match[1].toLowerCase(), shareToFeed, paidPartnership, disclosure: disclosure.trim(), disclosureKey: disclosureKey.trim(), disclosureAt, preambleKey: preambleKey.trim(), maxHashtags, outputKey, onFailure };
 }
 function readJob3(input, settings) {
-  const { disclosureKey, maxHashtags } = settings;
+  const { disclosureKey, disclosureAt, preambleKey, maxHashtags } = settings;
   if (!isObject12(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
   const { short, meta = {} } = input;
   if (!isObject12(short) || !isText3(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
@@ -52214,7 +52223,9 @@ function readJob3(input, settings) {
   const keyed = disclosureKey === "" ? void 0 : lookup3(input, disclosureKey);
   if (keyed !== void 0 && !oneLine(keyed)) throw new ExecutionFailure(`Instagram publish input job.${disclosureKey} (the disclosure) must be text of at most 100 characters on one line.`);
   if (typeof keyed === "string" && keyed.trim() !== "") disclosure = keyed.trim();
-  const caption = buildCaption(disclosure, String(meta.title ?? ""), withoutDriveLinks2(String(meta.description ?? "")), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
+  const pre = preambleKey === "" ? void 0 : lookup3(input, preambleKey);
+  const preamble = typeof pre === "string" ? withoutDriveLinks2(pre).trim() : "";
+  const caption = buildCaption(disclosure, disclosureAt, preamble, String(meta.title ?? ""), withoutDriveLinks2(String(meta.description ?? "")), cleanHashtags2(meta.hashtags ?? [], maxHashtags));
   return { job: input, file: short.file, caption };
 }
 async function guard2(step, wrap2) {
