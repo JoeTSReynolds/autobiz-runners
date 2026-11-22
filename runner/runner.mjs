@@ -47301,6 +47301,7 @@ function starterModules() {
       field("headlineFont", "Headline font (empty: the caption font)", "string", ""),
       field("storyHook", "Story opens with a hook", "boolean", true),
       field("storySounds", "Story sound effects", "boolean", true),
+      field("sfxVolume", "Sound effect volume (0-1)", "number", 1),
       field("storyTransitions", "Zoom and blur at story cuts and zoom effects (off: hard cuts, no zoom)", "boolean", true),
       field("captionItalic", "Italic captions", "boolean", true),
       field("captionColor", "Caption colour (#RRGGBB)", "string", "#FFFFFF"),
@@ -50876,7 +50877,7 @@ var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.
 var r33 = (x) => Math.round(x * 1e3) / 1e3;
 var n3 = (x) => Number(x.toFixed(3));
 var n4 = (x) => Number(x.toFixed(4));
-function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = noIn, silent, cut, stretch: wanted }, cmdsFile, layout = "box", cardBackground = "plain", splitTop = "left", segments) {
+function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = noIn, silent, cut, stretch: wanted, sfxVolume = 1 }, cmdsFile, layout = "box", cardBackground = "plain", splitTop = "left", segments) {
   const frame = layout === "frame";
   const card = layout === "card";
   const auto = layout === "auto" || layout === "stream";
@@ -50960,7 +50961,7 @@ function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = 
   const sounds = silent ? [] : effects;
   const audio = [
     `[0:a]${STEREO}[a0]`,
-    ...sounds.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=0.8[s${k}]`),
+    ...sounds.map((e, k) => `[${k + 1}:a]${STEREO},adelay=${Math.round(e.t0 * 1e3)}:all=1,volume=${n3(0.8 * sfxVolume)}[s${k}]`),
     sounds.length ? `[a0]${sounds.map((_, k) => `[s${k}]`).join("")}amix=inputs=${sounds.length + 1}:duration=first:normalize=0,alimiter=limit=0.95[aout]` : "[a0]anull[aout]"
   ];
   const tail = steps.map((step, k) => step(`v${k}`, k === steps.length - 1 ? "v" : `v${k + 1}`));
@@ -51341,7 +51342,7 @@ async function renderStory(input, settings, tools) {
   let seam;
   for (const [i, clip] of timed.clips.entries()) {
     const effects = timed.effects.filter((e) => e.clip === i).map((e) => ({ t0: n4(e.storyTime - clip.storyStart), sound: e.sound, visual: e.visual }));
-    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds, cut: !settings.storyTransitions, ...settings.hookTransition === "stretch" && settings.storyHook && i < 2 ? { stretch: i === 0 ? "out" : "in" } : {} };
+    const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds, sfxVolume: settings.sfxVolume, cut: !settings.storyTransitions, ...settings.hookTransition === "stretch" && settings.storyHook && i < 2 ? { stretch: i === 0 ? "out" : "in" } : {} };
     const cmdsFile = `story-box${i}.cmds`;
     const out = `story-box${i}.mp4`;
     const seek = r33(clip.start - files[i].offset);
@@ -51395,7 +51396,7 @@ async function renderStory(input, settings, tools) {
   await tools.writeText("run", FILES.text, storyTextAss(plan.headline, storyCaptions(done, lines, plan.corrections, applied), text3));
   const { transitions, pops } = settings.storySounds ? soundPlan(done, (sound) => library.get(sound).seconds) : { transitions: [], pops: [] };
   const audio = [...transitions, ...pops.filter((pop) => pop !== null)].map((a) => ({ ...a, file: `${sfx}/${library.get(a.sound).file}` }));
-  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" && settings.captionFont === "Roboto" ? "" : `${tools.stateDir}/fonts`, hits.filter((h) => available.get(h.name)).map((h) => ({ file: emojiPath(h.name), at: h.at })), settings.headlineStyle === "box" && rows.length > 0 ? { file: CARD_FILE, y: seam ?? Math.round(settings.headlinePosition * 1920) } : void 0));
+  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio.map((a) => ({ ...a, volume: n3(a.volume * settings.sfxVolume) })), settings.layout, cardBackground, settings.headlineFont === "" && settings.captionFont === "Roboto" ? "" : `${tools.stateDir}/fonts`, hits.filter((h) => available.get(h.name)).map((h) => ({ file: emojiPath(h.name), at: h.at })), settings.headlineStyle === "box" && rows.length > 0 ? { file: CARD_FILE, y: seam ?? Math.round(settings.headlinePosition * 1920) } : void 0));
   const short = {
     file: FILES.output,
     duration: done.total,
@@ -51445,6 +51446,7 @@ var DEFAULTS4 = {
   headlineFont: "",
   storyHook: true,
   storySounds: true,
+  sfxVolume: 1,
   storyTransitions: true,
   captionItalic: true,
   captionColor: "#FFFFFF",
@@ -51496,6 +51498,7 @@ var RULES = {
   headlineFont: [(value) => typeof value === "string" && /^[^,\r\n]*$/.test(value), "a font name without commas or line breaks, or empty"],
   storyHook: [flag, "true or false"],
   storySounds: [flag, "true or false"],
+  sfxVolume: [between(0, 1), "a number from 0 to 1"],
   storyTransitions: [flag, "true or false"],
   captionItalic: [flag, "true or false"],
   captionColor: [(value) => typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value), "a #RRGGBB colour"],

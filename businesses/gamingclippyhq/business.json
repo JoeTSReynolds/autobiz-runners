@@ -134,7 +134,8 @@
             "captionOutline": 6,
             "captionFont": "Roboto Black",
             "headlineFont": "Roboto",
-            "storyHook": false
+            "storyHook": false,
+            "sfxVolume": 0.4
           }
         },
         {
@@ -575,7 +576,7 @@
       ]
     },
     "createdAt": "2026-11-22T13:54:20.538Z",
-    "updatedAt": "2026-11-22T14:39:17.433Z"
+    "updatedAt": "2026-11-22T20:18:00.023Z"
   },
   "modules": [
     {
@@ -1625,6 +1626,12 @@
           "default": true
         },
         {
+          "key": "sfxVolume",
+          "label": "Sound effect volume (0-1)",
+          "type": "number",
+          "default": 1
+        },
+        {
           "key": "storyTransitions",
           "label": "Zoom and blur at story cuts and zoom effects (off: hard cuts, no zoom)",
           "type": "boolean",
@@ -1712,6 +1719,7 @@
         "headlineFont": "",
         "storyHook": true,
         "storySounds": true,
+        "sfxVolume": 1,
         "storyTransitions": true,
         "captionItalic": true,
         "captionColor": "#FFFFFF",
