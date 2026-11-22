@@ -43780,8 +43780,8 @@ var require_static = __commonJS({
               }
             }
           }
-          for (const [dirname6, rootPath] of indexDirs.entries()) {
-            const pathname = dirname6 + (dirname6.endsWith("/") ? "" : "/");
+          for (const [dirname7, rootPath] of indexDirs.entries()) {
+            const pathname = dirname7 + (dirname7.endsWith("/") ? "" : "/");
             const file = "/" + pathname.replace(prefix, "");
             setUpHeadAndGet(routeOpts, pathname, file, rootPath);
             if (opts.redirect === true) {
@@ -44298,7 +44298,7 @@ var require_static = __commonJS({
 // apps/server/src/headless.ts
 import { spawnSync } from "node:child_process";
 import { appendFile, mkdir as mkdir4, readFile as readFile7, rename as rename3, writeFile as writeFile2 } from "node:fs/promises";
-import { join as join10, resolve as resolve6 } from "node:path";
+import { dirname as dirname6, join as join10, resolve as resolve6 } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 // apps/server/src/app.ts
@@ -49283,7 +49283,7 @@ function parseSource(source, name) {
   const { duration } = source;
   if (typeof source.id !== "string" || source.id === "") throw new ExecutionFailure(`media-fetch ${name}.id must be a non-empty string.`);
   if (duration !== void 0 && (typeof duration !== "number" || !Number.isFinite(duration))) throw new ExecutionFailure(`media-fetch ${name}.duration must be a number.`);
-  return { id: source.id, url: positional(source.url, `${name}.url`), duration };
+  return { id: source.id, url: positional(source.url, `${name}.url`), duration: duration || void 0 };
 }
 var sourceOf = (job) => parseSource(job.source, "job.source");
 var BLOCKED = /confirm you.re not a bot|HTTP Error 429/i;
@@ -57055,6 +57055,13 @@ async function runHeadless(options) {
 }
 var usageText = "Usage: npm run runner -- <business.json> [--data <dir>] [--attempts <1-5>] [--between <shell command>]";
 var message = (error) => error instanceof Error ? error.message : String(error);
+function mergeAutoCampaigns(snapshot, auto) {
+  const settings = snapshot.business.settings;
+  if (!Array.isArray(settings.campaigns) || !Array.isArray(auto)) return snapshot;
+  const own = settings.campaigns;
+  const added = auto.filter((record2) => typeof record2?.url === "string" && !own.some((o) => o.url === record2.url));
+  return { ...snapshot, business: { ...snapshot.business, settings: { ...settings, campaigns: [...own, ...added] } } };
+}
 async function runHeadlessCli({ argv, out, err, summaryFile, publishedFile }) {
   const usage = (problem) => {
     err(`${problem}
@@ -57087,6 +57094,12 @@ ${usageText}`);
   }
   if (typeof snapshot?.business !== "object" || snapshot.business === null || !Array.isArray(snapshot.modules)) {
     return usage(`${file} must be a JSON object with a "business" object and a "modules" list.`);
+  }
+  const autoFile = join10(dirname6(file), "..", "..", "campaigns", "auto.json");
+  try {
+    snapshot = mergeAutoCampaigns(snapshot, JSON.parse(await readFile7(autoFile, "utf8")));
+  } catch (error) {
+    if (error.code !== "ENOENT") err(`Ignoring ${autoFile}: ${message(error)}`);
   }
   const betweenAttempts = between2 === void 0 ? void 0 : () => {
     const result = spawnSync("bash", ["-c", between2], { stdio: "inherit" });

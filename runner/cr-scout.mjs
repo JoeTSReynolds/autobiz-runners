@@ -111,6 +111,12 @@ function draftFromCampaign(json, candidate, channel) {
     needsSourceInfo: true
   };
 }
+function goLiveProblem(r) {
+  if (!r.sources.length) return "no usable source (YouTube video or Twitch)";
+  if (!/^[\p{L}\p{N}][\p{L}\p{N} .'&_-]{1,59}$/u.test(r.featured)) return "no featured person";
+  if (r.disclosure.length > 100 || !/^#ad(?: [#@][\p{L}\p{N}_.]+)*$/u.test(r.disclosure)) return `bad disclosure (${r.disclosure.slice(0, 60)})`;
+  return null;
+}
 async function audit(records, fetchPublic, { retireBelow = 100 } = {}) {
   const out = [];
   for (const { id, url } of records) {
@@ -169,7 +175,7 @@ async function fitCheck(candidates, ask, n = 5, lane = "podcast") {
 
 ${top.map((c) => JSON.stringify({ id: c.id, title: c.title, categories: c.categories, description: c.description?.slice(0, 400), ...c.rules ? { rules: c.rules.slice(0, 1200) } : {} })).join("\n")}
 
-Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "..."}], one entry per campaign.`;
+Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "...", "featured": "the one person or show the clips must feature, as the campaign names them, or empty if unclear"}], one entry per campaign.`;
   let verdicts = [];
   try {
     const reply = await ask(prompt), from = reply.indexOf("["), to = reply.lastIndexOf("]");
@@ -179,7 +185,7 @@ Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "..."}
   }
   return top.map((c) => {
     const v = verdicts.find((x) => typeof x === "object" && x !== null && x.id === c.id && typeof x.fit === "boolean");
-    return v ? { id: c.id, fit: v.fit, reason: String(v.reason ?? "") } : { id: c.id, fit: false, reason: "no valid verdict" };
+    return v ? { id: c.id, fit: v.fit, reason: String(v.reason ?? ""), ...typeof v.featured === "string" ? { featured: v.featured.trim() } : {} } : { id: c.id, fit: false, reason: "no valid verdict" };
   });
 }
 function report({ retired, drafted, gamingDrafted, suggested, blocked: skipped, wouldJoin }) {
@@ -219,6 +225,21 @@ async function knownRecords(dir) {
   }
   return out;
 }
+async function confirmSources(sources, fetchPublic) {
+  const out = [];
+  for (const source of sources) {
+    if (!/youtu\.?be/.test(source.url)) {
+      out.push(source);
+      continue;
+    }
+    try {
+      const info = JSON.parse(await fetchPublic(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(source.url)}`));
+      if (typeof info.title === "string" && typeof info.author_name === "string") out.push({ ...source, title: info.title, channel: info.author_name });
+    } catch {
+    }
+  }
+  return out;
+}
 async function scout(env, deps) {
   const { BUSINESSES_DIR = "businesses", SCOUT_STATE = "data/scout/seen.json", SCOUT_OUT = "scout-out" } = env;
   const join_ = env.SCOUT_JOIN === "1", maxJoins = Number(env.SCOUT_MAX_JOINS ?? 2), recheckMs = Number(env.SCOUT_RECHECK_DAYS ?? 14) * 864e5;
@@ -234,8 +255,14 @@ async function scout(env, deps) {
       if (!cursor) break;
     }
     if (!all.length) throw new Error("Discover API returned no campaigns. Check that contentrewards.com is up; if joins also fail, the session may have expired: run `npm run cr:connect` and update the CR_SESSION secret.");
-    const records = await knownRecords(BUSINESSES_DIR);
-    const retired = (await audit(records, deps.fetchPublic)).filter((a) => a.retire).map((a) => ({ id: a.id, reason: a.reason }));
+    const autoList = env.SCOUT_AUTO ? await readFile(env.SCOUT_AUTO, "utf8").then((text2) => JSON.parse(text2), (error) => {
+      if (error.code === "ENOENT") return [];
+      throw error;
+    }) : [];
+    const records = [...await knownRecords(BUSINESSES_DIR), ...autoList.map(({ id, url }) => ({ id, url }))];
+    const audited = await audit(records, deps.fetchPublic);
+    const retired = audited.filter((a) => a.retire).map((a) => ({ id: a.id, reason: a.reason }));
+    for (const r of autoList) if (r.active && audited.some((a) => a.retire && a.url === r.url)) r.active = false;
     const seen = await readJson(SCOUT_STATE).catch(() => ({}));
     const known = new Set(records.map((r) => uuidOf(r.url)));
     const fresh = rank(all).filter((c) => !known.has(c.id) && !(seen[c.id] && seen[c.id].verdict !== "failed" && deps.now() - Date.parse(seen[c.id].at) < recheckMs));
@@ -283,7 +310,18 @@ async function scout(env, deps) {
           mark(id, "joined");
           const json = details.get(c.id) ?? await deps.fetchCampaign(c.id), record = draftFromCampaign(json, c, channel);
           if (hasKickSource(json)) notes.push(`${c.title}: Kick sources are not supported yet`);
-          if (!record.sources.length) notes.push(`${c.title}: no usable source (YouTube or Twitch) in the reference materials (needs a source before it can go live)`);
+          record.featured = fits.find((f) => f.id === id)?.featured ?? "";
+          if (env.SCOUT_AUTO) {
+            record.sources = await confirmSources(record.sources, deps.fetchPublic);
+            const problem = goLiveProblem(record);
+            if (problem) notes.push(`${c.title}: stays a draft: ${problem}`);
+            else {
+              const { driveLinks: _private, ...rest } = record;
+              const taken = records.some((r) => r.id === record.id) || autoList.some((r) => r.id === record.id);
+              autoList.push({ ...rest, id: taken ? `${record.id}-${c.id.slice(0, 8)}` : record.id, active: true });
+              notes.push(`LIVE: ${c.title} now posts automatically (featuring ${record.featured}) ${c.url}`);
+            }
+          } else if (!record.sources.length) notes.push(`${c.title}: no usable source (YouTube or Twitch) in the reference materials (needs a source before it can go live)`);
           await write(join(SCOUT_OUT, "proposed", `${record.id}.json`), `${JSON.stringify(record, null, 2)}
 `);
           drafted.push({ id: record.id, title: c.title, url: c.url });
@@ -304,6 +342,8 @@ async function scout(env, deps) {
       suggested = gamingEligible.filter((c) => !run.joinedUrls.has(c.url) && !run.handled.has(c.id)).slice(0, 5);
     }
     await write(SCOUT_STATE, `${JSON.stringify(seen, null, 2)}
+`);
+    if (join_ && env.SCOUT_AUTO) await write(env.SCOUT_AUTO, `${JSON.stringify(autoList, null, 2)}
 `);
     const text = [report({ retired, drafted: podcastRun.drafted, gamingDrafted, suggested, blocked: all.filter(blocked).length, wouldJoin: join_ ? void 0 : wouldJoin }), ...notes.length ? ["Notes", ...notes.map((n) => `- ${n}`)] : []].join("\n");
     await write(join(SCOUT_OUT, "report.txt"), text);
