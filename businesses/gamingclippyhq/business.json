@@ -338,7 +338,7 @@
             "y": 647
           },
           "config": {
-            "prompt": "Use web search to find one topic that is trending today (use today's date) on Google Trends or in the news in the UK or the US, and that is safe and neutral: technology, cars, science, engineering, space, nature, animals, travel, food, architecture or a sporting record. Never pick deaths, disasters, crime, war, politics, elections, religion, health scares, private individuals, or a product being advertised. Run at most 3 searches. Then write a formal, encyclopedic description of that topic in 2 to 3 paragraphs, 120 to 220 words in total: factual, plain sentences, no hashtags, no emojis, no links, and no mention of videos, clips, social media, podcasts, streamers or this request. Return only JSON: {\"topic\": \"the topic in a few words\", \"essay\": \"the paragraphs, separated by one blank line\"}.",
+            "prompt": "Use web search to find one topic that is trending today (use today's date) on Google Trends or in the news in the UK or the US, such as technology, cars, science, engineering, space, nature, animals, travel, food, architecture, sport, politics, crime or a notable death. Never pick a private individual or a product being advertised. Run at most 3 searches. Then write a formal, encyclopedic description of that topic in 2 to 3 paragraphs, 120 to 220 words in total: factual, plain sentences, no hashtags, no emojis, no links, and no mention of videos, clips, social media, podcasts, streamers or this request. Return only JSON: {\"topic\": \"the topic in a few words\", \"essay\": \"the paragraphs, separated by one blank line\"}.",
             "format": "json",
             "requiredKeys": [
               "topic",
@@ -575,7 +575,7 @@
       ]
     },
     "createdAt": "2026-11-22T13:54:20.538Z",
-    "updatedAt": "2026-11-22T14:37:29.212Z"
+    "updatedAt": "2026-11-22T14:39:17.433Z"
   },
   "modules": [
     {
