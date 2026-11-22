@@ -51336,6 +51336,7 @@ async function renderStory(input, settings, tools) {
     }
   }
   const boxes = [];
+  let seam;
   for (const [i, clip] of timed.clips.entries()) {
     const effects = timed.effects.filter((e) => e.clip === i).map((e) => ({ t0: n4(e.storyTime - clip.storyStart), sound: e.sound, visual: e.visual }));
     const piece = { frames: Math.round((clip.end - clip.start) * FPS), first: i === 0, bigExit: i === 0 && settings.storyHook, last: i === timed.clips.length - 1, intro: settings.storyHook && i === 1, effects, silent: !settings.storySounds, cut: !settings.storyTransitions, ...settings.hookTransition === "stretch" && settings.storyHook && i < 2 ? { stretch: i === 0 ? "out" : "in" } : {} };
@@ -51345,6 +51346,7 @@ async function renderStory(input, settings, tools) {
     const [from, to] = [seek, r33(seek + clip.end - clip.start)];
     const cam = cams.get(files[i]?.file ?? "");
     const segments = cam?.cam ? planStream(cam.frame, cam.cam, from, to) : settings.layout === "auto" || settings.layout === "stream" ? planShots(analyses.get(files[i].file), from, to, settings.splitTop, settings.faceTop) : void 0;
+    seam ??= segments?.find((x) => x.layout === "stream")?.top;
     await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout, cardBackground, settings.splitTop, segments).cmds);
     await ffmpeg(boxArgs({
       file: files[i].file,
@@ -51391,7 +51393,7 @@ async function renderStory(input, settings, tools) {
   await tools.writeText("run", FILES.text, storyTextAss(plan.headline, storyCaptions(done, lines, plan.corrections, applied), text3));
   const { transitions, pops } = settings.storySounds ? soundPlan(done, (sound) => library.get(sound).seconds) : { transitions: [], pops: [] };
   const audio = [...transitions, ...pops.filter((pop) => pop !== null)].map((a) => ({ ...a, file: `${sfx}/${library.get(a.sound).file}` }));
-  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" && settings.captionFont === "Roboto" ? "" : `${tools.stateDir}/fonts`, hits.filter((h) => available.get(h.name)).map((h) => ({ file: emojiPath(h.name), at: h.at })), settings.headlineStyle === "box" && rows.length > 0 ? { file: CARD_FILE, y: Math.round(settings.headlinePosition * 1920) } : void 0));
+  await ffmpeg(finalArgs(done.total, emojis.map((m) => ({ file: emojiPath(m.name), at: m.storyTime, until: m.until })), audio, settings.layout, cardBackground, settings.headlineFont === "" && settings.captionFont === "Roboto" ? "" : `${tools.stateDir}/fonts`, hits.filter((h) => available.get(h.name)).map((h) => ({ file: emojiPath(h.name), at: h.at })), settings.headlineStyle === "box" && rows.length > 0 ? { file: CARD_FILE, y: seam ?? Math.round(settings.headlinePosition * 1920) } : void 0));
   const short = {
     file: FILES.output,
     duration: done.total,

@@ -63,7 +63,7 @@ jobs:
           CR_CHROME: /usr/bin/google-chrome
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SCOUT_MODEL: claude-haiku-5-5
-          SCOUT_GAMING: '0' # 1 also joins and drafts gaming/stream campaigns
+          SCOUT_GAMING: '1' # 0 skips gaming/stream campaigns (joins and drafts them for GamingClippyHQ)
           SCOUT_JOIN: ${{ (github.event_name == 'schedule' || inputs.join) && '1' || '0' }}
         run: node runner/cr-scout.mjs
       - name: Report in the job summary
