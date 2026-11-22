@@ -12959,17 +12959,17 @@ var require_proxy_addr = __commonJS({
       return len === 0 ? trustNone : len === 1 ? trustSingle(rangeSubnets[0]) : trustMulti(rangeSubnets);
     }
     function parseipNotation(note) {
-      const pos = note.lastIndexOf("/");
-      const str2 = pos !== -1 ? note.substring(0, pos) : note;
+      const pos2 = note.lastIndexOf("/");
+      const str2 = pos2 !== -1 ? note.substring(0, pos2) : note;
       if (!isip(str2)) {
         throw new TypeError("invalid IP address: " + str2);
       }
       let ip = parseip(str2);
-      if (pos === -1 && ip.kind() === "ipv6" && ip.isIPv4MappedAddress()) {
+      if (pos2 === -1 && ip.kind() === "ipv6" && ip.isIPv4MappedAddress()) {
         ip = ip.toIPv4Address();
       }
       const max = ip.kind() === "ipv6" ? 128 : 32;
-      let range = pos !== -1 ? note.substring(pos + 1, note.length) : null;
+      let range = pos2 !== -1 ? note.substring(pos2 + 1, note.length) : null;
       if (range === null) {
         range = max;
       } else if (DIGIT_REGEXP.test(range)) {
@@ -18989,15 +18989,15 @@ var require_ucs2length = __commonJS({
     function ucs2length(str2) {
       const len = str2.length;
       let length3 = 0;
-      let pos = 0;
+      let pos2 = 0;
       let value;
-      while (pos < len) {
+      while (pos2 < len) {
         length3++;
-        value = str2.charCodeAt(pos++);
-        if (value >= 55296 && value <= 56319 && pos < len) {
-          value = str2.charCodeAt(pos);
+        value = str2.charCodeAt(pos2++);
+        if (value >= 55296 && value <= 56319 && pos2 < len) {
+          value = str2.charCodeAt(pos2);
           if ((value & 64512) === 56320)
-            pos++;
+            pos2++;
         }
       }
       return length3;
@@ -21885,14 +21885,14 @@ var require_parseJson = __commonJS({
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.parseJsonString = exports.parseJsonNumber = exports.parseJson = void 0;
     var rxParseJson = /position\s(\d+)(?: \(line \d+ column \d+\))?$/;
-    function parseJson(s, pos) {
+    function parseJson(s, pos2) {
       let endPos;
       parseJson.message = void 0;
       let matches;
-      if (pos)
-        s = s.slice(pos);
+      if (pos2)
+        s = s.slice(pos2);
       try {
-        parseJson.position = pos + s.length;
+        parseJson.position = pos2 + s.length;
         return JSON.parse(s);
       } catch (e) {
         matches = rxParseJson.exec(e.message);
@@ -21903,7 +21903,7 @@ var require_parseJson = __commonJS({
         endPos = +matches[1];
         const c = s[endPos];
         s = s.slice(0, endPos);
-        parseJson.position = pos + endPos;
+        parseJson.position = pos2 + endPos;
         try {
           return JSON.parse(s);
         } catch (e1) {
@@ -21916,17 +21916,17 @@ var require_parseJson = __commonJS({
     parseJson.message = void 0;
     parseJson.position = 0;
     parseJson.code = 'require("ajv/dist/runtime/parseJson").parseJson';
-    function parseJsonNumber(s, pos, maxDigits) {
+    function parseJsonNumber(s, pos2, maxDigits) {
       let numStr = "";
       let c;
       parseJsonNumber.message = void 0;
-      if (s[pos] === "-") {
+      if (s[pos2] === "-") {
         numStr += "-";
-        pos++;
+        pos2++;
       }
-      if (s[pos] === "0") {
+      if (s[pos2] === "0") {
         numStr += "0";
-        pos++;
+        pos2++;
       } else {
         if (!parseDigits(maxDigits)) {
           errorMessage();
@@ -21934,43 +21934,43 @@ var require_parseJson = __commonJS({
         }
       }
       if (maxDigits) {
-        parseJsonNumber.position = pos;
+        parseJsonNumber.position = pos2;
         return +numStr;
       }
-      if (s[pos] === ".") {
+      if (s[pos2] === ".") {
         numStr += ".";
-        pos++;
+        pos2++;
         if (!parseDigits()) {
           errorMessage();
           return void 0;
         }
       }
-      if (c = s[pos], c === "e" || c === "E") {
+      if (c = s[pos2], c === "e" || c === "E") {
         numStr += "e";
-        pos++;
-        if (c = s[pos], c === "+" || c === "-") {
+        pos2++;
+        if (c = s[pos2], c === "+" || c === "-") {
           numStr += c;
-          pos++;
+          pos2++;
         }
         if (!parseDigits()) {
           errorMessage();
           return void 0;
         }
       }
-      parseJsonNumber.position = pos;
+      parseJsonNumber.position = pos2;
       return +numStr;
       function parseDigits(maxLen) {
         let digit = false;
-        while (c = s[pos], c >= "0" && c <= "9" && (maxLen === void 0 || maxLen-- > 0)) {
+        while (c = s[pos2], c >= "0" && c <= "9" && (maxLen === void 0 || maxLen-- > 0)) {
           digit = true;
           numStr += c;
-          pos++;
+          pos2++;
         }
         return digit;
       }
       function errorMessage() {
-        parseJsonNumber.position = pos;
-        parseJsonNumber.message = pos < s.length ? `unexpected token ${s[pos]}` : "unexpected end";
+        parseJsonNumber.position = pos2;
+        parseJsonNumber.message = pos2 < s.length ? `unexpected token ${s[pos2]}` : "unexpected end";
       }
     }
     exports.parseJsonNumber = parseJsonNumber;
@@ -21989,26 +21989,26 @@ var require_parseJson = __commonJS({
     };
     var CODE_A = "a".charCodeAt(0);
     var CODE_0 = "0".charCodeAt(0);
-    function parseJsonString(s, pos) {
+    function parseJsonString(s, pos2) {
       let str2 = "";
       let c;
       parseJsonString.message = void 0;
       while (true) {
-        c = s[pos++];
+        c = s[pos2++];
         if (c === '"')
           break;
         if (c === "\\") {
-          c = s[pos];
+          c = s[pos2];
           if (c in escapedChars) {
             str2 += escapedChars[c];
-            pos++;
+            pos2++;
           } else if (c === "u") {
-            pos++;
+            pos2++;
             let count2 = 4;
             let code = 0;
             while (count2--) {
               code <<= 4;
-              c = s[pos];
+              c = s[pos2];
               if (c === void 0) {
                 errorMessage("unexpected end");
                 return void 0;
@@ -22022,7 +22022,7 @@ var require_parseJson = __commonJS({
                 errorMessage(`unexpected token ${c}`);
                 return void 0;
               }
-              pos++;
+              pos2++;
             }
             str2 += String.fromCharCode(code);
           } else {
@@ -22041,10 +22041,10 @@ var require_parseJson = __commonJS({
           }
         }
       }
-      parseJsonString.position = pos;
+      parseJsonString.position = pos2;
       return str2;
       function errorMessage(msg) {
-        parseJsonString.position = pos;
+        parseJsonString.position = pos2;
         parseJsonString.message = msg;
       }
     }
@@ -36172,48 +36172,48 @@ var require_set_cookie = __commonJS({
         return [];
       }
       var cookiesStrings = [];
-      var pos = 0;
+      var pos2 = 0;
       var start;
       var ch;
       var lastComma;
       var nextStart;
       var cookiesSeparatorFound;
       function skipWhitespace() {
-        while (pos < cookiesString.length && /\s/.test(cookiesString.charAt(pos))) {
-          pos += 1;
+        while (pos2 < cookiesString.length && /\s/.test(cookiesString.charAt(pos2))) {
+          pos2 += 1;
         }
-        return pos < cookiesString.length;
+        return pos2 < cookiesString.length;
       }
       function notSpecialChar() {
-        ch = cookiesString.charAt(pos);
+        ch = cookiesString.charAt(pos2);
         return ch !== "=" && ch !== ";" && ch !== ",";
       }
-      while (pos < cookiesString.length) {
-        start = pos;
+      while (pos2 < cookiesString.length) {
+        start = pos2;
         cookiesSeparatorFound = false;
         while (skipWhitespace()) {
-          ch = cookiesString.charAt(pos);
+          ch = cookiesString.charAt(pos2);
           if (ch === ",") {
-            lastComma = pos;
-            pos += 1;
+            lastComma = pos2;
+            pos2 += 1;
             skipWhitespace();
-            nextStart = pos;
-            while (pos < cookiesString.length && notSpecialChar()) {
-              pos += 1;
+            nextStart = pos2;
+            while (pos2 < cookiesString.length && notSpecialChar()) {
+              pos2 += 1;
             }
-            if (pos < cookiesString.length && cookiesString.charAt(pos) === "=") {
+            if (pos2 < cookiesString.length && cookiesString.charAt(pos2) === "=") {
               cookiesSeparatorFound = true;
-              pos = nextStart;
+              pos2 = nextStart;
               cookiesStrings.push(cookiesString.substring(start, lastComma));
-              start = pos;
+              start = pos2;
             } else {
-              pos = lastComma + 1;
+              pos2 = lastComma + 1;
             }
           } else {
-            pos += 1;
+            pos2 += 1;
           }
         }
-        if (!cookiesSeparatorFound || pos >= cookiesString.length) {
+        if (!cookiesSeparatorFound || pos2 >= cookiesString.length) {
           cookiesStrings.push(cookiesString.substring(start, cookiesString.length));
         }
       }
@@ -47293,7 +47293,7 @@ function starterModules() {
       field("crf", "Quality (CRF)", "number", 20),
       field("renderTimeoutMs", "Render time limit (ms)", "number", 6e5),
       field("background", "Story background", "string", "brick"),
-      field("layout", "Story layout", "select", "box", ["box", "frame", "card", "split", "auto"]),
+      field("layout", "Story layout", "select", "box", ["box", "frame", "card", "split", "auto", "stream"]),
       field("splitTop", "Split layout: which half goes on top", "select", "left", ["left", "right"]),
       field("faceTop", "Auto layout: face height from the top in px (0 = off)", "number", 0),
       field("hookTransition", "Hook to intro transition", "select", "blur", ["blur", "stretch"]),
@@ -49217,6 +49217,11 @@ var OUTPUT_KEYS = { search: "source", captions: "transcript", section: "clip", s
 var WHISPER_MODEL = "base.en";
 var DRIVE = /^https:\/\/drive\.google\.com\/(?:file\/d\/|uc\?(?:[^#]*&)?id=)[\w-]+/;
 var isDrive = (url) => DRIVE.test(url);
+var TWITCH_VOD = /^https?:\/\/(?:www\.|m\.)?twitch\.tv\/(?:\w+\/)?videos\/(\d+)/i;
+var TWITCH_CHANNEL = /^https?:\/\/(?:www\.|m\.)?twitch\.tv\/(?!videos(?:[/?#]|$))(\w{2,25})(?:[/?#]|$)/i;
+var isTwitch = (url) => TWITCH_VOD.test(url) || TWITCH_CHANNEL.test(url);
+var TWITCH_PY = decodeURIComponent(new URL("./media-fetch-python/twitch.py", import.meta.url).pathname);
+var TWITCH_MAX_WINDOWS = 6;
 var WORDS_FILE = "captions.words.json";
 var TRANSCRIPT_FILE = "transcript.txt";
 var HOTSPOTS_FILE = "hotspots.txt";
@@ -49534,10 +49539,9 @@ async function readInfo(tools) {
     return {};
   }
 }
-function hotspotsText({ laughs, entries, transcript, info, duration, window, perKind }) {
-  const points = [...spread(replayPoints(info), window, perKind), ...spread(commentPoints(info, duration), window, perKind), ...laughPoints(laughs, window).slice(0, perKind)];
+function mergeWindows(points, window, duration) {
   const windows = [];
-  for (const { at: at2, label } of points.sort((a, b) => a.at - b.at)) {
+  for (const { at: at2, label } of [...points].sort((a, b) => a.at - b.at)) {
     const [start, end] = [Math.max(0, at2 - window), Math.min(duration, at2 + window)];
     if (start >= end) continue;
     const last = windows.at(-1);
@@ -49546,6 +49550,11 @@ function hotspotsText({ laughs, entries, transcript, info, duration, window, per
       last.labels.push(label);
     } else windows.push({ start, end, labels: [label] });
   }
+  return windows;
+}
+function hotspotsText({ laughs, entries, transcript, info, duration, window, perKind, extra = [] }) {
+  const points = [...spread(replayPoints(info), window, perKind), ...spread(commentPoints(info, duration), window, perKind), ...laughPoints(laughs, window).slice(0, perKind), ...extra];
+  const windows = mergeWindows(points, window, duration);
   if (windows.length === 0) return { text: `## No hotspots found: whole transcript
 ${transcript}`, windows: 0 };
   const text3 = windows.map(({ start, end, labels }) => `${[`## ${start.toFixed(1)}-${end.toFixed(1)}: ${labels.join("; ")}`, ...entries.filter((entry) => entry.start >= start && entry.start <= end).map((entry) => entry.text)].join("\n")}
@@ -49582,6 +49591,103 @@ function srtToJson3(srt) {
   });
   return JSON.stringify({ events });
 }
+var twitchJson = async (tools, timeoutMs, ...args) => JSON.parse((await tools.run("python3", [TWITCH_PY, ...args], { timeoutMs })).stdout);
+function twitchStamp(url) {
+  const parts = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/.exec(/[?&]t=([^&#]+)/.exec(url)?.[1] ?? "");
+  return parts?.[0] ? Number(parts[1] ?? 0) * 3600 + Number(parts[2] ?? 0) * 60 + Number(parts[3] ?? 0) : void 0;
+}
+async function twitchPlaylist(yt2, format2, url, timeoutMs) {
+  const line2 = (await yt2(["-g", "-f", format2, "--no-warnings", "--", url], timeoutMs)).stdout.trim().split("\n")[0] ?? "";
+  if (!/^https?:\/\//.test(line2)) throw new ExecutionFailure(`yt-dlp gave no playlist URL for ${url}.`);
+  return line2;
+}
+async function twitchCut(tools, yt2, url, maxHeight, from, to, base, timeoutMs) {
+  if (!TWITCH_VOD.test(url)) throw new ExecutionFailure(`media-fetch needs a Twitch VOD link to cut a clip (got ${url}); run captions first to pick a VOD from a channel.`);
+  const playlist = await twitchPlaylist(yt2, `b[height<=${maxHeight}]`, url, timeoutMs);
+  const { start } = await twitchJson(tools, timeoutMs, "hls", playlist, String(from), String(to), `${base}.ts`);
+  await tools.run("ffmpeg", ["-v", "error", "-y", "-i", `${base}.ts`, "-c", "copy", `${base}.mp4`], { timeoutMs });
+  return start;
+}
+async function twitchCaptions(job, { tools, yt: yt2, language, window, rejected, apiMs, downloadMs, whisperMs }) {
+  const source = job.source;
+  const link = source.url;
+  const after = source.after === void 0 ? void 0 : Date.parse(String(source.after));
+  if (Number.isNaN(after)) throw new ExecutionFailure("media-fetch job.source.after must be an ISO date.");
+  const py = (...args) => twitchJson(tools, apiMs, ...args);
+  const periods = /* @__PURE__ */ new Map();
+  const clipsOf = async (login2, period) => periods.get(period) ?? periods.set(period, await py("clips", login2, period)).get(period);
+  const usable = (vod2) => !!vod2 && !rejected.includes(vod2.id) && (after === void 0 || Date.parse(vod2.created) >= after);
+  let vod;
+  const vodId = TWITCH_VOD.exec(link)?.[1];
+  if (vodId) vod = await py("video", vodId) ?? void 0;
+  else {
+    const login2 = TWITCH_CHANNEL.exec(link)[1];
+    const recent = (await clipsOf(login2, "LAST_WEEK")).length ? await clipsOf(login2, "LAST_WEEK") : await clipsOf(login2, "LAST_MONTH");
+    const views = /* @__PURE__ */ new Map();
+    for (const clip of recent) views.set(clip.vod, (views.get(clip.vod) ?? 0) + clip.views);
+    for (const [candidate] of [...views].sort(([, a], [, b]) => b - a)) {
+      if (rejected.includes(candidate)) continue;
+      const found = await py("video", candidate);
+      if (usable(found)) {
+        vod = found;
+        break;
+      }
+    }
+    vod ??= (await py("vods", login2)).find(usable);
+    if (vod) vod.channel ??= login2;
+  }
+  if (!vod) return void 0;
+  const [id, login, duration] = [vod.id, vod.channel ?? "", vod.duration];
+  const url = `https://www.twitch.tv/videos/${id}`;
+  const next = { ...job, source: { ...source, id, url, title: vod.title, channel: login, duration } };
+  const stamp4 = twitchStamp(link);
+  const campaign = stamp4 === void 0 ? [] : [{ at: stamp4, label: "campaign timestamp", score: Infinity }];
+  const cache = `transcripts/twitch-${id}`;
+  const [cachedText, cachedPoints] = [await tools.readText("state", `${cache}.json3`), await tools.readText("state", `${cache}.points.json`)];
+  if (cachedText && cachedPoints) {
+    await tools.writeText("run", `captions.${language}.json3`, cachedText);
+    return { job: next, id, url, duration, points: [...JSON.parse(cachedPoints), ...campaign] };
+  }
+  let playlist;
+  const audio = async () => playlist ??= await twitchPlaylist(yt2, "Audio_Only", url, apiMs);
+  let points = [];
+  for (const period of ["LAST_WEEK", "LAST_MONTH", "ALL_TIME"]) {
+    const mine = login ? (await clipsOf(login, period)).filter((clip) => clip.vod === id) : [];
+    if (mine.length) {
+      points = mine.sort((a, b) => b.views - a.views).map((clip) => ({ at: clip.offset + clip.duration / 2, label: `viewer clip "${clip.title}" (${clip.views} views)`, score: clip.views }));
+      break;
+    }
+  }
+  if (!points.length && !campaign.length) {
+    await twitchJson(tools, downloadMs, "hls", await audio(), "0", "1000000", "twitch-full-audio");
+    const { stdout } = await tools.run("ffmpeg", ["-v", "error", "-i", "twitch-full-audio", "-vn", "-af", "aresample=16000,asetnsamples=n=16000:p=0,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-", "-f", "null", "-"], { timeoutMs: downloadMs });
+    const db = [...stdout.matchAll(/RMS_level=(\S+)/g)].map(([, value]) => Number.isFinite(Number(value)) ? Number(value) : -100);
+    const loud = db.map((_, i) => ({ at: i + 5, label: "loud moment", score: db.slice(i, i + 10).reduce((sum2, v) => sum2 + v, 0) / Math.min(10, db.length - i) })).filter((_, i) => i + 10 <= db.length);
+    points = spread(loud, 120, 4).filter((point) => point.score >= Math.max(...loud.map((p) => p.score)) - 15);
+  }
+  const kept = [];
+  for (const point of [...campaign, ...points]) if (mergeWindows([...kept, point], window, duration).length <= TWITCH_MAX_WINDOWS) kept.push(point);
+  const events = [];
+  for (const [i, { start, end }] of mergeWindows(kept, window, duration).entries()) {
+    const file = `twitch-audio-${i}`;
+    const real = (await twitchJson(tools, downloadMs, "hls", await audio(), String(round(start)), String(round(end)), file)).start;
+    const whisper = (words2) => tools.run("whisper-ctranslate2", [file, "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", ...words2, "--output_format", "json", "--output_dir", "."], { timeoutMs: whisperMs });
+    try {
+      await whisper(["--word_timestamps", "True"]);
+    } catch (error) {
+      rethrowStop(error);
+      await whisper([]);
+    }
+    const spoken = await tools.readText("run", `${file}.json`);
+    if (spoken === void 0) throw new Error(`whisper wrote no ${file}.json`);
+    for (const event of JSON.parse(whisperToJson3(spoken)).events) events.push({ ...event, tStartMs: event.tStartMs + Math.round(real * 1e3) });
+  }
+  const combined = JSON.stringify({ events: events.sort((a, b) => a.tStartMs - b.tStartMs) });
+  await tools.writeText("run", `captions.${language}.json3`, combined);
+  await tools.writeText("state", `${cache}.json3`, combined);
+  await tools.writeText("state", `${cache}.points.json`, JSON.stringify(kept.filter((point) => !campaign.includes(point))));
+  return { job: next, id, url, duration, points: kept };
+}
 var captions = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
   const languages = list(config, "languages", 1);
@@ -49596,12 +49702,14 @@ var captions = async (job, config, tools, outputKey) => {
   const unit = config.transcriptUnit ?? DEFAULTS3.transcriptUnit;
   if (unit !== "line" && unit !== "sentence") throw new ExecutionFailure("media-fetch setting transcriptUnit must be 'line' or 'sentence'.");
   const archiveWindow = count(config, "archiveWindow", true);
-  const { id, url, duration: sourceDuration } = sourceOf(job);
+  let { id, url, duration: sourceDuration } = sourceOf(job);
   const archive = isArchive(url);
   const momentsName = momentsFile(config);
   const rejected = rejectedSources(job);
   const missing = () => ({ output: { ...job, rejectedSources: [...rejected, id] }, port: "missing" });
   const drive = isDrive(url);
+  const twitch = isTwitch(url);
+  let extra = [];
   const transcribe = async (whisperTimeoutMs = downloadTimeoutMs) => {
     await tools.run("yt-dlp", ["-f", "ba[ext=m4a]/ba", "-o", "captions-audio", "--no-warnings", "--", url], { timeoutMs: downloadTimeoutMs });
     await tools.run("whisper-ctranslate2", ["captions-audio", "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", "--word_timestamps", "True", "--output_format", "json", "--output_dir", "."], { timeoutMs: whisperTimeoutMs });
@@ -49620,6 +49728,15 @@ var captions = async (job, config, tools, outputKey) => {
       return missing();
     }
     await tools.writeText("run", `captions.${languages[0]}.json3`, srtToJson3(await tools.readText("run", "captions.srt") ?? ""));
+  } else if (twitch) {
+    try {
+      const found = await twitchCaptions(job, { tools, yt: yt2, language: languages[0], window, rejected, apiMs: timeout, downloadMs: downloadTimeoutMs, whisperMs: count(config, "transcribeTimeoutMs", true) });
+      if (!found) return missing();
+      ({ job, id, url, duration: sourceDuration, points: extra } = found);
+    } catch (error) {
+      if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure && !/^\S+ exceeded its \d+ ms time limit/.test(error.message)) throw error;
+      return missing();
+    }
   } else if (drive) {
     const cacheFile = `transcripts/${id}.json3`;
     const cached = await tools.readText("state", cacheFile);
@@ -49650,7 +49767,7 @@ var captions = async (job, config, tools, outputKey) => {
     for (const language of languages) if (parseCaptions(await tools.readText("run", `captions.${language}.json3`)).length) return true;
     return false;
   };
-  if (!archive && transcribeUpTo > 0 && (sourceDuration ?? Infinity) <= transcribeUpTo && !await captioned()) {
+  if (!archive && !twitch && transcribeUpTo > 0 && (sourceDuration ?? Infinity) <= transcribeUpTo && !await captioned()) {
     try {
       await transcribe();
     } catch (fallback) {
@@ -49671,7 +49788,7 @@ var captions = async (job, config, tools, outputKey) => {
     const output2 = { ...job, ...usedMoments, [outputKey]: { file: TRANSCRIPT_FILE, wordsFile: WORDS_FILE, language } };
     if (!hotspots) return { output: output2, port: "next" };
     const info = await readInfo(tools);
-    const found = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind });
+    const found = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind, extra });
     await tools.writeText("run", HOTSPOTS_FILE, found.text);
     return { output: { ...output2, hotspots: { file: HOTSPOTS_FILE, windows: found.windows } }, port: "next" };
   }
@@ -49707,9 +49824,10 @@ var section = async (job, config, tools, outputKey) => {
   }
   const from = round(Math.max(0, start - padding));
   const to = round(duration === void 0 ? end + padding : Math.min(duration, end + padding));
-  await yt2(["-f", sectionFormat(maxHeight, url), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools, url), "-o", "section.%(ext)s", "--no-warnings", "--", url], timeoutMs);
+  const real = isTwitch(url) ? await twitchCut(tools, yt2, url, maxHeight, from, to, "section", timeoutMs) : void 0;
+  if (real === void 0) await yt2(["-f", sectionFormat(maxHeight, url), "--download-sections", `*${from}-${to}`, "--force-keyframes-at-cuts", "--merge-output-format", "mp4", ...archiveArgs(config, tools, url), "-o", "section.%(ext)s", "--no-warnings", "--", url], timeoutMs);
   const length3 = await probe(tools, CLIP_FILE, timeoutMs);
-  return { output: { ...job, [outputKey]: { file: CLIP_FILE, offset: from, duration: length3 } }, port: "next" };
+  return { output: { ...job, [outputKey]: { file: CLIP_FILE, offset: real ?? from, duration: length3 } }, port: "next" };
 };
 var ROLES = ["hook", "intro", "beat", "moment", "payoff"];
 var sections = async (job, config, tools, outputKey) => {
@@ -49757,9 +49875,14 @@ var sections = async (job, config, tools, outputKey) => {
   }
   const plain = groups.size === 1 && groups.has(base?.id ?? "");
   for (const group of groups.values()) group.prefix = plain ? "clip-" : `clip-${group.source.id}-`;
+  const realStarts = /* @__PURE__ */ new Map();
   const fileOf = (id, from) => `${groups.get(id).prefix}${from.toFixed(3)}.mp4`;
   for (const { source: { id, url }, prefix, downloads } of groups.values()) {
     const throttled = () => ({ output: { ...job, rejectedSources: [...rejectedSources(job), id] }, port: "missing" });
+    if (isTwitch(url)) {
+      for (const [from, to] of downloads) realStarts.set(`${prefix}${from.toFixed(3)}.mp4`, await twitchCut(tools, yt2, url, maxHeight, from, to, `${prefix}${from.toFixed(3)}`, timeoutMs));
+      continue;
+    }
     if (isArchive(url)) {
       for (const [from, to] of downloads) {
         await ffmpegTwice(tools, ["-v", "error", "-y", "-ss", String(from), "-i", url, "-t", String(round(to - from)), "-map", "0:v:0", "-map", "0:a:0", "-vf", `scale=-2:'min(${maxHeight},ih)'`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-movflags", "+faststart", `${prefix}${from.toFixed(3)}.mp4`], timeoutMs);
@@ -49789,7 +49912,7 @@ var sections = async (job, config, tools, outputKey) => {
     } catch (error) {
       throw error instanceof ExecutionFailure ? new ExecutionFailure(`media-fetch job.story.clips[${i}] (${role}): ${error.message.replace(/^media-fetch /, "")}`) : error;
     }
-    found.push({ role, file, offset: from, duration: lengths.get(file), sourceId: source.id });
+    found.push({ role, file, offset: realStarts.get(file) ?? from, duration: lengths.get(file), sourceId: source.id });
   }
   const archived = [...groups.values()].filter(({ source }) => isArchive(source.url));
   if (archived.length > 0) {
@@ -50575,6 +50698,44 @@ function planShots({ width: W, height: H2, shots }, from, to, splitTop, faceTop 
   return out;
 }
 
+// modules/video-edit/facecam.ts
+var isObject7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var pos = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+async function detectFacecam(file, modelPath, tools, timeoutMs) {
+  const { stdout } = await tools.run("python3", [`${PYTHON_DIR}facecam.py`, file, modelPath], { timeoutMs });
+  const bad = (why) => new ExecutionFailure(`facecam.py output for ${file} ${why}.`);
+  let data;
+  try {
+    data = JSON.parse(stdout.trim().split("\n").at(-1) ?? "");
+  } catch {
+    throw bad("is not valid JSON");
+  }
+  if (!isObject7(data) || !isObject7(data.frame) || !pos(data.frame.w) || !pos(data.frame.h) || !("cam" in data)) throw bad("needs a frame size and a cam (a box or null)");
+  const { frame: f, cam: c } = data;
+  if (c !== null) {
+    if (!isObject7(c) || !pos(c.w) || !pos(c.h) || typeof c.x !== "number" || typeof c.y !== "number" || c.x < 0 || c.y < 0 || c.x + c.w > f.w || c.y + c.h > f.h) throw bad("has a cam box outside the frame");
+  }
+  return data;
+}
+var even2 = (x) => 2 * Math.floor(x / 2);
+var clamp2 = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
+var MARGIN = 0.0125;
+function planStream({ w: W, h: H2 }, cam, from, to) {
+  const top = even2(clamp2(1080 * cam.h / cam.w, 540, 760));
+  const aspect = 1080 / top;
+  const [cw, ch] = cam.w / cam.h > aspect ? [even2(cam.h * aspect), cam.h] : [cam.w, even2(cam.w / aspect)];
+  const camCrop = { x: cam.x + even2((cam.w - cw) / 2), y: cam.y + even2((cam.h - ch) / 2), w: cw, h: ch };
+  const panel = 1920 - top;
+  const [gw, gh] = H2 * 1080 / panel > W ? [even2(W), even2(W * panel / 1080)] : [even2(H2 * 1080 / panel), even2(H2)];
+  const gy = even2((H2 - gh) / 2);
+  const centre = even2((W - gw) / 2);
+  const gap = even2(MARGIN * W);
+  const clear = [cam.x + cam.w + gap, cam.x - gap - gw].filter((x2) => x2 >= 0 && x2 + gw <= W);
+  const overlaps = centre < cam.x + cam.w && centre + gw > cam.x && gy < cam.y + cam.h && gy + gh > cam.y;
+  const x = !overlaps || clear.length === 0 ? centre : clear.reduce((a, b) => Math.abs(a - centre) <= Math.abs(b - centre) ? a : b);
+  return [{ start: 0, end: Math.round((to - from) * 1e3) / 1e3, layout: "stream", top, crops: [camCrop, { x: even2(x), y: gy, w: gw, h: gh }] }];
+}
+
 // modules/video-edit/headline-card.ts
 var CARD_FILE = "headline-card.png";
 async function renderHeadlineCard(rows, { family, size, emoji }, tools, timeoutMs) {
@@ -50707,7 +50868,7 @@ var POP_VOLUME = 0.5;
 var FINAL_CRF = 18;
 var FLUENT = "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/";
 var REQUIRED_SOUNDS = ["whoosh", "reverse-whoosh", "bubble-pop"];
-var isObject7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num3 = (value) => typeof value === "number" && Number.isFinite(value);
 var safeName = (value) => typeof value === "string" && value !== "" && !/^[-/]/.test(value) && !value.split("/").includes("..");
 var r33 = (x) => Math.round(x * 1e3) / 1e3;
@@ -50716,7 +50877,7 @@ var n4 = (x) => Number(x.toFixed(4));
 function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = noIn, silent, cut, stretch: wanted }, cmdsFile, layout = "box", cardBackground = "plain", splitTop = "left", segments) {
   const frame = layout === "frame";
   const card = layout === "card";
-  const auto = layout === "auto";
+  const auto = layout === "auto" || layout === "stream";
   const split = layout === "split" || auto;
   const wide = frame || split;
   const stretch = wide && !cut ? wanted : void 0;
@@ -50779,9 +50940,9 @@ function boxGraph({ frames, first: noIn, last: noOut, intro, effects, bigExit = 
   }
   const half = (x) => `crop=w='trunc(iw*0.475/2)*2':h='trunc(iw*0.475/1.125/2)*2':x='${x}':y='min(ih-oh,ih*0.08)',scale=1080:960,setsar=1`;
   const crop = (c) => `crop=${c.w}:${c.h}:${c.x}:${c.y}`;
-  const autoPart = ({ start, end, layout: l, crops }, k) => {
+  const autoPart = ({ start, end, layout: l, crops, top }, k) => {
     const head = `[i${k}]trim=start=${n3(start)}:end=${n3(end)},setpts=PTS-STARTPTS`;
-    return l === "split" ? `${head},split=2[a${k}][b${k}];[a${k}]${crop(crops[0])},scale=1080:960,setsar=1[t${k}];[b${k}]${crop(crops[1])},scale=1080:960,setsar=1[u${k}];[t${k}][u${k}]vstack=inputs=2[s${k}]` : l === "single" ? `${head},${crop(crops[0])},scale=1080:1920,setsar=1[s${k}]` : `${head},split=2[bg${k}][fg${k}];[bg${k}]${BLUR_BG}[bv${k}];[fg${k}]${FIT.join(",")}[fv${k}];[bv${k}][fv${k}]overlay=(W-w)/2:(H-h)/2[s${k}]`;
+    return l === "stream" ? `${head},split=2[a${k}][b${k}];[a${k}]${crop(crops[0])},scale=1080:${top},setsar=1[t${k}];[b${k}]${crop(crops[1])},scale=1080:${1920 - top},setsar=1[u${k}];[t${k}][u${k}]vstack=inputs=2[s${k}]` : l === "split" ? `${head},split=2[a${k}][b${k}];[a${k}]${crop(crops[0])},scale=1080:960,setsar=1[t${k}];[b${k}]${crop(crops[1])},scale=1080:960,setsar=1[u${k}];[t${k}][u${k}]vstack=inputs=2[s${k}]` : l === "single" ? `${head},${crop(crops[0])},scale=1080:1920,setsar=1[s${k}]` : `${head},split=2[bg${k}][fg${k}];[bg${k}]${BLUR_BG}[bv${k}];[fg${k}]${FIT.join(",")}[fv${k}];[bv${k}][fv${k}]overlay=(W-w)/2:(H-h)/2[s${k}]`;
   };
   const parts = segments ?? [{ start: 0, end: length3, layout: "frame", crops: [] }];
   const wash = (e) => {
@@ -51059,7 +51220,7 @@ function storyCaptions(story, lines, corrections = [], applied) {
 function readSources(value) {
   if (!Array.isArray(value) || value.length === 0) throw new ExecutionFailure("video-edit job.clips must be a non-empty list of { role, file, offset, duration }.");
   return value.map((clip, i) => {
-    if (!isObject7(clip) || typeof clip.role !== "string" || !["hook", "intro", "beat", "payoff"].includes(clip.role) || !safeName(clip.file) || !num3(clip.offset) || !num3(clip.duration) || clip.duration <= 0) {
+    if (!isObject8(clip) || typeof clip.role !== "string" || !["hook", "intro", "beat", "payoff"].includes(clip.role) || !safeName(clip.file) || !num3(clip.offset) || !num3(clip.duration) || clip.duration <= 0) {
       throw new ExecutionFailure(`video-edit job.clips[${i}] needs a role (hook, intro, beat or payoff), a relative file name in the run folder, a numeric offset and a positive duration.`);
     }
     return { role: clip.role, file: clip.file, offset: clip.offset, duration: clip.duration };
@@ -51072,7 +51233,7 @@ function readLibrary(raw, path) {
   } catch {
     data = void 0;
   }
-  if (!Array.isArray(data) || !data.every((e) => isObject7(e) && typeof e.name === "string" && safeName(e.file) && num3(e.seconds) && e.seconds > 0)) {
+  if (!Array.isArray(data) || !data.every((e) => isObject8(e) && typeof e.name === "string" && safeName(e.file) && num3(e.seconds) && e.seconds > 0)) {
     throw new ExecutionFailure(`video-edit needs ${path} in the business state folder for sounds.`);
   }
   return new Map(data.map((e) => [e.name, { file: e.file, seconds: e.seconds }]));
@@ -51085,16 +51246,16 @@ function readWords(raw, file) {
   } catch {
     throw bad("is not valid JSON");
   }
-  if (!isObject7(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
+  if (!isObject8(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
   const lines = data.lines.map((line2, i) => {
-    if (!isObject7(line2) || !Array.isArray(line2.words) || !line2.words.every((w) => isObject7(w) && typeof w.text === "string" && num3(w.start) && num3(w.end))) {
+    if (!isObject8(line2) || !Array.isArray(line2.words) || !line2.words.every((w) => isObject8(w) && typeof w.text === "string" && num3(w.start) && num3(w.end))) {
       throw bad(`has a malformed line at index ${i}`);
     }
     return { words: line2.words };
   });
   if (!Array.isArray(data.sentences)) throw bad("needs a sentences array");
   const sentences = data.sentences.map((s, i) => {
-    if (!isObject7(s) || !num3(s.start) || !num3(s.end) || typeof s.text !== "string" || typeof s.speakerChange !== "boolean" || !Number.isInteger(s.first) || !Number.isInteger(s.last)) {
+    if (!isObject8(s) || !num3(s.start) || !num3(s.end) || typeof s.text !== "string" || typeof s.speakerChange !== "boolean" || !Number.isInteger(s.first) || !Number.isInteger(s.last)) {
       throw bad(`has a malformed sentence at index ${i}`);
     }
     return s;
@@ -51112,7 +51273,7 @@ async function present(tools, file, timeoutMs) {
   }
 }
 async function checkStory(input, settings, tools) {
-  if (!isObject7(input)) throw new ExecutionFailure("video-edit needs a job object.");
+  if (!isObject8(input)) throw new ExecutionFailure("video-edit needs a job object.");
   const manifest = `${settings.soundsDir}/sounds.json`;
   const library = readLibrary(await tools.readText("state", manifest), manifest);
   const { agentErrors, ...job } = input;
@@ -51125,13 +51286,13 @@ async function checkStory(input, settings, tools) {
   return { output: job, port: "next" };
 }
 async function renderStory(input, settings, tools) {
-  if (!isObject7(input)) throw new ExecutionFailure("video-edit input must be a job object.");
+  if (!isObject8(input)) throw new ExecutionFailure("video-edit input must be a job object.");
   const timeoutMs = settings.renderTimeoutMs;
   const ffmpeg = (args) => tools.run("ffmpeg", args, { timeoutMs });
   const sfx = `${tools.stateDir}/${settings.soundsDir}`;
   const emojiPath = (name) => `${tools.stateDir}/${settings.emojiDir}/${emojiFile(name)}`;
   const sources = readSources(input.clips);
-  const wordsFile = isObject7(input.transcript) ? input.transcript.wordsFile : void 0;
+  const wordsFile = isObject8(input.transcript) ? input.transcript.wordsFile : void 0;
   if (!safeName(wordsFile)) throw new ExecutionFailure("video-edit needs job.transcript.wordsFile as a relative file name in the run folder.");
   const manifest = `${settings.soundsDir}/sounds.json`;
   const library = readLibrary(await tools.readText("state", manifest), manifest);
@@ -51144,7 +51305,7 @@ async function renderStory(input, settings, tools) {
   const story = normalizeStory(plan, words2, sentences, laughs);
   const files = matchSources(story.clips, sources);
   const card = settings.layout === "card";
-  const seed = settings.storySeed !== "" ? settings.storySeed : isObject7(input.source) && typeof input.source.id === "string" ? input.source.id : "";
+  const seed = settings.storySeed !== "" ? settings.storySeed : isObject8(input.source) && typeof input.source.id === "string" ? input.source.id : "";
   const picked = settings.cardBackgrounds[Math.floor(seededRandom(`${seed}-background`)() * settings.cardBackgrounds.length)];
   const cardBackground = picked === "plain" || picked === "blur" ? picked : "texture";
   const still = settings.layout === "box" || card && cardBackground === "texture";
@@ -51164,10 +51325,15 @@ async function renderStory(input, settings, tools) {
     ends.push(levels.length < 2 ? clip.end : quietestStart(levels, 0.02, search2.from));
   }
   const retimed = retime({ ...story, issues: [...story.issues, ...notes] }, ends);
-  const timed = card || settings.layout === "split" || settings.layout === "auto" ? { ...retimed, emojis: [] } : retimed;
+  const timed = card || settings.layout === "split" || settings.layout === "auto" || settings.layout === "stream" ? { ...retimed, emojis: [] } : retimed;
+  const model = `${tools.stateDir}/models/face_detection_yunet_2023mar.onnx`;
   const analyses = /* @__PURE__ */ new Map();
-  if (settings.layout === "auto") {
-    for (const { file } of files) if (!analyses.has(file)) analyses.set(file, await analyseShots(file, `${tools.stateDir}/models/face_detection_yunet_2023mar.onnx`, tools, timeoutMs));
+  const cams = /* @__PURE__ */ new Map();
+  if (settings.layout === "auto" || settings.layout === "stream") {
+    for (const { file } of files) {
+      if (settings.layout === "stream" && !cams.has(file)) cams.set(file, await detectFacecam(file, model, tools, timeoutMs));
+      if (!analyses.has(file) && !cams.get(file)?.cam) analyses.set(file, await analyseShots(file, model, tools, timeoutMs));
+    }
   }
   const boxes = [];
   for (const [i, clip] of timed.clips.entries()) {
@@ -51176,7 +51342,9 @@ async function renderStory(input, settings, tools) {
     const cmdsFile = `story-box${i}.cmds`;
     const out = `story-box${i}.mp4`;
     const seek = r33(clip.start - files[i].offset);
-    const segments = settings.layout === "auto" ? planShots(analyses.get(files[i].file), seek, r33(seek + clip.end - clip.start), settings.splitTop, settings.faceTop) : void 0;
+    const [from, to] = [seek, r33(seek + clip.end - clip.start)];
+    const cam = cams.get(files[i]?.file ?? "");
+    const segments = cam?.cam ? planStream(cam.frame, cam.cam, from, to) : settings.layout === "auto" || settings.layout === "stream" ? planShots(analyses.get(files[i].file), from, to, settings.splitTop, settings.faceTop) : void 0;
     await tools.writeText("run", cmdsFile, boxGraph(piece, cmdsFile, settings.layout, cardBackground, settings.splitTop, segments).cmds);
     await ffmpeg(boxArgs({
       file: files[i].file,
@@ -51282,19 +51450,19 @@ var DEFAULTS4 = {
   storySeed: "",
   outputKey: "short"
 };
-var isObject8 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num4 = (value) => typeof value === "number" && Number.isFinite(value);
 var between = (min, max = Infinity) => (value) => num4(value) && value >= min && value <= max;
 var positive = (value) => num4(value) && value > 0;
-var even2 = (value) => Number.isInteger(value) && value >= 2 && value % 2 === 0;
+var even3 = (value) => Number.isInteger(value) && value >= 2 && value % 2 === 0;
 var flag = (value) => typeof value === "boolean";
 var str = (value) => typeof value === "string";
 var safeName2 = (value) => typeof value === "string" && value !== "" && !/^[-/]/.test(value) && !value.split("/").includes("..");
 var folderName = (value) => typeof value === "string" && /^[a-z0-9][a-z0-9_-]*$/i.test(value);
 var RULES = {
   mode: [(value) => value === "short" || value === "story" || value === "check", "'short', 'story' or 'check'"],
-  width: [even2, "an even integer"],
-  height: [even2, "an even integer"],
+  width: [even3, "an even integer"],
+  height: [even3, "an even integer"],
   contentAspect: [(value) => typeof value === "string" && /^[1-9]\d*:[1-9]\d*$/.test(value), "a ratio such as 4:5"],
   saturation: [between(0, 3), "a number from 0 to 3"],
   removePauses: [flag, "true or false"],
@@ -51316,7 +51484,7 @@ var RULES = {
   crf: [between(0, 51), "a number from 0 to 51"],
   renderTimeoutMs: [positive, "a positive number of milliseconds"],
   background: [folderName, "a plain file name without the .jpg, such as brick"],
-  layout: [(value) => value === "box" || value === "frame" || value === "card" || value === "split" || value === "auto", "'box', 'frame', 'card', 'split' or 'auto'"],
+  layout: [(value) => value === "box" || value === "frame" || value === "card" || value === "split" || value === "auto" || value === "stream", "'box', 'frame', 'card', 'split', 'auto' or 'stream'"],
   splitTop: [(value) => value === "left" || value === "right", "'left' or 'right'"],
   faceTop: [between(0, 1920), "a number of pixels from 0 (off) to 1920"],
   hookTransition: [(value) => value === "blur" || value === "stretch", "'blur' or 'stretch'"],
@@ -51350,16 +51518,16 @@ function readSettings(config) {
   return settings;
 }
 function readJob(input) {
-  if (!isObject8(input)) throw new ExecutionFailure("video-edit input must be a job object.");
+  if (!isObject9(input)) throw new ExecutionFailure("video-edit input must be a job object.");
   const { moment, clip, transcript } = input;
-  if (!isObject8(moment) || !num4(moment.start) || !num4(moment.end) || moment.end <= moment.start) {
+  if (!isObject9(moment) || !num4(moment.start) || !num4(moment.end) || moment.end <= moment.start) {
     throw new ExecutionFailure("video-edit needs job.moment with numeric start and end, end after start.");
   }
-  if (!isObject8(clip) || !num4(clip.offset) || !num4(clip.duration) || clip.duration <= 0) {
+  if (!isObject9(clip) || !num4(clip.offset) || !num4(clip.duration) || clip.duration <= 0) {
     throw new ExecutionFailure("video-edit needs job.clip with numeric offset and a positive duration.");
   }
   if (!safeName2(clip.file)) throw new ExecutionFailure("video-edit needs job.clip.file as a relative file name in the run folder.");
-  if (!isObject8(transcript) || !safeName2(transcript.wordsFile)) {
+  if (!isObject9(transcript) || !safeName2(transcript.wordsFile)) {
     throw new ExecutionFailure("video-edit needs job.transcript.wordsFile as a relative file name in the run folder.");
   }
   return {
@@ -51368,7 +51536,7 @@ function readJob(input) {
     wordsFile: transcript.wordsFile
   };
 }
-var lookup = (job, path) => path.split(".").reduce((value, key) => isObject8(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
+var lookup = (job, path) => path.split(".").reduce((value, key) => isObject9(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
 function headlineText(job, path) {
   const value = lookup(job, path);
   if (typeof value !== "string" || clean2(value) === "") throw new ExecutionFailure(`video-edit job.${path} (the headline) must be a non-empty string.`);
@@ -51388,7 +51556,7 @@ async function readLibrary2(tools, dir) {
   } catch {
     data = void 0;
   }
-  if (!Array.isArray(data) || !data.every((entry) => isObject8(entry) && typeof entry.name === "string" && safeName2(entry.file))) {
+  if (!Array.isArray(data) || !data.every((entry) => isObject9(entry) && typeof entry.name === "string" && safeName2(entry.file))) {
     throw new ExecutionFailure(`video-edit needs ${file} in the business state folder for sounds.`);
   }
   return data;
@@ -51401,9 +51569,9 @@ function parseLines(raw, file) {
   } catch {
     throw bad("is not valid JSON");
   }
-  if (!isObject8(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
+  if (!isObject9(data) || !Array.isArray(data.lines)) throw bad("needs a lines array");
   return data.lines.map((line2, index2) => {
-    const valid = isObject8(line2) && num4(line2.start) && num4(line2.end) && typeof line2.text === "string" && Array.isArray(line2.words) && line2.words.every((word) => isObject8(word) && num4(word.start) && num4(word.end));
+    const valid = isObject9(line2) && num4(line2.start) && num4(line2.end) && typeof line2.text === "string" && Array.isArray(line2.words) && line2.words.every((word) => isObject9(word) && num4(word.start) && num4(word.end));
     if (!valid) throw bad(`has a malformed line at index ${index2}`);
     return line2;
   });
@@ -51439,7 +51607,7 @@ function pickSounds(items, library, offset, segments, maxSounds) {
   const first = segments[0].start;
   const last = segments[segments.length - 1].end;
   return items.flatMap((item) => {
-    if (!isObject8(item) || !num4(item.at) || typeof item.sound !== "string") return [];
+    if (!isObject9(item) || !num4(item.at) || typeof item.sound !== "string") return [];
     const volume = item.volume === void 0 ? 1 : item.volume;
     const entry = library.find(({ name }) => name === item.sound);
     const time = item.at - offset;
@@ -51603,10 +51771,10 @@ var TITLE_FILE = "thumbnail-title.txt";
 var MAX_BYTES = 2e6;
 var ADVANCE = { I: 0.29, M: 0.88, W: 0.88, " ": 0.25, "!": 0.27, ".": 0.29, ",": 0.25, "'": 0.16, "-": 0.39 };
 var ADVANCE_DEFAULT = 0.68;
-var isObject9 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var num5 = (value) => String(Math.round(value * 1e6) / 1e6);
 function object(value, name) {
-  if (!isObject9(value)) throw new ExecutionFailure(`Thumbnail ${name} must be an object.`);
+  if (!isObject10(value)) throw new ExecutionFailure(`Thumbnail ${name} must be an object.`);
   return value;
 }
 function bounded(value, name, min, max = Infinity, integer = false) {
@@ -51670,7 +51838,7 @@ function frameTimes(moment, offset, count2) {
   return Array.from({ length: count2 }, (_, index2) => first + span * (index2 + 0.5) / count2 - offset);
 }
 async function candidates(job, settings, tools) {
-  const payoff = job.clip === void 0 && Array.isArray(job.clips) ? job.clips.find((item) => isObject9(item) && item.role === "payoff") : void 0;
+  const payoff = job.clip === void 0 && Array.isArray(job.clips) ? job.clips.find((item) => isObject10(item) && item.role === "payoff") : void 0;
   const clip = object(job.clip ?? payoff, "clip");
   const file = fileName2(clip.file, "clip.file");
   const offset = bounded(clip.offset, "clip.offset", 0);
@@ -51799,9 +51967,9 @@ var DEFAULTS6 = {
   onlyWhen: ""
 };
 var PRIVACIES = ["private", "unlisted", "public"];
-var isObject10 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var isText2 = (value) => typeof value === "string" && value.trim() !== "";
-var lookup2 = (job, path) => path.split(".").reduce((value, key) => isObject10(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
+var lookup2 = (job, path) => path.split(".").reduce((value, key) => isObject11(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
 var reason2 = (error) => error instanceof Error ? error.message : String(error);
 function clipTitle(title) {
   if (title.length <= 100) return title;
@@ -51878,19 +52046,19 @@ function readSettings3(config) {
   return { channelHandle, privacy, categoryId, madeForKids, containsSyntheticMedia, paidPromotion, setCover, maxHashtags, titleHashtags, publishAfterHours, outputKey, condition };
 }
 function readJob2(input, needCover, maxHashtags, titleHashtags) {
-  if (!isObject10(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
+  if (!isObject11(input)) throw new ExecutionFailure("YouTube publish input must be a plain object (the job).");
   const { short, meta, thumbnail } = input;
-  if (!isObject10(short) || !isText2(short.file)) throw new ExecutionFailure("YouTube publish input job.short.file must be a non-empty string.");
-  if (!isObject10(meta) || !isText2(meta.title)) throw new ExecutionFailure("YouTube publish input job.meta.title must be a non-empty string.");
+  if (!isObject11(short) || !isText2(short.file)) throw new ExecutionFailure("YouTube publish input job.short.file must be a non-empty string.");
+  if (!isObject11(meta) || !isText2(meta.title)) throw new ExecutionFailure("YouTube publish input job.meta.title must be a non-empty string.");
   if (meta.description !== void 0 && typeof meta.description !== "string") throw new ExecutionFailure("YouTube publish input job.meta.description must be a string.");
   if (meta.tags !== void 0 && !Array.isArray(meta.tags)) throw new ExecutionFailure("YouTube publish input job.meta.tags must be an array.");
   if (meta.hashtags !== void 0 && !Array.isArray(meta.hashtags)) throw new ExecutionFailure("YouTube publish input job.meta.hashtags must be an array.");
   if (meta.comment !== void 0 && typeof meta.comment !== "string") throw new ExecutionFailure("YouTube publish input job.meta.comment must be a string.");
-  if (needCover && (!isObject10(thumbnail) || !isText2(thumbnail.file))) throw new ExecutionFailure("YouTube publish input job.thumbnail.file must be a non-empty string.");
+  if (needCover && (!isObject11(thumbnail) || !isText2(thumbnail.file))) throw new ExecutionFailure("YouTube publish input job.thumbnail.file must be a non-empty string.");
   return {
     job: input,
     file: short.file,
-    cover: isObject10(thumbnail) ? String(thumbnail.file) : "",
+    cover: isObject11(thumbnail) ? String(thumbnail.file) : "",
     title: withTitleHashtags(clipTitle(meta.title.trim()), titleHashtags ? cleanHashtags(meta.hashtags ?? [], maxHashtags) : []),
     description: withHashtags(withoutDriveLinks(meta.description ?? ""), cleanHashtags(meta.hashtags ?? [], maxHashtags)),
     tags: cleanTags(meta.tags ?? []),
@@ -51915,8 +52083,8 @@ async function uploadOnce(youtube, tools, node, handle, file, metadata) {
       receipt = JSON.parse(saved);
     } catch {
     }
-    if (!isObject10(receipt) || receipt.handle === handle && receipt.file === file) {
-      if (!isObject10(receipt) || typeof receipt.videoId !== "string" || !/^[A-Za-z0-9_-]{6,20}$/.test(receipt.videoId)) {
+    if (!isObject11(receipt) || receipt.handle === handle && receipt.file === file) {
+      if (!isObject11(receipt) || typeof receipt.videoId !== "string" || !/^[A-Za-z0-9_-]{6,20}$/.test(receipt.videoId)) {
         throw new ExecutionFailure(`The upload receipt ${name} is unreadable, so nothing was uploaded; check the channel for a video that was already uploaded, then delete the receipt to upload again.`);
       }
       return receipt.videoId;
@@ -51981,9 +52149,9 @@ var DEFAULTS7 = {
 var CAPTION_LIMIT = 2200;
 var USERNAME = /^@?([A-Za-z0-9._]{1,30})$/;
 var ID = /^[A-Za-z0-9_-]{1,64}$/;
-var isObject11 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject12 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var isText3 = (value) => typeof value === "string" && value.trim() !== "";
-var lookup3 = (job, path) => path.split(".").reduce((value, key) => isObject11(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
+var lookup3 = (job, path) => path.split(".").reduce((value, key) => isObject12(value) && Object.hasOwn(value, key) ? value[key] : void 0, job);
 var oneLine = (value) => typeof value === "string" && value.trim().length <= 100 && !/[\r\n]/.test(value);
 var reason3 = (error) => error instanceof Error ? error.message : String(error);
 function cleanHashtags2(items, max) {
@@ -52032,10 +52200,10 @@ function readSettings4(config) {
 }
 function readJob3(input, settings) {
   const { disclosureKey, maxHashtags } = settings;
-  if (!isObject11(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
+  if (!isObject12(input)) throw new ExecutionFailure("Instagram publish input must be a plain object (the job).");
   const { short, meta = {} } = input;
-  if (!isObject11(short) || !isText3(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
-  if (!isObject11(meta)) throw new ExecutionFailure("Instagram publish input job.meta must be an object.");
+  if (!isObject12(short) || !isText3(short.file)) throw new ExecutionFailure("Instagram publish input job.short.file must be a non-empty string.");
+  if (!isObject12(meta)) throw new ExecutionFailure("Instagram publish input job.meta must be an object.");
   for (const key of ["title", "description"]) {
     if (meta[key] !== void 0 && typeof meta[key] !== "string") throw new ExecutionFailure(`Instagram publish input job.meta.${key} must be a string.`);
   }
@@ -52069,8 +52237,8 @@ async function readReceipt(tools, name, username, file) {
     receipt = JSON.parse(saved);
   } catch {
   }
-  if (isObject11(receipt) && (receipt.username !== username || receipt.file !== file)) return void 0;
-  const valid = isObject11(receipt) && typeof receipt.containerId === "string" && ID.test(receipt.containerId) && (receipt.mediaId === void 0 || typeof receipt.mediaId === "string" && ID.test(receipt.mediaId)) && (receipt.permalink === void 0 || typeof receipt.permalink === "string");
+  if (isObject12(receipt) && (receipt.username !== username || receipt.file !== file)) return void 0;
+  const valid = isObject12(receipt) && typeof receipt.containerId === "string" && ID.test(receipt.containerId) && (receipt.mediaId === void 0 || typeof receipt.mediaId === "string" && ID.test(receipt.mediaId)) && (receipt.permalink === void 0 || typeof receipt.permalink === "string");
   if (!valid) {
     throw new ExecutionFailure(`The Instagram receipt ${name} is unreadable, so nothing was uploaded; check @${username} for a Reel that was already posted, then delete the receipt to post again.`);
   }
@@ -52140,7 +52308,7 @@ var VOICES = ["kokoro", "elevenlabs"];
 var PORTS = ["next", "invalid", "missing"];
 var LOG_TAIL = 1e3;
 var ENGINE_DIR = decodeURIComponent(new URL("./shorts-engine/", import.meta.url).pathname);
-var isObject12 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject13 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 var whole = (value, min, max) => typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 function readSettings5(config) {
   const merged = { ...DEFAULTS8, ...config };
@@ -52162,8 +52330,8 @@ function readResult(text3) {
     parsed = text3 === void 0 ? void 0 : JSON.parse(text3);
   } catch {
   }
-  const log = isObject12(parsed) && typeof parsed.log === "string" ? parsed.log : "";
-  if (!isObject12(parsed) || typeof parsed.port !== "string" || !PORTS.includes(parsed.port) || !isObject12(parsed.output)) {
+  const log = isObject13(parsed) && typeof parsed.log === "string" ? parsed.log : "";
+  if (!isObject13(parsed) || typeof parsed.port !== "string" || !PORTS.includes(parsed.port) || !isObject13(parsed.output)) {
     throw new ExecutionFailure(`Shorts engine wrote no usable result (shorts-result.json).${log ? ` Log tail: ${log.slice(-LOG_TAIL)}` : ""}`);
   }
   return { port: parsed.port, output: parsed.output, log };
@@ -52171,7 +52339,7 @@ function readResult(text3) {
 async function execute16({ input, config }, { tools }) {
   if (!tools) throw new ExecutionFailure("Shorts module requires the tools capability.");
   const { mode, lane, timeoutMs, engine } = readSettings5(config);
-  if (!isObject12(input)) throw new ExecutionFailure("Shorts input must be a job object.");
+  if (!isObject13(input)) throw new ExecutionFailure("Shorts input must be a job object.");
   const job = lane === "" ? input : { ...input, lane };
   const at2 = (name) => `${tools.runDir}/${name}`;
   await tools.writeText("run", "shorts-job.json", JSON.stringify(job));
@@ -52282,9 +52450,9 @@ var printable = (value) => typeof value === "string" ? value : json(value);
 function shorten(text3, max) {
   return text3.length > max ? `${text3.slice(0, max - 1)}\u2026` : text3;
 }
-var isObject13 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+var isObject14 = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 function summarizeOutput(input, output2) {
-  if (!isObject13(input) || !isObject13(output2)) return shorten(printable(output2), 300);
+  if (!isObject14(input) || !isObject14(output2)) return shorten(printable(output2), 300);
   const changed = Object.keys(output2).filter((key) => json(output2[key]) !== json(input[key])).map((key) => `${key}=${shorten(json(output2[key]), 120)}`);
   const removed = Object.keys(input).filter((key) => !(key in output2)).map((key) => `${key} removed`);
   return [...changed, ...removed].join(", ") || "no changes";
@@ -56634,7 +56802,7 @@ async function createApp(options = {}) {
   const dataDir = resolve5(options.dataDir || process.env.AUTOBIZ_DATA_DIR || dirname5(databasePath));
   const repository = new WorkspaceRepository(databasePath);
   const configuredAgent = options.agent ?? createConfiguredAgent();
-  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), contentRewards: () => createContentRewards({ dataDir, env: process.env, fetch }), toolExecutables: toolExecutables(), scriptRoots: [shortsEngineDir(), videoEditScriptsDir()], networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
+  const runService = new RunService(repository, configuredAgent, (error) => app.log.error(error), runTimeoutMs, { dataDir, youtube: createYouTube(dataDir), instagram: createInstagram(dataDir), contentRewards: () => createContentRewards({ dataDir, env: process.env, fetch }), toolExecutables: toolExecutables(), scriptRoots: [shortsEngineDir(), videoEditScriptsDir(), mediaFetchScriptsDir()], networkResetCommand: process.env.AUTOBIZ_NETWORK_RESET_COMMAND?.trim() || void 0 }, agentTimeoutMs);
   repository.markActiveRunsInterrupted();
   const cloudSync = runnersRepo ? createCloudSync({ repo: runnersRepo, dataDir, repository, gh: options.cloudSync?.gh }) : void 0;
   app.decorate("workspaceRepository", repository);
@@ -56778,6 +56946,10 @@ function shortsEngineDir() {
 function videoEditScriptsDir() {
   const bundled = fileURLToPath(new URL("./video-edit-python/", import.meta.url));
   return existsSync3(bundled) ? bundled : fileURLToPath(new URL("../../../modules/video-edit/video-edit-python/", import.meta.url));
+}
+function mediaFetchScriptsDir() {
+  const bundled = fileURLToPath(new URL("./media-fetch-python/", import.meta.url));
+  return existsSync3(bundled) ? bundled : fileURLToPath(new URL("../../../modules/media-fetch/media-fetch-python/", import.meta.url));
 }
 function toolExecutables(env = process.env) {
   const python = env.AUTOBIZ_PYTHON?.trim();

@@ -11,12 +11,21 @@ function postKey(url) {
   return /(?:shorts\/|[?&]v=|youtu\.be\/)([\w-]{11})/.exec(url)?.[1] ?? /instagram\.com\/(?:reel|p)\/([\w-]+)/.exec(url)?.[1] ?? "";
 }
 
+// scripts/content-rewards-page.ts
+var handled = /* @__PURE__ */ new WeakSet();
+async function dismissAnnouncements(page) {
+  if (handled.has(page)) return;
+  handled.add(page);
+  await page.addLocatorHandler(page.getByRole("button", { name: "Not now", exact: true }), (button) => button.click(), { noWaitAfter: true });
+}
+
 // scripts/content-rewards-submit.ts
 var CAMPAIGN = /^https:\/\/contentrewards\.com\/c\/campaigns\/[0-9a-f-]{36}$/i;
 var ERROR = /can['’]t|invalid|already|\bnot\b|error|failed/i;
 var ITEM_MS = 9e4;
 async function submitClip(page, campaignUrl, clipUrl, shot) {
   try {
+    await dismissAnnouncements(page);
     await page.goto(campaignUrl, { waitUntil: "domcontentloaded", timeout: 3e4 });
     const open = page.getByRole("button", { name: "Submit clip", exact: true });
     const signIn = page.getByRole("link", { name: "Sign in" });
@@ -24,11 +33,14 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
     await open.or(signIn).or(limit).first().waitFor({ timeout: 3e4 });
     if (page.url().includes("/login") || await signIn.count()) return { submitted: false, reason: "logged out" };
     if (await limit.count() && !(await open.count() && await open.isEnabled())) return { submitted: false, reason: "campaign clip limit reached (too many clips waiting for review)" };
-    await open.click();
     const dialog = page.getByRole("dialog").filter({ hasText: /Before you submit|linked accounts|read the requirements/ }).first();
     const hold = dialog.getByRole("button", { name: "Hold to confirm" });
     const link = dialog.locator("input[type=url]");
-    await hold.or(link).first().waitFor({ timeout: 15e3 });
+    for (const end = Date.now() + 6e4; ; ) {
+      if (!await dialog.isVisible()) await open.click();
+      if (await hold.or(link).first().waitFor({ timeout: 4e3 }).then(() => true, () => false)) break;
+      if (Date.now() > end) throw new Error("the submit dialog did not open 60 s after clicking Submit clip");
+    }
     if (await hold.isVisible()) {
       const box2 = await hold.boundingBox();
       await page.mouse.move(box2.x + box2.width / 2, box2.y + box2.height / 2);

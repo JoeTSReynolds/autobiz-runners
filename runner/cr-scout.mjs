@@ -13,6 +13,14 @@ function postKey(url) {
   return /(?:shorts\/|[?&]v=|youtu\.be\/)([\w-]{11})/.exec(url)?.[1] ?? /instagram\.com\/(?:reel|p)\/([\w-]+)/.exec(url)?.[1] ?? "";
 }
 
+// scripts/content-rewards-page.ts
+var handled = /* @__PURE__ */ new WeakSet();
+async function dismissAnnouncements(page) {
+  if (handled.has(page)) return;
+  handled.add(page);
+  await page.addLocatorHandler(page.getByRole("button", { name: "Not now", exact: true }), (button) => button.click(), { noWaitAfter: true });
+}
+
 // scripts/content-rewards-scout.ts
 var GAMING = ["gaming", "streamer", "twitch", "kick", "gta", "fortnite", "roblox", "minecraft", "mobile gaming", "pc gaming"];
 var PODCAST = ["personal brand", "business", "entrepreneurship", "coach & mentor", "coaching & consulting", "content creator"];
@@ -59,15 +67,31 @@ function viewsToMinimum(terms, platform) {
 var passesMinimum = ({ terms }, { maxViewsToMinimum = 2e3 } = {}) => viewsToMinimum(terms, "youtube") <= maxViewsToMinimum;
 var entities = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
 var plain = (html) => html.replace(/<[^>]*>/g, " ").replace(/&(?:amp|lt|gt|quot|#39);/g, (e) => entities[e]).replace(/[ \t]+/g, " ").replace(/ ?\n ?/g, "\n").trim();
+var TWITCH_RESERVED = /* @__PURE__ */ new Set(["videos", "directory", "downloads", "jobs", "settings", "store", "turbo", "search", "popout", "embed", "moderator", "friends", "subscriptions", "inventory", "wallet", "drops", "user", "p", "u"]);
+var refUrls = (json) => (json?.data ?? json ?? {}).configuration?.referenceMaterial?.map((r) => String(r.url ?? "")) ?? [];
+var hasKickSource = (json) => refUrls(json).some((u) => /^https?:\/\/(?:www\.)?kick\.com\//i.test(u));
 function draftFromCampaign(json, candidate, channel) {
   const o = json?.data ?? json ?? {};
   const cfg = o.configuration ?? {}, caption = cfg.rules?.caption ?? {};
   const refs = cfg.referenceMaterial ?? [];
   const urls = refs.map((r) => String(r.url ?? ""));
   const sources = [];
-  for (const url of urls.filter((u) => /(?:youtube\.com|youtu\.be)\//.test(u))) {
-    const id = postKey(url);
-    if (id && !sources.some((x) => x.id === id)) sources.push({ id, url, title: String(o.name ?? ""), channel: "", duration: 0 });
+  const title = String(o.name ?? "");
+  const add = (s) => {
+    if (s.id && !sources.some((x) => x.id === s.id)) sources.push(s);
+  };
+  for (const url of urls) {
+    if (/(?:youtube\.com|youtu\.be)\//.test(url)) {
+      add({ id: postKey(url), url, title, channel: "", duration: 0 });
+      continue;
+    }
+    const vod = /^https?:\/\/(?:www\.|m\.)?twitch\.tv\/videos\/(\d+)/i.exec(url)?.[1];
+    if (vod) {
+      add({ id: vod, url, title, channel: "", duration: 0 });
+      continue;
+    }
+    const login = /^https?:\/\/(?:www\.|m\.)?twitch\.tv\/(\w{3,25})(?:[/?#]|$)/i.exec(url)?.[1]?.toLowerCase();
+    if (login && !TWITCH_RESERVED.has(login)) add({ id: login, url: `https://www.twitch.tv/${login}`, title, channel: login, duration: 0 });
   }
   const rates = {};
   for (const p of cfg.payoutModel ?? []) rates[String(p.platform)] = { rate: p.rate / 100, minPayout: p.minPayout / 100, maxPayout: p.maxPayout / 100 };
@@ -108,17 +132,22 @@ async function audit(records, fetchPublic, { retireBelow = 100 } = {}) {
   return out;
 }
 var submitButton = (page) => page.getByRole("button", { name: "Submit clip", exact: true });
-async function joinCampaign(page, url, waitMs = 2e4) {
+async function joinCampaign(page, url, waitMs = 6e4) {
   try {
+    await dismissAnnouncements(page);
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
     const submit = submitButton(page), join2 = page.getByRole("button", { name: "Join Campaign" }).first(), signIn = page.getByRole("link", { name: "Sign in" });
     await submit.or(join2).or(signIn).first().waitFor({ timeout: 3e4 });
     if (page.url().includes("/login") || await signIn.count()) return { joined: false, reason: "logged out" };
     if (await submit.count()) return { joined: true, already: true };
     await join2.click();
-    let confirmed = false;
+    let confirmed = false, clicked = Date.now();
     for (const end = Date.now() + waitMs; Date.now() < end; await page.waitForTimeout(250)) {
       if (await submit.count()) return { joined: true };
+      if (!confirmed && Date.now() - clicked > 4e3 && await join2.isVisible()) {
+        await join2.click();
+        clicked = Date.now();
+      }
       const dialog = page.getByRole("dialog").filter({ hasNotText: /cookie/i }).first();
       const ok = dialog.getByRole("button", { name: /^(join|confirm|accept|continue)/i }).first();
       if (confirmed || !await ok.isVisible()) continue;
@@ -133,9 +162,10 @@ async function joinCampaign(page, url, waitMs = 2e4) {
     return { joined: false, reason: (error instanceof Error ? error.message : String(error)).split("\n")[0].slice(0, 300) };
   }
 }
-async function fitCheck(candidates, ask, n = 5) {
+async function fitCheck(candidates, ask, n = 5, lane = "podcast") {
   const top = candidates.slice(0, n);
-  const prompt = `Our pipeline makes YouTube Shorts and Instagram Reels from long-form video. For each campaign below, decide whether we can clip it well. Podcast lane: long-form talking-head video with clear speech. Reject gameplay, trailers, music videos, product demos without talking, and non-English content. We post from a new page with few followers, the clips are fully automated (no human editor), and nobody appears or speaks on camera for us. So also reject campaigns whose rules need any of: an existing or established account, or a follower minimum; the creator's face on camera, a voiceover or reactions; no automated or AI clipping; a brand logo or watermark kept on screen; a specific sound or song.
+  const intro = lane === "gaming" ? "Our pipeline makes YouTube Shorts and Instagram Reels from a named streamer's Twitch VODs, fully automated (no human editor): viewer-clip hotspots, a facecam-on-top and gameplay-below vertical layout, captions and a headline. For each campaign below, decide whether we can clip it. Accept Twitch VODs and channels, YouTube videos and streams, and supplied Drive footage. We post from a new page with few followers, and nobody appears or speaks on camera for us. Reject campaigns whose rules need any of: a logo or watermark kept on screen; our own voiceover or reactions; recording our own gameplay or footage; a Kick-only source (not supported yet); a specific sound or song; an existing or established account or a follower minimum; non-English content; saying or showing a link, discount code or call to action in the video. Also reject product promos and supplied ad footage (pack openings, app or store promos): the clips must be a streamer's own stream moments." : `Our pipeline makes YouTube Shorts and Instagram Reels from long-form video. For each campaign below, decide whether we can clip it well. Podcast lane: long-form talking-head video with clear speech. Reject gameplay, trailers, music videos, product demos without talking, and non-English content. We post from a new page with few followers, the clips are fully automated (no human editor), and nobody appears or speaks on camera for us. So also reject campaigns whose rules need any of: an existing or established account, or a follower minimum; the creator's face on camera, a voiceover or reactions; no automated or AI clipping; a brand logo or watermark kept on screen; a specific sound or song.`;
+  const prompt = `${intro}
 
 ${top.map((c) => JSON.stringify({ id: c.id, title: c.title, categories: c.categories, description: c.description?.slice(0, 400), ...c.rules ? { rules: c.rules.slice(0, 1200) } : {} })).join("\n")}
 
@@ -152,12 +182,13 @@ Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "..."}
     return v ? { id: c.id, fit: v.fit, reason: String(v.reason ?? "") } : { id: c.id, fit: false, reason: "no valid verdict" };
   });
 }
-function report({ retired, drafted, suggested, blocked: skipped, wouldJoin }) {
+function report({ retired, drafted, gamingDrafted, suggested, blocked: skipped, wouldJoin }) {
   const lines = [
     `Retired (${retired.length})`,
     ...retired.map((r) => `- ${r.id}: ${r.reason}`),
     `Joined and drafted (${drafted.length})`,
     ...drafted.map((d) => `- ${d.title} ${d.url}`),
+    ...gamingDrafted ? [`Gaming joined and drafted (${gamingDrafted.length})`, ...gamingDrafted.map((d) => `- ${d.title} ${d.url}`)] : [],
     ...wouldJoin ? [`Would join (dry run) (${wouldJoin.length})`, ...wouldJoin.map((w) => `- ${w.title} ${w.url}`)] : [],
     `Gaming suggestions (${suggested.length}), not joined`,
     ...suggested.map((c) => `- ${c.title} ($${c.rate}/1K, $${Math.round(c.availableBudget)} left) ${c.url}`),
@@ -208,57 +239,73 @@ async function scout(env, deps) {
     const seen = await readJson(SCOUT_STATE).catch(() => ({}));
     const known = new Set(records.map((r) => uuidOf(r.url)));
     const fresh = rank(all).filter((c) => !known.has(c.id) && !(seen[c.id] && seen[c.id].verdict !== "failed" && deps.now() - Date.parse(seen[c.id].at) < recheckMs));
-    const suggested = fresh.filter((c) => routeChannel(c) === "gaming").slice(0, 5);
+    const gamingOn = env.SCOUT_GAMING === "1";
+    const gamingFresh = fresh.filter((c) => routeChannel(c) === "gaming");
     const isPodcast = (c) => c.categories.some((n) => /podcast/i.test(n));
     const eligible = fresh.filter((c) => routeChannel(c) === "podcast" && passesMinimum(c)).sort((a, b) => Number(isPodcast(b)) - Number(isPodcast(a)));
     const mark = (id, verdict) => {
       seen[id] = { verdict, at: new Date(deps.now()).toISOString() };
     };
-    const drafted = [], wouldJoin = [];
-    const top = eligible.slice(0, 10);
-    const details = /* @__PURE__ */ new Map();
-    for (const c of top) {
-      try {
-        const json = await deps.fetchCampaign(c.id), r = draftFromCampaign(json, c, "podcast");
-        details.set(c.id, json);
-        c.rules = [...new Set([r.brief, r.requirements, r.checklist].filter(Boolean))].join("\n");
-      } catch {
+    const wouldJoin = [];
+    const runLane = async (channel, list, max) => {
+      const drafted = [], unfit = /* @__PURE__ */ new Set(), top = list.slice(0, 10);
+      const details = /* @__PURE__ */ new Map();
+      for (const c of top) {
+        try {
+          const json = await deps.fetchCampaign(c.id), r = draftFromCampaign(json, c, channel);
+          details.set(c.id, json);
+          c.rules = [...new Set([r.brief, r.requirements, r.checklist].filter(Boolean))].join("\n");
+        } catch {
+        }
       }
-    }
-    const fits = top.length ? await fitCheck(top, deps.ask, 10) : [];
-    const judged = fits.filter((f) => f.reason !== "no valid verdict");
-    if (top.length && judged.length < fits.length) notes.push(`Fit check gave no usable answer for ${fits.length - judged.length} of ${fits.length} campaigns; they will be asked again next run`);
-    for (const f of judged.filter((f2) => !f2.fit)) {
-      mark(f.id, "unfit");
-      notes.push(`${top.find((x) => x.id === f.id).title}: not a fit (${f.reason})`);
-    }
-    for (const { id } of fits.filter((f) => f.fit).slice(0, maxJoins)) {
-      const c = top.find((x) => x.id === id);
-      if (!join_) {
-        wouldJoin.push({ title: c.title, url: c.url });
-        continue;
+      const fits = top.length ? await fitCheck(top, deps.ask, 10, channel) : [];
+      const judged = fits.filter((f) => f.reason !== "no valid verdict");
+      if (top.length && judged.length < fits.length) notes.push(`Fit check gave no usable answer for ${fits.length - judged.length} of ${fits.length} campaigns; they will be asked again next run`);
+      for (const f of judged.filter((f2) => !f2.fit)) {
+        mark(f.id, "unfit");
+        unfit.add(f.id);
+        notes.push(`${top.find((x) => x.id === f.id).title}: not a fit (${f.reason})`);
       }
-      try {
-        const joined = await site.joinCampaign(page, c.url);
-        if (!joined.joined) {
-          mark(id, "failed");
-          notes.push(`${c.title}: join failed (${joined.reason})`);
+      for (const { id } of fits.filter((f) => f.fit).slice(0, max)) {
+        const c = top.find((x) => x.id === id);
+        if (!join_) {
+          wouldJoin.push({ title: c.title, url: c.url });
+          drafted.push({ id, title: c.title, url: c.url });
           continue;
         }
-        mark(id, "joined");
-        const record = draftFromCampaign(details.get(c.id) ?? await deps.fetchCampaign(c.id), c, "podcast");
-        if (!record.sources.length) notes.push(`${c.title}: no YouTube source in the reference materials (needs a source before it can go live)`);
-        await write(join(SCOUT_OUT, "proposed", `${record.id}.json`), `${JSON.stringify(record, null, 2)}
+        try {
+          const joined = await site.joinCampaign(page, c.url);
+          if (!joined.joined) {
+            mark(id, "failed");
+            notes.push(`${c.title}: join failed (${joined.reason})`);
+            continue;
+          }
+          mark(id, "joined");
+          const json = details.get(c.id) ?? await deps.fetchCampaign(c.id), record = draftFromCampaign(json, c, channel);
+          if (hasKickSource(json)) notes.push(`${c.title}: Kick sources are not supported yet`);
+          if (!record.sources.length) notes.push(`${c.title}: no usable source (YouTube or Twitch) in the reference materials (needs a source before it can go live)`);
+          await write(join(SCOUT_OUT, "proposed", `${record.id}.json`), `${JSON.stringify(record, null, 2)}
 `);
-        drafted.push({ id: record.id, title: c.title, url: c.url });
-      } catch (error) {
-        mark(id, "failed");
-        notes.push(`${c.title}: ${message(error)}`);
+          drafted.push({ id: record.id, title: c.title, url: c.url });
+        } catch (error) {
+          mark(id, "failed");
+          notes.push(`${c.title}: ${message(error)}`);
+        }
       }
+      return { drafted: join_ ? drafted : [], handled: /* @__PURE__ */ new Set([...unfit, ...drafted.map((d) => d.id)]), joinedUrls: new Set(drafted.map((d) => d.url)) };
+    };
+    const podcastRun = await runLane("podcast", eligible, maxJoins);
+    let gamingDrafted, suggested = gamingFresh.slice(0, 5);
+    if (gamingOn) {
+      const maxViewsToMinimum = Number(env.SCOUT_GAMING_MAX_VIEWS ?? 1e4);
+      const gamingEligible = gamingFresh.filter((c) => passesMinimum(c, { maxViewsToMinimum }));
+      const run = await runLane("gaming", gamingEligible, Number(env.SCOUT_MAX_JOINS_GAMING ?? 2));
+      gamingDrafted = run.drafted;
+      suggested = gamingEligible.filter((c) => !run.joinedUrls.has(c.url) && !run.handled.has(c.id)).slice(0, 5);
     }
     await write(SCOUT_STATE, `${JSON.stringify(seen, null, 2)}
 `);
-    const text = [report({ retired, drafted, suggested, blocked: all.filter(blocked).length, wouldJoin: join_ ? void 0 : wouldJoin }), ...notes.length ? ["Notes", ...notes.map((n) => `- ${n}`)] : []].join("\n");
+    const text = [report({ retired, drafted: podcastRun.drafted, gamingDrafted, suggested, blocked: all.filter(blocked).length, wouldJoin: join_ ? void 0 : wouldJoin }), ...notes.length ? ["Notes", ...notes.map((n) => `- ${n}`)] : []].join("\n");
     await write(join(SCOUT_OUT, "report.txt"), text);
     console.log(text);
     return text;

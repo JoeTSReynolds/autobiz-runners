@@ -1556,7 +1556,8 @@
             "frame",
             "card",
             "split",
-            "auto"
+            "auto",
+            "stream"
           ]
         },
         {
