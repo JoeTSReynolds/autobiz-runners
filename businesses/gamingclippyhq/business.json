@@ -30,7 +30,7 @@
           "featured": "Pilat (the streamer)",
           "disclosure": "#ad #Pilat",
           "brief": "Clip the best moments from Pilat's Twitch streams. Caption must include #Pilat.",
-          "requirements": "",
+          "requirements": "Reach campaign, one strike and you are out. Footage must come from Pilat's GTA or gambling streams only. Pilat must be the main focus. Never portray Pilat in a negative light. No hate farming: no clips cut to provoke pile-ons, no rage-bait captions, no drama framing. No logos of any kind. English captions and on-screen text. Caption must include #Pilat. Look for funny moments, memorable quotes and reactions.",
           "checklist": "Caption includes #Pilat",
           "rates": {
             "instagram": {
@@ -46,13 +46,28 @@
           },
           "sources": [
             {
-              "id": "pilat",
-              "url": "https://www.twitch.tv/pilat",
-              "title": "Pilat Twitch streams",
+              "id": "2935500864",
+              "url": "https://www.twitch.tv/videos/2935500864",
+              "title": "VICE CITY DAY 3 - GTA 6 playthrough",
               "channel": "pilat",
-              "duration": 0
+              "duration": 18896
+            },
+            {
+              "id": "2934250222",
+              "url": "https://www.twitch.tv/videos/2934250222",
+              "title": "VICE CITY DAY 2 - GTA playthrough",
+              "channel": "pilat",
+              "duration": 21861
+            },
+            {
+              "id": "2932927228",
+              "url": "https://www.twitch.tv/videos/2932927228",
+              "title": "GTA 6 PLAYTHROUGH",
+              "channel": "pilat",
+              "duration": 21825
             }
-          ]
+          ],
+          "noEssay": true
         }
       ]
     },
@@ -334,7 +349,8 @@
             ],
             "outputKey": "essay",
             "webSearch": true,
-            "includeDate": true
+            "includeDate": true,
+            "onlyWhen": "campaign.noEssay!=true"
           }
         },
         {
@@ -593,7 +609,7 @@
       ]
     },
     "createdAt": "2026-11-22T13:54:20.538Z",
-    "updatedAt": "2026-11-22T21:06:00.570Z"
+    "updatedAt": "2026-11-22T21:18:25.307Z"
   },
   "modules": [
     {

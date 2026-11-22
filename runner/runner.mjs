@@ -48977,9 +48977,9 @@ async function execute4({ input, config, module }, { agent, tools }) {
   }
   if (config.includeDate !== void 0 && typeof config.includeDate !== "boolean") throw new ExecutionFailure("Agent setting includeDate must be true or false.");
   const onlyWhen = config.onlyWhen === void 0 ? "" : config.onlyWhen;
-  const condition = typeof onlyWhen === "string" ? /^(\w+)(!?)=(.*)$/s.exec(onlyWhen) : null;
-  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('Agent setting onlyWhen must be empty, "key=value" or "key!=value" with a key of letters, digits and _.');
-  if (condition && isObject(input) && String(input[condition[1]]) === condition[3] === (condition[2] === "!")) return { output: input, port: "next" };
+  const condition = typeof onlyWhen === "string" ? /^(\w+(?:\.\w+)*)(!?)=(.*)$/s.exec(onlyWhen) : null;
+  if (onlyWhen !== "" && !condition) throw new ExecutionFailure('Agent setting onlyWhen must be empty, "key=value" or "key!=value" with a key of letters, digits and _ (dots for a nested value).');
+  if (condition && isObject(input) && String(condition[1].split(".").reduce((at2, key) => isObject(at2) ? at2[key] : void 0, input)) === condition[3] === (condition[2] === "!")) return { output: input, port: "next" };
   const value = cloneJson(input);
   if ((inputKeys.length > 0 || imageKeys.length > 0 || fileKeys.length > 0 || outputKey) && !isObject(value)) {
     throw new ExecutionFailure("Agent input must be an object when inputKeys, imageKeys, fileKeys or outputKey is set.");
