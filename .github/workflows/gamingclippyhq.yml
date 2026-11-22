@@ -109,6 +109,8 @@ jobs:
           restore-keys: |
             state/gamingclippyhq/
             state-gamingclippyhq-4
+      - name: Restore business assets
+        run: mkdir -p data/state/businesses/d0322bd9-69ec-4b89-bfcb-24d23f6f09f7 && cp -R businesses/gamingclippyhq/state/. data/state/businesses/d0322bd9-69ec-4b89-bfcb-24d23f6f09f7/
       - name: Write credentials for GamingClippyHQ
         env:
           YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN_GAMINGCLIPPYHQ }}
