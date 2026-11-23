@@ -36260,10 +36260,10 @@ var require_response = __commonJS({
         process.nextTick(() => onEnd(null, payload));
       };
       this._lightMyRequest.onEndSuccess = onEndSuccess;
-      let finished2 = false;
+      let finished3 = false;
       const onEndFailure = (err) => {
         if (called) {
-          if (this._lightMyRequest.stream && !finished2) {
+          if (this._lightMyRequest.stream && !finished3) {
             if (!err) {
               err = new Error("response destroyed before completion");
               err.code = "LIGHT_ECONNRESET";
@@ -36286,7 +36286,7 @@ var require_response = __commonJS({
       };
       if (this._lightMyRequest.stream) {
         this.once("finish", () => {
-          finished2 = true;
+          finished3 = true;
           this._lightMyRequest.stream.push(null);
         });
       } else {
@@ -47239,6 +47239,7 @@ function starterModules() {
       field("transcriptUnit", "Transcript unit", "select", "line", ["line", "sentence"]),
       field("transcribeUpTo", "Transcribe uncaptioned videos up to (s)", "number", 0),
       field("transcribeTimeoutMs", "Whisper time limit for Drive sources (ms)", "number", 36e5),
+      field("voiceCheck", "Check the streamer voice (channel sources, needs hotspots)", "boolean", false),
       field("padding", "Section padding (s)", "number", 2),
       field("maxHeight", "Maximum video height", "number", 1080),
       field("minMoment", "Shortest moment (s)", "number", 5),
@@ -49179,6 +49180,8 @@ var DEFAULTS3 = {
   // seconds; a video this short with no captions is transcribed with whisper instead of rejected (0 = never)
   transcribeTimeoutMs: 36e5,
   // whisper on a Google Drive source (no length guard there); the YouTube fallback keeps downloadTimeoutMs
+  voiceCheck: false,
+  // YouTube channel sources with hotspots: keep only the windows where the channel's own voice speaks (voice.py; needs sherpa-onnx in AUTOBIZ_PYTHON)
   // section (maxHeight and downloadTimeoutMs also apply to download and sections)
   padding: 2,
   maxHeight: 1080,
@@ -49229,6 +49232,7 @@ var YT_CHANNEL = /^https?:\/\/(?:www\.|m\.)?youtube\.com\/((?:@[^/?#]+|channel\/
 var isYouTubeChannel = (url) => YT_CHANNEL.test(url);
 var CHANNEL_TRANSCRIPT_SECONDS = 90 * 60;
 var TWITCH_PY = decodeURIComponent(new URL("./media-fetch-python/twitch.py", import.meta.url).pathname);
+var VOICE_PY = decodeURIComponent(new URL("./media-fetch-python/voice.py", import.meta.url).pathname);
 var TWITCH_MAX_WINDOWS = 6;
 var WORDS_FILE = "captions.words.json";
 var TRANSCRIPT_FILE = "transcript.txt";
@@ -49474,7 +49478,7 @@ function parseCaptions(json2) {
   });
 }
 var transcriptLine = (line2) => ({ start: line2.start, text: `[${line2.start.toFixed(1)}] ${line2.speakerChange ? ">> " : ""}${line2.text}` });
-var sentenceLine = (sentence) => ({ start: sentence.start, text: `[${sentence.start.toFixed(1)}-${sentence.end.toFixed(1)}] ${sentence.speakerChange ? ">> " : ""}${sentence.text}` });
+var sentenceLine = (sentence, tag = "") => ({ start: sentence.start, text: `[${sentence.start.toFixed(1)}-${sentence.end.toFixed(1)}] ${tag}${sentence.speakerChange ? ">> " : ""}${sentence.text}` });
 var ABBREVIATIONS = /* @__PURE__ */ new Set(["mr.", "mrs.", "ms.", "dr.", "vs.", "st.", "jr.", "sr.", "u.s.", "no."]);
 var endsSentence = (token) => /[.?!]["'”’)\]]*$/.test(token) && !ABBREVIATIONS.has(token.toLowerCase());
 function quoteAfter(open3, token) {
@@ -49577,12 +49581,13 @@ function hotspotsText({ laughs, entries, transcript, info, duration, window, per
   const points = [...spread(replayPoints(info), window, perKind), ...spread(commentPoints(info, duration), window, perKind), ...laughPoints(laughs, window).slice(0, perKind), ...extra];
   const windows = mergeWindows(points, window, duration);
   if (windows.length === 0) return { text: `## No hotspots found: whole transcript
-${transcript}`, windows: 0 };
-  const text3 = windows.map(({ start, end, labels }) => `${[`## ${start.toFixed(1)}-${end.toFixed(1)}: ${labels.join("; ")}`, ...entries.filter((entry) => entry.start >= start && entry.start <= end).map((entry) => entry.text)].join("\n")}
-
-`).join("");
-  return { text: text3, windows: windows.length };
+${transcript}`, windows: 0, spans: windows };
+  const text3 = windows.map((span) => windowText(span, entries.filter((entry) => entry.start >= span.start && entry.start <= span.end).map((entry) => entry.text))).join("");
+  return { text: text3, windows: windows.length, spans: windows };
 }
+var windowText = ({ start, end, labels }, lines) => `${[`## ${start.toFixed(1)}-${end.toFixed(1)}: ${labels.join("; ")}`, ...lines].join("\n")}
+
+`;
 function whisperToJson3(json2) {
   const { segments } = JSON.parse(json2);
   if (!Array.isArray(segments)) throw new Error("whisper output has no segments list");
@@ -49612,7 +49617,8 @@ function srtToJson3(srt) {
   });
   return JSON.stringify({ events });
 }
-var twitchJson = async (tools, timeoutMs, ...args) => JSON.parse((await tools.run("python3", [TWITCH_PY, ...args], { timeoutMs })).stdout);
+var pyJson = async (script, tools, timeoutMs, ...args) => JSON.parse((await tools.run("python3", [script, ...args], { timeoutMs })).stdout);
+var twitchJson = (tools, timeoutMs, ...args) => pyJson(TWITCH_PY, tools, timeoutMs, ...args);
 function twitchStamp(url) {
   const parts = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/.exec(/[?&]t=([^&#]+)/.exec(url)?.[1] ?? "");
   return parts?.[0] ? Number(parts[1] ?? 0) * 3600 + Number(parts[2] ?? 0) * 60 + Number(parts[3] ?? 0) : void 0;
@@ -49709,8 +49715,9 @@ async function twitchCaptions(job, { tools, yt: yt2, language, window, rejected,
   await tools.writeText("state", `${cache}.points.json`, JSON.stringify(kept.filter((point) => !campaign.includes(point))));
   return { job: next, id, url, duration, points: kept };
 }
+var finished = (e) => e.live_status === void 0 || e.live_status === null || e.live_status === "was_live" || e.live_status === "not_live";
 async function channelVideo(yt2, root, rejected, timeoutMs) {
-  const usable = (e) => typeof e.id === "string" && !rejected.includes(e.id) && typeof e.duration === "number" && e.duration >= 600 && (e.live_status === void 0 || e.live_status === null || e.live_status === "was_live" || e.live_status === "not_live");
+  const usable = (e) => typeof e.id === "string" && !rejected.includes(e.id) && typeof e.duration === "number" && e.duration >= 600 && finished(e);
   for (const tab of ["streams", "videos"]) {
     let entries = [];
     try {
@@ -49723,6 +49730,80 @@ async function channelVideo(yt2, root, rejected, timeoutMs) {
   }
   return void 0;
 }
+var VOICE_MODEL = "/models/campplus.onnx";
+var VOICE_CUTOFF = 0.45;
+var VOICE_MAX_WINDOWS = 10;
+function audioCutter(tools, yt2, videoUrl, timeoutMs) {
+  let direct = "";
+  return async (from, length3, file) => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        direct ||= (await yt2(["-g", "-f", "140/bestaudio", "--no-warnings", "--", videoUrl], timeoutMs)).stdout.trim().split("\n")[0];
+        await tools.run("ffmpeg", ["-v", "error", "-y", "-ss", String(from), "-t", String(length3), "-i", direct, "-ac", "1", "-ar", "16000", file], { timeoutMs });
+        return true;
+      } catch (error) {
+        rethrowStop(error);
+        if (isBlock(error)) throw error;
+        direct = "";
+        if (attempt >= 2) return false;
+      }
+    }
+  };
+}
+var voiceClean = (tools, files, timeoutMs) => tools.run("python3", [VOICE_PY, "remove", ...files], { timeoutMs });
+async function voiceReference(tools, yt2, channel, timeoutMs) {
+  const file = `voices/${channel.replace(/[^\w.-]/g, "_")}.json`;
+  const saved = await tools.readText("state", file).catch((error) => {
+    rethrowStop(error);
+  });
+  try {
+    const { embedding } = JSON.parse(saved ?? "null") ?? {};
+    if (Array.isArray(embedding)) return embedding;
+  } catch {
+  }
+  const listed = (JSON.parse((await yt2(["--flat-playlist", "--playlist-end", "30", "-J", "--no-warnings", "--", `https://www.youtube.com/${channel}/videos`], timeoutMs)).stdout).entries ?? []).filter(isObject4);
+  const wavs = [];
+  for (const { id, duration } of listed.filter((e) => typeof e.id === "string" && typeof e.duration === "number" && e.duration >= 300 && finished(e)).slice(0, 4)) {
+    const cut = audioCutter(tools, yt2, `https://www.youtube.com/watch?v=${id}`, timeoutMs);
+    for (const percent of [20, 40, 60, 80]) {
+      const wav = `voiceref-${id}-${percent}.wav`;
+      if (await cut(Math.floor(duration * percent / 100), 12, wav)) wavs.push(wav);
+    }
+  }
+  if (wavs.length === 0) return void 0;
+  try {
+    const { embedding, ...kept } = await pyJson(VOICE_PY, tools, timeoutMs, "enroll", `${tools.stateDir}${VOICE_MODEL}`, ...wavs);
+    if (!embedding) return void 0;
+    await tools.writeText("state", file, JSON.stringify({ embedding, ...kept }));
+    return embedding;
+  } finally {
+    await voiceClean(tools, wavs, timeoutMs);
+  }
+}
+async function voiceWindows(tools, yt2, { videoUrl, embedding, spans, sentences, timeoutMs }) {
+  await tools.writeText("run", "voice-embedding.json", JSON.stringify(embedding));
+  const cut = audioCutter(tools, yt2, videoUrl, timeoutMs);
+  let text3 = "";
+  let kept = 0;
+  const other = [];
+  try {
+    for (const span of spans.slice(0, VOICE_MAX_WINDOWS)) {
+      const inside = sentences.filter((s) => s.start >= span.start && s.start <= span.end);
+      if (inside.length === 0 || !await cut(span.start, round(span.end - span.start), "voice-window.wav")) continue;
+      await tools.writeText("run", "voice-ranges.json", JSON.stringify(inside.map((s) => [s.start, s.end])));
+      const { scores } = await pyJson(VOICE_PY, tools, timeoutMs, "score", `${tools.stateDir}${VOICE_MODEL}`, "voice-embedding.json", "voice-window.wav", String(span.start), "voice-ranges.json");
+      const own = inside.map((_, i) => (scores[i] ?? 0) >= VOICE_CUTOFF);
+      const spoken = (only) => inside.reduce((n, s, i) => n + (!only || own[i] ? s.end - s.start : 0), 0);
+      if (spoken(true) < 20 || spoken(true) < 0.5 * spoken(false)) continue;
+      kept++;
+      text3 += windowText(span, inside.map((s, i) => sentenceLine(s, own[i] ? "" : "(other voice) ").text));
+      other.push(...inside.filter((_, i) => !own[i]).map((s) => [s.start, s.end]));
+    }
+  } finally {
+    await voiceClean(tools, ["voice-window.wav", "voice-embedding.json", "voice-ranges.json"], timeoutMs);
+  }
+  return { text: text3, windows: kept, other };
+}
 var captions = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
   const languages = list(config, "languages", 1);
@@ -49730,6 +49811,8 @@ var captions = async (job, config, tools, outputKey) => {
   const downloadTimeoutMs = count(config, "downloadTimeoutMs", true);
   const hotspots = config.hotspots ?? DEFAULTS3.hotspots;
   if (typeof hotspots !== "boolean") throw new ExecutionFailure("media-fetch setting hotspots must be true or false.");
+  const voiceCheck = config.voiceCheck ?? DEFAULTS3.voiceCheck;
+  if (typeof voiceCheck !== "boolean") throw new ExecutionFailure("media-fetch setting voiceCheck must be true or false.");
   const commentsToScan = count(config, "commentsToScan", false, true);
   const window = count(config, "hotspotWindow", true);
   const perKind = count(config, "hotspotsPerKind", true, true);
@@ -49746,8 +49829,10 @@ var captions = async (job, config, tools, outputKey) => {
   const twitch = isTwitch(url);
   let extra = [];
   const fromChannel = isYouTubeChannel(url);
+  const channel = fromChannel ? YT_CHANNEL.exec(url)[1] : "";
   if (fromChannel) {
-    const video = await channelVideo(yt2, `https://www.youtube.com/${YT_CHANNEL.exec(url)[1]}`, rejected, timeout);
+    if (voiceCheck && !hotspots) throw new ExecutionFailure("media-fetch setting voiceCheck needs hotspots: true.");
+    const video = await channelVideo(yt2, `https://www.youtube.com/${channel}`, rejected, timeout);
     if (!video) return missing();
     job = { ...job, source: { ...job.source, ...video } };
     ({ id, url, duration: sourceDuration } = sourceOf(job));
@@ -49823,7 +49908,7 @@ var captions = async (job, config, tools, outputKey) => {
     if (lines.length === 0) continue;
     const [sentences, laughs] = [sentencesOf(lines), laughTimes(json2)];
     await tools.writeText("run", WORDS_FILE, JSON.stringify({ lines, sentences, laughs }));
-    const entries = unit === "sentence" ? sentences.map(sentenceLine) : lines.map(transcriptLine);
+    const entries = unit === "sentence" ? sentences.map((sentence) => sentenceLine(sentence)) : lines.map(transcriptLine);
     const transcript = entries.filter((entry) => !fromChannel || entry.start <= CHANNEL_TRANSCRIPT_SECONDS).map((entry) => entry.text).join("\n");
     await tools.writeText("run", TRANSCRIPT_FILE, transcript);
     const usedMoments = momentsName ? { usedMoments: (await readMoments(tools, momentsName)).filter((m) => m.source === id).map(({ start, end }) => ({ start, end })).sort((a, b) => a.start - b.start) } : {};
@@ -49831,9 +49916,17 @@ var captions = async (job, config, tools, outputKey) => {
     if (!hotspots) return { output: output2, port: "next" };
     const info = await readInfo(tools);
     const found = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind, extra: fromChannel ? [...extra, ...livelyPoints(entries, usedMoments.usedMoments ?? [])] : extra });
-    await tools.writeText("run", HOTSPOTS_FILE, found.text);
-    if (fromChannel && found.windows > 0) await tools.writeText("run", TRANSCRIPT_FILE, found.text);
-    return { output: { ...output2, hotspots: { file: HOTSPOTS_FILE, windows: found.windows } }, port: "next" };
+    let [shown, voice] = [found, {}];
+    if (voiceCheck && fromChannel) {
+      const embedding = found.windows > 0 ? await voiceReference(tools, yt2, channel, downloadTimeoutMs) : void 0;
+      const checked = embedding && await voiceWindows(tools, yt2, { videoUrl: url, embedding, spans: found.spans, sentences, timeoutMs: downloadTimeoutMs });
+      if (!checked || checked.windows === 0) return missing();
+      shown = checked;
+      voice = { voice: { other: checked.other } };
+    }
+    await tools.writeText("run", HOTSPOTS_FILE, shown.text);
+    if (fromChannel && shown.windows > 0) await tools.writeText("run", TRANSCRIPT_FILE, shown.text);
+    return { output: { ...output2, ...voice, hotspots: { file: HOTSPOTS_FILE, windows: shown.windows } }, port: "next" };
   }
   return missing();
 };
@@ -49895,6 +49988,11 @@ var sections = async (job, config, tools, outputKey) => {
   const payoffAt = wanted.findIndex(({ role }) => role === "payoff");
   const payoff = payoffAt < 0 ? void 0 : { source: wanted[payoffAt].source.id, start: clips[payoffAt].start, end: clips[payoffAt].end };
   const usedMoments = momentsName && payoff ? await readMoments(tools, momentsName) : [];
+  const others = isObject4(job.voice) && Array.isArray(job.voice.other) && payoff && isObject4(job.source) && job.source.id === payoff.source ? job.voice.other : [];
+  if (payoff && others.reduce((n, [from = 0, to = 0]) => n + Math.max(0, Math.min(to, payoff.end) - Math.max(from, payoff.start)), 0) > 0.4 * (payoff.end - payoff.start)) {
+    const refusals = typeof job.momentRefusals === "number" ? job.momentRefusals : 0;
+    return { output: { ...job, momentRefusals: refusals + 1, agentErrors: [`The payoff (${payoff.start}-${payoff.end}) is mostly another voice, not the streamer. Choose a payoff where the streamer speaks, away from the "(other voice)" lines.`] }, port: "missing" };
+  }
   let reused = false;
   const scenes = !payoff ? [] : wanted.flatMap(({ role, source }, i) => role === "payoff" || role === "beat" ? [{ source: source.id, start: clips[i].start, end: clips[i].end }] : []);
   for (const scene of [...scenes].sort((a, b) => Number(b.start === payoff?.start) - Number(a.start === payoff?.start))) {
@@ -52932,6 +53030,11 @@ var readLimitBytes = 32 * 1024 * 1024;
 function storageKey(id) {
   return /^[A-Za-z0-9_-]{1,128}$/.test(id) ? id : createHash("sha256").update(id).digest("hex");
 }
+function signedInArgs(args) {
+  const at2 = args.findIndex((arg, i) => arg === "--extractor-args" && args[i + 1]?.startsWith("youtube:"));
+  if (at2 < 0) return ["--extractor-args", "youtube:player_js_variant=tv", ...args];
+  return args.map((arg, i) => i === at2 + 1 ? `youtube:player_js_variant=tv;${arg.slice("youtube:".length)}` : arg);
+}
 function createRunTools(options) {
   const runDir = resolve(options.runDir);
   const stateDir = resolve(options.stateDir);
@@ -52958,7 +53061,7 @@ function createRunTools(options) {
     if (signal?.aborted) throw new ExecutionCancelled();
     const env = { LANG: "C.UTF-8", LC_ALL: "C.UTF-8" };
     for (const key of ["PATH", "HOME", "TMPDIR", ...toolEnvKeys[tool] ?? []]) if (process.env[key] !== void 0) env[key] = process.env[key];
-    const toolArgs = tool === "yt-dlp" && process.env.YTDLP_COOKIES_FILE ? ["--cookies", process.env.YTDLP_COOKIES_FILE, ...args] : [...args];
+    const toolArgs = tool === "yt-dlp" && process.env.YTDLP_COOKIES_FILE ? ["--cookies", process.env.YTDLP_COOKIES_FILE, ...signedInArgs(args)] : [...args];
     return new Promise((resolvePromise, reject) => {
       const child = spawn2(options.executables?.[tool] ?? tool, toolArgs, { cwd: runDir, env, shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"] });
       const stdout = [];
@@ -57037,7 +57140,7 @@ function toolExecutables(env = process.env) {
 }
 
 // apps/server/src/headless.ts
-var finished = /* @__PURE__ */ new Set(["completed", "failed", "cancelled", "interrupted"]);
+var finished2 = /* @__PURE__ */ new Set(["completed", "failed", "cancelled", "interrupted"]);
 async function call(app, method, url, status, payload) {
   const response = await app.inject({ method, url, payload });
   const body = response.json();
@@ -57100,7 +57203,7 @@ async function runHeadless(options) {
           await rename3(join10(runsDir, `${id}.json.tmp`), join10(runsDir, `${id}.json`));
           saved = json2;
         }
-        if (finished.has(run2.status)) return run2;
+        if (finished2.has(run2.status)) return run2;
         await delay(pollMs);
       }
     };
