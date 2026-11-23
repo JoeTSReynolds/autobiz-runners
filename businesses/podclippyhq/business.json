@@ -1156,6 +1156,12 @@
           "default": 3600000
         },
         {
+          "key": "voiceCheck",
+          "label": "Check the streamer voice (channel sources, needs hotspots)",
+          "type": "boolean",
+          "default": false
+        },
+        {
           "key": "padding",
           "label": "Section padding (s)",
           "type": "number",
@@ -1365,6 +1371,7 @@
         "transcriptUnit": "line",
         "transcribeUpTo": 0,
         "transcribeTimeoutMs": 3600000,
+        "voiceCheck": false,
         "padding": 2,
         "maxHeight": 1080,
         "minMoment": 5,

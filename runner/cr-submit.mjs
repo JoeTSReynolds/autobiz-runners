@@ -23,6 +23,7 @@ async function dismissAnnouncements(page) {
 var CAMPAIGN = /^https:\/\/contentrewards\.com\/c\/campaigns\/[0-9a-f-]{36}$/i;
 var ERROR = /can['’]t|invalid|already|\bnot\b|error|failed/i;
 var ITEM_MS = 9e4;
+var NOT_THIS_CLIP = /^(?:\d+ (?:older )?posts? can['’]t be submitted|no new clips yet)$/i;
 async function submitClip(page, campaignUrl, clipUrl, shot) {
   try {
     await dismissAnnouncements(page);
@@ -71,7 +72,9 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
         if (found === void 0) return { submitted: true };
         continue;
       }
-      const added = (await dialog.innerText()).split("\n").map((line) => line.trim()).filter((line) => line && !before.has(line)).join(" ");
+      const text = await dialog.innerText();
+      if (/submitting/i.test(text)) continue;
+      const added = text.split("\n").map((line) => line.trim()).filter((line) => line && !before.has(line) && !NOT_THIS_CLIP.test(line)).join(" ");
       if (ERROR.test(added)) return { submitted: false, reason: added.replace(/\s+/g, " ").slice(0, 300) };
       if (/submitted|success/i.test(added)) return { submitted: true };
     }
