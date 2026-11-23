@@ -50184,7 +50184,7 @@ var frinkiac = async (job, config, tools, outputKey) => {
     const source = { id, url: `${ARCHIVE_URL}${item}/${name.split("/").map(encodeURIComponent).join("/")}`, title: name.split("/").at(-1).replace(/\.mkv$/, ""), channel: text(brief.show, item), duration: Number(file.length) };
     return { output: { ...job, [outputKey]: source, hint: { start: at2, end: at2, text: text(top.Content), quote }, located: { method: "frinkiac", searched: i + 1 } }, port: "next" };
   }
-  throw new ExecutionFailure("media-fetch frinkiac: no quote matched an unused archive episode.");
+  return { output: { ...job, agentErrors: [`None of these quotes is in an unused archive episode: ${quotes.map((quote) => JSON.stringify(quote)).join(", ")}. Choose 6 lines from different, less famous scenes.`] }, port: "missing" };
 };
 var modes = { search, captions, section, sections, download, index, locate, frinkiac };
 async function execute11({ input, config }, { tools }) {
