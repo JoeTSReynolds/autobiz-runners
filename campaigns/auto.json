@@ -1,1 +1,46 @@
-[]
+[
+  {
+    "id": "5-000-dylan-page-gta-vi-marathon-campaig",
+    "url": "https://contentrewards.com/c/campaigns/39753a1a-f1f3-491b-a8f6-0cfee0af0c97",
+    "channel": "gaming",
+    "active": true,
+    "brief": "Only TikTok, Instagram Reels, Twitter(x) and YouTube Shorts are accepted.\n\nUse footage from Dylan Page’s GTA 6 marathon starting November 19, 2026. Streams, VODs and clips from the marathon are all accepted.\n\nVideos must be in 9:16 vertical format.\n\nDylan must be the main focus throughout the clip. Clips where he only appears in the intro will be rejected.\n\nInclude #DylanPage in the caption.\n\nPost on an account that fits the content, such as gaming, streamer or entertainment pages.\n\nNo misleading edits, false claims or clips taken out of context to damage Dylan’s reputation.\n\nNo added watermarks or third-party branding. Logos already present in the original footage are allowed.\n\nThumbnails and captions must accurately reflect the clip. Do not reuse the same thumbnail across different clips. All captions and subtitles must be in English.\n\nSubmit only your own edits. Copying or reposting another creator’s edit is not allowed. You may publish your own edit on multiple accepted platforms.\n\nCollab posts are not accepted.\n\nAny artificial manipulation of views or engagement will result in rejection. Botting will result in a permanent ban from the campaign.\n\nAI-generated footage, voices or fabricated reactions will result in a permanent ban from the campaign. Automatic subtitles are allowed.",
+    "requirements": "",
+    "checklist": "",
+    "featured": "Dylan Page",
+    "disclosure": "#ad",
+    "rates": {
+      "tiktok": {
+        "rate": 1.2,
+        "minPayout": 4,
+        "maxPayout": 250
+      },
+      "instagram": {
+        "rate": 1.2,
+        "minPayout": 4,
+        "maxPayout": 250
+      },
+      "youtube": {
+        "rate": 1.2,
+        "minPayout": 4,
+        "maxPayout": 250
+      },
+      "x": {
+        "rate": 1.2,
+        "minPayout": 4,
+        "maxPayout": 250
+      }
+    },
+    "sources": [
+      {
+        "id": "yt-dylan.page.",
+        "url": "https://www.youtube.com/@dylan.page.",
+        "title": "$5,000 Dylan Page GTA VI Marathon Campaign",
+        "channel": "dylan.page.",
+        "duration": 0
+      }
+    ],
+    "needsSourceInfo": true,
+    "noEssay": true
+  }
+]
