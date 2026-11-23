@@ -95,7 +95,7 @@ function sourceFromUrl(url, title) {
   const file = /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]+)/.exec(url)?.[1];
   return file ? { id: file, url: `https://drive.google.com/file/d/${file}/view`, title, channel: "", duration: 0 } : null;
 }
-function draftFromCampaign(json, candidate, channel, { linked = "", sourceUrl = "" } = {}) {
+function draftFromCampaign(json, candidate, channel, { linked = "", sourceUrl = "", captionTags = [] } = {}) {
   const o = unwrap(json);
   const cfg = o.configuration ?? {}, caption = cfg.rules?.caption ?? {};
   const refs = cfg.referenceMaterial ?? [];
@@ -114,6 +114,8 @@ function draftFromCampaign(json, candidate, channel, { linked = "", sourceUrl = 
   for (const p of cfg.payoutModel ?? []) rates[String(p.platform)] = { rate: p.rate / 100, minPayout: p.minPayout / 100, maxPayout: p.maxPayout / 100 };
   const noEssay = /reachclipping|game the system|AI-generated/i.test(`${JSON.stringify(o)} ${linked}`);
   const own = plain(String(cfg.creator?.description ?? ""));
+  const said = `${JSON.stringify(o)} ${linked}`.toLowerCase();
+  const spoken = captionTags.filter((t) => /^[#@][\p{L}\p{N}_.]+$/u.test(t) && said.includes(t.toLowerCase()));
   return {
     id: candidate.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || candidate.id.slice(0, 8),
     url: candidate.url,
@@ -124,7 +126,7 @@ function draftFromCampaign(json, candidate, channel, { linked = "", sourceUrl = 
 ${linked}`].filter(Boolean).join("\n").slice(0, 3e3),
     checklist: (cfg.rules?.reviewerOnly ?? []).join("\n"),
     featured: "",
-    disclosure: ["#ad", ...caption.hashtags ?? [], ...caption.mentions ?? []].join(" "),
+    disclosure: [...new Map(["#ad", ...caption.hashtags ?? [], ...caption.mentions ?? [], ...spoken].map((t) => [t.toLowerCase(), t])).values()].join(" "),
     rates,
     sources,
     driveLinks: urls.filter((u) => /^https:\/\/(?:drive|docs)\.google\.com\//.test(u)),
@@ -198,7 +200,7 @@ async function fitCheck(candidates, ask, n = 5, lane = "podcast") {
 
 ${top.map((c) => JSON.stringify({ id: c.id, title: c.title, categories: c.categories, description: c.description?.slice(0, 400), ...c.rules ? { rules: c.rules.slice(0, 8e3) } : {} })).join("\n")}
 
-Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "...", "featured": "the one person or show the clips must feature, as the campaign names them, or empty if unclear", "sourceUrl": "the official Twitch or YouTube channel URL when the footage is only named in words, or empty"}], one entry per campaign.`;
+Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "...", "featured": "the one person or show the clips must feature, as the campaign names them, or empty if unclear", "captionTags": ["every #hashtag or @mention the rules say must be in the caption, exactly as written"], "sourceUrl": "the official Twitch or YouTube channel URL when the footage is only named in words, or empty"}], one entry per campaign.`;
   let verdicts = [];
   try {
     const reply = await ask(prompt), from = reply.indexOf("["), to = reply.lastIndexOf("]");
@@ -208,7 +210,7 @@ Reply with only a JSON array: [{"id": "...", "fit": true|false, "reason": "...",
   }
   return top.map((c) => {
     const v = verdicts.find((x) => typeof x === "object" && x !== null && x.id === c.id && typeof x.fit === "boolean");
-    return v ? { id: c.id, fit: v.fit, reason: String(v.reason ?? ""), ...typeof v.featured === "string" ? { featured: v.featured.trim() } : {}, ...typeof v.sourceUrl === "string" && v.sourceUrl.trim() ? { sourceUrl: v.sourceUrl.trim() } : {} } : { id: c.id, fit: false, reason: "no valid verdict" };
+    return v ? { id: c.id, fit: v.fit, reason: String(v.reason ?? ""), ...typeof v.featured === "string" ? { featured: v.featured.trim() } : {}, ...typeof v.sourceUrl === "string" && v.sourceUrl.trim() ? { sourceUrl: v.sourceUrl.trim() } : {}, ...Array.isArray(v.captionTags) ? { captionTags: v.captionTags.filter((t) => typeof t === "string").map((t) => t.trim()) } : {} } : { id: c.id, fit: false, reason: "no valid verdict" };
   });
 }
 function report({ retired, drafted, gamingDrafted, suggested, blocked: skipped, wouldJoin }) {
@@ -356,7 +358,7 @@ ${page_.slice(0, 6e3)}`;
         } catch {
         }
       }
-      const drafted_ = (c, f) => draftFromCampaign(details.get(c.id), c, channel, { linked: linked.get(c.id), sourceUrl: f?.sourceUrl });
+      const drafted_ = (c, f) => draftFromCampaign(details.get(c.id), c, channel, { linked: linked.get(c.id), sourceUrl: f?.sourceUrl, captionTags: f?.captionTags });
       const fits = top.length ? await fitCheck(top, deps.ask, 10, channel) : [];
       const judged = fits.filter((f) => f.reason !== "no valid verdict");
       if (top.length && judged.length < fits.length) notes.push(`Fit check gave no usable answer for ${fits.length - judged.length} of ${fits.length} campaigns; they will be asked again next run`);
@@ -392,7 +394,7 @@ ${page_.slice(0, 6e3)}`;
             continue;
           }
           mark(id, "joined");
-          const json = details.get(c.id) ?? await deps.fetchCampaign(c.id), fit = fits.find((f) => f.id === id), record = details.has(c.id) ? drafted_(c, fit) : draftFromCampaign(json, c, channel, { sourceUrl: fit?.sourceUrl });
+          const json = details.get(c.id) ?? await deps.fetchCampaign(c.id), fit = fits.find((f) => f.id === id), record = details.has(c.id) ? drafted_(c, fit) : draftFromCampaign(json, c, channel, { sourceUrl: fit?.sourceUrl, captionTags: fit?.captionTags });
           if (hasKickSource(json)) notes.push(`${c.title}: Kick sources are not supported yet`);
           record.featured = fit?.featured ?? "";
           if (env.SCOUT_AUTO) {
