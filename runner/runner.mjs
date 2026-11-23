@@ -49181,7 +49181,7 @@ var DEFAULTS3 = {
   transcribeTimeoutMs: 36e5,
   // whisper on a Google Drive source (no length guard there); the YouTube fallback keeps downloadTimeoutMs
   voiceCheck: false,
-  // YouTube channel sources with hotspots: keep only the windows where the channel's own voice speaks (voice.py; needs sherpa-onnx in AUTOBIZ_PYTHON)
+  // YouTube channel sources: scan the whole stream for where the channel's own voice talks and keep only those windows (voice.py; needs sherpa-onnx in AUTOBIZ_PYTHON)
   // section (maxHeight and downloadTimeoutMs also apply to download and sections)
   padding: 2,
   maxHeight: 1080,
@@ -49583,7 +49583,7 @@ function hotspotsText({ laughs, entries, transcript, info, duration, window, per
   if (windows.length === 0) return { text: `## No hotspots found: whole transcript
 ${transcript}`, windows: 0, spans: windows };
   const text3 = windows.map((span) => windowText(span, entries.filter((entry) => entry.start >= span.start && entry.start <= span.end).map((entry) => entry.text))).join("");
-  return { text: text3, windows: windows.length, spans: windows };
+  return { text: text3, windows: windows.length };
 }
 var windowText = ({ start, end, labels }, lines) => `${[`## ${start.toFixed(1)}-${end.toFixed(1)}: ${labels.join("; ")}`, ...lines].join("\n")}
 
@@ -49780,29 +49780,34 @@ async function voiceReference(tools, yt2, channel, timeoutMs) {
     await voiceClean(tools, wavs, timeoutMs);
   }
 }
-async function voiceWindows(tools, yt2, { videoUrl, embedding, spans, sentences, timeoutMs }) {
-  await tools.writeText("run", "voice-embedding.json", JSON.stringify(embedding));
-  const cut = audioCutter(tools, yt2, videoUrl, timeoutMs);
-  let text3 = "";
-  let kept = 0;
-  const other = [];
+async function voiceWindows(tools, yt2, { url, embedding, sentences, used, timeoutMs }) {
+  const files = ["voice-audio", "voice-embedding.json", "voice-sentences.json"];
   try {
-    for (const span of spans.slice(0, VOICE_MAX_WINDOWS)) {
-      const inside = sentences.filter((s) => s.start >= span.start && s.start <= span.end);
-      if (inside.length === 0 || !await cut(span.start, round(span.end - span.start), "voice-window.wav")) continue;
-      await tools.writeText("run", "voice-ranges.json", JSON.stringify(inside.map((s) => [s.start, s.end])));
-      const { scores } = await pyJson(VOICE_PY, tools, timeoutMs, "score", `${tools.stateDir}${VOICE_MODEL}`, "voice-embedding.json", "voice-window.wav", String(span.start), "voice-ranges.json");
+    try {
+      await yt2(["-f", "249/250/140", "-N", "8", "--http-chunk-size", "10M", "-o", files[0], "--no-warnings", "--", url], timeoutMs);
+    } catch (error) {
+      if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure && !/^\S+ exceeded its \d+ ms time limit/.test(error.message) || isBlock(error)) throw error;
+      return void 0;
+    }
+    await tools.writeText("run", files[1], JSON.stringify(embedding));
+    await tools.writeText("run", files[2], JSON.stringify(sentences.map(({ start, end }) => ({ start, end }))));
+    const { windows } = await pyJson(VOICE_PY, tools, timeoutMs, "scan", `${tools.stateDir}${VOICE_MODEL}`, files[1], files[0], files[2]);
+    const kept = windows.flatMap(({ start, end, scores }) => {
+      const inside = sentences.filter((s) => s.start >= start && s.start < end);
       const own = inside.map((_, i) => (scores[i] ?? 0) >= VOICE_CUTOFF);
       const spoken = (only) => inside.reduce((n, s, i) => n + (!only || own[i] ? s.end - s.start : 0), 0);
-      if (spoken(true) < 20 || spoken(true) < 0.5 * spoken(false)) continue;
-      kept++;
-      text3 += windowText(span, inside.map((s, i) => sentenceLine(s, own[i] ? "" : "(other voice) ").text));
-      other.push(...inside.filter((_, i) => !own[i]).map((s) => [s.start, s.end]));
-    }
+      const reused = used.reduce((n, m) => n + Math.max(0, Math.min(m.end, end) - Math.max(m.start, start)), 0);
+      return spoken(true) < 20 || spoken(true) < 0.5 * spoken(false) || reused > 0.5 * (end - start) ? [] : [{ span: { start, end, labels: ["streamer talking"] }, inside, own, mine: spoken(true) }];
+    }).sort((a, b) => b.mine - a.mine).slice(0, VOICE_MAX_WINDOWS).sort((a, b) => a.span.start - b.span.start);
+    if (kept.length === 0) return void 0;
+    return {
+      text: kept.map(({ span, inside, own }) => windowText(span, inside.map((s, i) => sentenceLine(s, own[i] ? "" : "(other voice) ").text))).join(""),
+      windows: kept.length,
+      other: kept.flatMap(({ inside, own }) => inside.filter((_, i) => !own[i]).map((s) => [s.start, s.end]))
+    };
   } finally {
-    await voiceClean(tools, ["voice-window.wav", "voice-embedding.json", "voice-ranges.json"], timeoutMs);
+    await voiceClean(tools, files, timeoutMs);
   }
-  return { text: text3, windows: kept, other };
 }
 var captions = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
@@ -49831,7 +49836,6 @@ var captions = async (job, config, tools, outputKey) => {
   const fromChannel = isYouTubeChannel(url);
   const channel = fromChannel ? YT_CHANNEL.exec(url)[1] : "";
   if (fromChannel) {
-    if (voiceCheck && !hotspots) throw new ExecutionFailure("media-fetch setting voiceCheck needs hotspots: true.");
     const video = await channelVideo(yt2, `https://www.youtube.com/${channel}`, rejected, timeout);
     if (!video) return missing();
     job = { ...job, source: { ...job.source, ...video } };
@@ -49913,16 +49917,18 @@ var captions = async (job, config, tools, outputKey) => {
     await tools.writeText("run", TRANSCRIPT_FILE, transcript);
     const usedMoments = momentsName ? { usedMoments: (await readMoments(tools, momentsName)).filter((m) => m.source === id).map(({ start, end }) => ({ start, end })).sort((a, b) => a.start - b.start) } : {};
     const output2 = { ...job, ...usedMoments, [outputKey]: { file: TRANSCRIPT_FILE, wordsFile: WORDS_FILE, language } };
-    if (!hotspots) return { output: output2, port: "next" };
-    const info = await readInfo(tools);
-    const found = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind, extra: fromChannel ? [...extra, ...livelyPoints(entries, usedMoments.usedMoments ?? [])] : extra });
-    let [shown, voice] = [found, {}];
+    let shown;
+    let voice = {};
     if (voiceCheck && fromChannel) {
-      const embedding = found.windows > 0 ? await voiceReference(tools, yt2, channel, downloadTimeoutMs) : void 0;
-      const checked = embedding && await voiceWindows(tools, yt2, { videoUrl: url, embedding, spans: found.spans, sentences, timeoutMs: downloadTimeoutMs });
-      if (!checked || checked.windows === 0) return missing();
+      const embedding = await voiceReference(tools, yt2, channel, downloadTimeoutMs);
+      const checked = embedding && await voiceWindows(tools, yt2, { url, embedding, sentences, used: usedMoments.usedMoments ?? [], timeoutMs: downloadTimeoutMs });
+      if (!checked) return missing();
       shown = checked;
       voice = { voice: { other: checked.other } };
+    } else {
+      if (!hotspots) return { output: output2, port: "next" };
+      const info = await readInfo(tools);
+      shown = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind, extra: fromChannel ? [...extra, ...livelyPoints(entries, usedMoments.usedMoments ?? [])] : extra });
     }
     await tools.writeText("run", HOTSPOTS_FILE, shown.text);
     if (fromChannel && shown.windows > 0) await tools.writeText("run", TRANSCRIPT_FILE, shown.text);
