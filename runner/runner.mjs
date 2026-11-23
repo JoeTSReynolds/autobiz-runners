@@ -49190,7 +49190,7 @@ var DEFAULTS3 = {
   clipLead: 3.5,
   clipTail: 5,
   payoffTail: 15,
-  // section, sections: false stops yt-dlp's --download-archive (a video is then reusable); momentsFile, a state file name, records used payoff moments so one source can be cut many times without repeats ('' = off)
+  // section, sections: false stops yt-dlp's --download-archive (a video is then reusable); momentsFile, a state file name, records the used payoff and beat moments so one source can be cut many times without repeats ('' = off)
   archive: true,
   momentsFile: "",
   // yt-dlp calls: retries after YouTube's bot check or a 429, and the first wait (doubles each retry)
@@ -49225,6 +49225,9 @@ var isDrive = (url) => DRIVE.test(url);
 var TWITCH_VOD = /^https?:\/\/(?:www\.|m\.)?twitch\.tv\/(?:\w+\/)?videos\/(\d+)/i;
 var TWITCH_CHANNEL = /^https?:\/\/(?:www\.|m\.)?twitch\.tv\/(?!videos(?:[/?#]|$))(\w{2,25})(?:[/?#]|$)/i;
 var isTwitch = (url) => TWITCH_VOD.test(url) || TWITCH_CHANNEL.test(url);
+var YT_CHANNEL = /^https?:\/\/(?:www\.|m\.)?youtube\.com\/((?:@[^/?#]+|channel\/UC[\w-]+))(?:\/(?:live|streams|videos|featured))?\/?(?:[?#].*)?$/i;
+var isYouTubeChannel = (url) => YT_CHANNEL.test(url);
+var CHANNEL_TRANSCRIPT_SECONDS = 90 * 60;
 var TWITCH_PY = decodeURIComponent(new URL("./media-fetch-python/twitch.py", import.meta.url).pathname);
 var TWITCH_MAX_WINDOWS = 6;
 var WORDS_FILE = "captions.words.json";
@@ -49557,6 +49560,19 @@ function mergeWindows(points, window, duration) {
   }
   return windows;
 }
+var REACTION = /\b(?:chat|guys|bro|dude|bruh|lmao|oh my god|what the (?:fuck|hell)|holy (?:shit|fuck)|no way|are you (?:serious|kidding)|i swear|i can'?t believe|let'?s go+|fuck|shit)\b/gi;
+function livelyPoints(entries, used, most = 8, minScore = 3) {
+  const bins = /* @__PURE__ */ new Map();
+  for (const { start, text: text3 } of entries) bins.set(Math.floor(start / 120), (bins.get(Math.floor(start / 120)) ?? 0) + (text3.match(REACTION)?.length ?? 0));
+  const kept = [];
+  for (const [bin, score] of [...bins].sort((a, b) => b[1] - a[1] || a[0] - b[0])) {
+    if (score < minScore || kept.length >= most) break;
+    const [from, to, at2] = [bin * 120, bin * 120 + 120, bin * 120 + 60];
+    if (used.some((m) => m.start < to && m.end > from) || kept.some((p) => Math.abs(p.at - at2) < 300)) continue;
+    kept.push({ at: at2, label: `lively moment (${score} reactions)`, score });
+  }
+  return kept;
+}
 function hotspotsText({ laughs, entries, transcript, info, duration, window, perKind, extra = [] }) {
   const points = [...spread(replayPoints(info), window, perKind), ...spread(commentPoints(info, duration), window, perKind), ...laughPoints(laughs, window).slice(0, perKind), ...extra];
   const windows = mergeWindows(points, window, duration);
@@ -49693,6 +49709,20 @@ async function twitchCaptions(job, { tools, yt: yt2, language, window, rejected,
   await tools.writeText("state", `${cache}.points.json`, JSON.stringify(kept.filter((point) => !campaign.includes(point))));
   return { job: next, id, url, duration, points: kept };
 }
+async function channelVideo(yt2, root, rejected, timeoutMs) {
+  const usable = (e) => typeof e.id === "string" && !rejected.includes(e.id) && typeof e.duration === "number" && e.duration >= 600 && (e.live_status === void 0 || e.live_status === null || e.live_status === "was_live" || e.live_status === "not_live");
+  for (const tab of ["streams", "videos"]) {
+    let entries = [];
+    try {
+      entries = (JSON.parse((await yt2(["--flat-playlist", "--playlist-end", "15", "-J", "--no-warnings", "--", `${root}/${tab}`], timeoutMs)).stdout).entries ?? []).filter(isObject4);
+    } catch (error) {
+      if (error instanceof ExecutionCancelled || error instanceof ExecutionLimitFailure && !/^\S+ exceeded its \d+ ms time limit/.test(error.message)) throw error;
+    }
+    const found = entries.find((e) => usable(e) && (tab === "videos" || e.live_status === "was_live"));
+    if (found) return summary(found);
+  }
+  return void 0;
+}
 var captions = async (job, config, tools, outputKey) => {
   const yt2 = ytDlp(config, tools);
   const languages = list(config, "languages", 1);
@@ -49715,6 +49745,13 @@ var captions = async (job, config, tools, outputKey) => {
   const drive = isDrive(url);
   const twitch = isTwitch(url);
   let extra = [];
+  const fromChannel = isYouTubeChannel(url);
+  if (fromChannel) {
+    const video = await channelVideo(yt2, `https://www.youtube.com/${YT_CHANNEL.exec(url)[1]}`, rejected, timeout);
+    if (!video) return missing();
+    job = { ...job, source: { ...job.source, ...video } };
+    ({ id, url, duration: sourceDuration } = sourceOf(job));
+  }
   const transcribe = async (whisperTimeoutMs = downloadTimeoutMs) => {
     await tools.run("yt-dlp", ["-f", "ba[ext=m4a]/ba", "-o", "captions-audio", "--no-warnings", "--", url], { timeoutMs: downloadTimeoutMs });
     await tools.run("whisper-ctranslate2", ["captions-audio", "--model", WHISPER_MODEL, "--device", "cpu", "--compute_type", "int8", "--word_timestamps", "True", "--output_format", "json", "--output_dir", "."], { timeoutMs: whisperTimeoutMs });
@@ -49760,7 +49797,7 @@ var captions = async (job, config, tools, outputKey) => {
     if (error instanceof ExecutionCancelled) throw error;
     if (!isBlock(error)) return missing();
     const refused = `YouTube refused the captions request (bot check or rate limit): ${error.message.slice(-300)}`;
-    if ((sourceDuration ?? 0) > downloadTimeoutMs / 1e3 * 2) return missing();
+    if (fromChannel || (sourceDuration ?? 0) > downloadTimeoutMs / 1e3 * 2) return missing();
     try {
       await transcribe();
     } catch (fallback) {
@@ -49772,7 +49809,7 @@ var captions = async (job, config, tools, outputKey) => {
     for (const language of languages) if (parseCaptions(await tools.readText("run", `captions.${language}.json3`)).length) return true;
     return false;
   };
-  if (!archive && !twitch && transcribeUpTo > 0 && (sourceDuration ?? Infinity) <= transcribeUpTo && !await captioned()) {
+  if (!archive && !twitch && !fromChannel && transcribeUpTo > 0 && (sourceDuration ?? Infinity) <= transcribeUpTo && !await captioned()) {
     try {
       await transcribe();
     } catch (fallback) {
@@ -49787,14 +49824,15 @@ var captions = async (job, config, tools, outputKey) => {
     const [sentences, laughs] = [sentencesOf(lines), laughTimes(json2)];
     await tools.writeText("run", WORDS_FILE, JSON.stringify({ lines, sentences, laughs }));
     const entries = unit === "sentence" ? sentences.map(sentenceLine) : lines.map(transcriptLine);
-    const transcript = entries.map((entry) => entry.text).join("\n");
+    const transcript = entries.filter((entry) => !fromChannel || entry.start <= CHANNEL_TRANSCRIPT_SECONDS).map((entry) => entry.text).join("\n");
     await tools.writeText("run", TRANSCRIPT_FILE, transcript);
     const usedMoments = momentsName ? { usedMoments: (await readMoments(tools, momentsName)).filter((m) => m.source === id).map(({ start, end }) => ({ start, end })).sort((a, b) => a.start - b.start) } : {};
     const output2 = { ...job, ...usedMoments, [outputKey]: { file: TRANSCRIPT_FILE, wordsFile: WORDS_FILE, language } };
     if (!hotspots) return { output: output2, port: "next" };
     const info = await readInfo(tools);
-    const found = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind, extra });
+    const found = hotspotsText({ laughs, entries, transcript, info, duration: typeof info.duration === "number" ? info.duration : sourceDuration ?? Infinity, window, perKind, extra: fromChannel ? [...extra, ...livelyPoints(entries, usedMoments.usedMoments ?? [])] : extra });
     await tools.writeText("run", HOTSPOTS_FILE, found.text);
+    if (fromChannel && found.windows > 0) await tools.writeText("run", TRANSCRIPT_FILE, found.text);
     return { output: { ...output2, hotspots: { file: HOTSPOTS_FILE, windows: found.windows } }, port: "next" };
   }
   return missing();
@@ -49858,19 +49896,16 @@ var sections = async (job, config, tools, outputKey) => {
   const payoff = payoffAt < 0 ? void 0 : { source: wanted[payoffAt].source.id, start: clips[payoffAt].start, end: clips[payoffAt].end };
   const usedMoments = momentsName && payoff ? await readMoments(tools, momentsName) : [];
   let reused = false;
-  if (payoff) {
-    for (const used of usedMoments) {
-      if (used.source !== payoff.source) continue;
-      const overlap = Math.min(used.end, payoff.end) - Math.max(used.start, payoff.start);
-      if (overlap > 0.5 * Math.min(used.end - used.start, payoff.end - payoff.start)) {
-        const refusals = typeof job.momentRefusals === "number" ? job.momentRefusals : 0;
-        if (refusals >= 2) {
-          reused = true;
-          break;
-        }
-        return { output: { ...job, momentRefusals: refusals + 1, momentOverlap: { start: payoff.start, end: payoff.end, with: { start: used.start, end: used.end } } }, port: "missing" };
-      }
+  const scenes = !payoff ? [] : wanted.flatMap(({ role, source }, i) => role === "payoff" || role === "beat" ? [{ source: source.id, start: clips[i].start, end: clips[i].end }] : []);
+  for (const scene of [...scenes].sort((a, b) => Number(b.start === payoff?.start) - Number(a.start === payoff?.start))) {
+    const used = usedMoments.find((m) => m.source === scene.source && Math.min(m.end, scene.end) - Math.max(m.start, scene.start) > 0.5 * Math.min(m.end - m.start, scene.end - scene.start));
+    if (!used) continue;
+    const refusals = typeof job.momentRefusals === "number" ? job.momentRefusals : 0;
+    if (refusals >= 2) {
+      reused = true;
+      break;
     }
+    return { output: { ...job, momentRefusals: refusals + 1, momentOverlap: { start: scene.start, end: scene.end, with: { start: used.start, end: used.end } } }, port: "missing" };
   }
   const groups = /* @__PURE__ */ new Map();
   for (const { source, from, to } of wanted) {
@@ -49925,7 +49960,7 @@ var sections = async (job, config, tools, outputKey) => {
     await tools.writeText("state", "archive.txt", `${seen}${seen && !seen.endsWith("\n") ? "\n" : ""}${archived.map(({ source }) => `archive ${source.id}
 `).join("")}`);
   }
-  if (momentsName && payoff) await tools.writeText("state", momentsName, JSON.stringify([...usedMoments, { ...payoff, at: (/* @__PURE__ */ new Date()).toISOString() }], null, 2));
+  if (momentsName && payoff) await tools.writeText("state", momentsName, JSON.stringify([...usedMoments, ...scenes.map((scene) => ({ ...scene, at: (/* @__PURE__ */ new Date()).toISOString() }))], null, 2));
   return { output: { ...job, ...reused && { momentReused: true }, [outputKey]: found }, port: "next" };
 };
 function httpLink(value) {
