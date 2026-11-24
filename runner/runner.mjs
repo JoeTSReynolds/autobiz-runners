@@ -57175,17 +57175,18 @@ function failedInMediaFetch(run2) {
 }
 function publishedItems(run2) {
   const found = [];
-  const walk = (value, title, campaign) => {
-    if (Array.isArray(value)) return value.forEach((item) => walk(item, title, campaign));
+  const walk = (value, title, campaign, pays) => {
+    if (Array.isArray(value)) return value.forEach((item) => walk(item, title, campaign, pays));
     if (typeof value !== "object" || value === null) return;
     const node = value;
     const meta = node.meta;
     const here = typeof meta?.title === "string" ? meta.title : title;
     const record2 = node.campaign;
     const camp = typeof record2?.url === "string" ? record2.url : campaign;
+    const paid = typeof record2?.url === "string" ? record2.rates && typeof record2.rates === "object" ? Object.keys(record2.rates) : void 0 : pays;
     const [platform, url] = typeof node.videoId === "string" ? ["youtube", node.url] : typeof node.mediaId === "string" ? ["instagram", node.permalink] : [];
-    if (platform && typeof url === "string") found.push({ platform, url, ...here && { title: here }, ...camp && { campaign: camp } });
-    for (const child of Object.values(node)) walk(child, here, camp);
+    if (platform && typeof url === "string") found.push({ platform, url, ...here && { title: here }, ...camp && { campaign: camp }, ...paid && { pays: paid } });
+    for (const child of Object.values(node)) walk(child, here, camp, paid);
   };
   walk(run2.output ?? run2.checkpoint?.input);
   return found;

@@ -46,7 +46,7 @@ async function submitClip(page, campaignUrl, clipUrl, shot) {
       const box2 = await hold.boundingBox();
       await page.mouse.move(box2.x + box2.width / 2, box2.y + box2.height / 2);
       await page.mouse.down();
-      await page.waitForTimeout(1600);
+      await page.waitForTimeout(2500);
       await page.mouse.up();
     }
     await link.fill(clipUrl, { timeout: 1e4 });
@@ -100,6 +100,7 @@ async function submitAll(env) {
       let result;
       if (!url.startsWith("https://")) result = { submitted: false, reason: "not an https URL" };
       else if (!campaign) result = { submitted: false, reason: "no campaign URL" };
+      else if (Array.isArray(item.pays) && !item.pays.includes(platform)) result = { submitted: false, reason: `the campaign does not pay on ${platform}` };
       else if (!context) result = { submitted: false, reason: "browser did not start" };
       else {
         const page = await context.newPage();

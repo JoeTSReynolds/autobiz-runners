@@ -23,7 +23,7 @@ async function dismissAnnouncements(page) {
 
 // scripts/content-rewards-scout.ts
 var GAMING = ["gaming", "streamer", "twitch", "kick", "gta", "fortnite", "roblox", "minecraft", "mobile gaming", "pc gaming"];
-var PODCAST = ["personal brand", "business", "entrepreneurship", "coach & mentor", "coaching & consulting", "content creator"];
+var PODCAST = ["entertainment", "personal brand", "business", "entrepreneurship", "coach & mentor", "coaching & consulting", "content creator"];
 var BLOCK = ["gambling", "casino", "betting", "bet", "parlay", "poker", "prop firm", "prop trading", "funded trader", "trading", "day trading", "forex", "crypto", "memecoin", "token", "nft", "adult", "onlyfans", "politics", "political", "election", "ugc", "sound campaign"];
 var BLOCK_RE = new RegExp(`(?<![a-z])(${BLOCK.join("|")})s?(?![a-z])`, "i");
 var payload = (html) => [...html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g)].map((m) => JSON.parse(m[1])).join("");
@@ -58,7 +58,7 @@ var blocked = (c) => {
 };
 function rank(list, { minBudget = 1e3 } = {}) {
   const score = (c) => c.rate * c.availableBudget / Math.max(c.creators, 1);
-  return list.filter((c) => c.type === "cpm" && !c.requiresApplication && c.platforms.includes("youtube") && c.platforms.includes("instagram") && c.availableBudget >= minBudget && routeChannel(c) && !blocked(c)).sort((a, b) => score(b) - score(a));
+  return list.filter((c) => c.type === "cpm" && !c.requiresApplication && c.platforms.includes("youtube") && c.availableBudget >= minBudget && routeChannel(c) && !blocked(c)).sort((a, b) => score(b) - score(a));
 }
 function viewsToMinimum(terms, platform) {
   const t = terms.find((x) => x.platform === platform);
