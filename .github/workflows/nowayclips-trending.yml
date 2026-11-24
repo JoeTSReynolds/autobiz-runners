@@ -65,7 +65,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: tools-playwright-${{ hashFiles('runner/package.json') }}-${{ runner.os }}
       - name: Install tools
-        timeout-minutes: 10
+        timeout-minutes: 25
         run: |
           (docker pull -q brainicism/bgutil-ytdlp-pot-provider:2.0.2-node > /dev/null 2>&1 &)
           bash runner/warp.sh repo

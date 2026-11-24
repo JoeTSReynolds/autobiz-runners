@@ -11,9 +11,13 @@ ytdlp.run(['-F', 'x'])
 assert seen[-1] == ['yt-dlp', '-F', 'x'], seen
 os.environ['YTDLP_COOKIES_FILE'] = '/tmp/c.txt'
 ytdlp.run(['-F', 'x'])
-assert seen[-1] == ['yt-dlp', '--cookies', '/tmp/c.txt', '-F', 'x'], seen
+# signed in, YouTube's 2026-11-23 player needs the tv variant (yt-dlp#18123); it merges into an existing youtube extractor-args value
+TV = ['--extractor-args', 'youtube:player_js_variant=tv']
+assert seen[-1] == ['yt-dlp', '--cookies', '/tmp/c.txt', *TV, '-F', 'x'], seen
 ytdlp.run(['--cookies', 'mine', 'x'])
-assert seen[-1] == ['yt-dlp', '--cookies', 'mine', 'x'], seen
+assert seen[-1] == ['yt-dlp', *TV, '--cookies', 'mine', 'x'], seen
+ytdlp.run(['--extractor-args', 'youtube:player_client=web', 'x'])
+assert seen[-1] == ['yt-dlp', '--cookies', '/tmp/c.txt', '--extractor-args', 'youtube:player_js_variant=tv;player_client=web', 'x'], seen
 
 # a blocked yt-dlp call (HTTP 429 or bot check) gets a fresh address from AUTOBIZ_NETWORK_RESET_COMMAND and is retried, twice at most
 class R:

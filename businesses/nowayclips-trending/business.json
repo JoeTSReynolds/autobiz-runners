@@ -980,6 +980,67 @@
       }
     },
     {
+      "id": "campaign",
+      "name": "Campaign",
+      "description": "Picks an active campaign from the business settings and one of its sources, and adds both to the job.",
+      "kind": "campaign",
+      "version": 1,
+      "fields": [
+        {
+          "key": "settingsKey",
+          "label": "Settings key",
+          "type": "string",
+          "default": "campaigns"
+        },
+        {
+          "key": "channel",
+          "label": "Channel (empty: any)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "outputKey",
+          "label": "Campaign key",
+          "type": "string",
+          "default": "campaign"
+        },
+        {
+          "key": "sourceKey",
+          "label": "Source key",
+          "type": "string",
+          "default": "source"
+        },
+        {
+          "key": "withdrawAfterHours",
+          "label": "Withdraw pending clips after (hours, 0 = never)",
+          "type": "number",
+          "default": 48
+        }
+      ],
+      "defaults": {
+        "settingsKey": "campaigns",
+        "channel": "",
+        "outputKey": "campaign",
+        "sourceKey": "source",
+        "withdrawAfterHours": 48
+      },
+      "outputs": [
+        {
+          "id": "next",
+          "label": "Next"
+        },
+        {
+          "id": "full",
+          "label": "Full"
+        }
+      ],
+      "logging": {
+        "enabled": true,
+        "onSuccess": "{module} completed: {output}",
+        "onFail": "{module} failed: {error}"
+      }
+    },
+    {
       "id": "media-fetch",
       "name": "Media fetch",
       "description": "Searches (one pick or a ranked list), reads captions with optional hotspots and sentences, downloads a section or all clips of a story, downloads any video link (HLS included) with yt-dlp, indexes channel transcripts, locates a scene by its dialogue, or finds a Simpsons scene by quote on archive.org (frinkiac).",
@@ -1146,6 +1207,18 @@
           "label": "Transcribe uncaptioned videos up to (s)",
           "type": "number",
           "default": 0
+        },
+        {
+          "key": "transcribeTimeoutMs",
+          "label": "Whisper time limit for Drive sources (ms)",
+          "type": "number",
+          "default": 3600000
+        },
+        {
+          "key": "voiceCheck",
+          "label": "Check the streamer voice (channel sources, needs hotspots)",
+          "type": "boolean",
+          "default": false
         },
         {
           "key": "padding",
@@ -1356,6 +1429,8 @@
         "hotspotsPerKind": 4,
         "transcriptUnit": "line",
         "transcribeUpTo": 0,
+        "transcribeTimeoutMs": 3600000,
+        "voiceCheck": false,
         "padding": 2,
         "maxHeight": 1080,
         "minMoment": 5,
@@ -1567,7 +1642,8 @@
             "frame",
             "card",
             "split",
-            "auto"
+            "auto",
+            "stream"
           ]
         },
         {
@@ -1621,6 +1697,12 @@
           "label": "Story sound effects",
           "type": "boolean",
           "default": true
+        },
+        {
+          "key": "sfxVolume",
+          "label": "Sound effect volume (0-1)",
+          "type": "number",
+          "default": 1
         },
         {
           "key": "storyTransitions",
@@ -1710,6 +1792,7 @@
         "headlineFont": "",
         "storyHook": true,
         "storySounds": true,
+        "sfxVolume": 1,
         "storyTransitions": true,
         "captionItalic": true,
         "captionColor": "#FFFFFF",
@@ -1915,6 +1998,22 @@
           "label": "Output key",
           "type": "string",
           "default": "youtube"
+        },
+        {
+          "key": "onlyWhen",
+          "label": "Publish only when (path=value or path!=value, empty = always)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "onFailure",
+          "label": "When the channel check or upload fails",
+          "type": "select",
+          "default": "throw",
+          "options": [
+            "throw",
+            "port"
+          ]
         }
       ],
       "defaults": {
@@ -1928,12 +2027,18 @@
         "maxHashtags": 10,
         "titleHashtags": true,
         "publishAfterHours": 0,
-        "outputKey": "youtube"
+        "outputKey": "youtube",
+        "onlyWhen": "",
+        "onFailure": "throw"
       },
       "outputs": [
         {
           "id": "next",
           "label": "Next"
+        },
+        {
+          "id": "failed",
+          "label": "Failed"
         }
       ],
       "logging": {
@@ -1962,6 +2067,40 @@
           "default": true
         },
         {
+          "key": "paidPartnership",
+          "label": "Paid partnership label",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "disclosure",
+          "label": "Disclosure first line (max 100, empty = off)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "disclosureKey",
+          "label": "Disclosure (job path, wins over the text)",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "key": "disclosureAt",
+          "label": "Disclosure position",
+          "type": "select",
+          "default": "start",
+          "options": [
+            "start",
+            "end"
+          ]
+        },
+        {
+          "key": "preambleKey",
+          "label": "Caption opening text (job path, empty = off)",
+          "type": "string",
+          "default": ""
+        },
+        {
           "key": "maxHashtags",
           "label": "Most hashtags (0-30)",
           "type": "number",
@@ -1972,18 +2111,45 @@
           "label": "Output key",
           "type": "string",
           "default": "instagram"
+        },
+        {
+          "key": "onFailure",
+          "label": "When publishing fails",
+          "type": "select",
+          "default": "throw",
+          "options": [
+            "throw",
+            "port"
+          ]
+        },
+        {
+          "key": "onlyWhen",
+          "label": "Publish only when (path=value or path!=value, empty = always)",
+          "type": "string",
+          "default": ""
         }
       ],
       "defaults": {
         "username": "",
         "shareToFeed": true,
+        "paidPartnership": false,
+        "disclosure": "",
+        "disclosureKey": "",
+        "disclosureAt": "start",
+        "preambleKey": "",
         "maxHashtags": 5,
-        "outputKey": "instagram"
+        "outputKey": "instagram",
+        "onFailure": "throw",
+        "onlyWhen": ""
       },
       "outputs": [
         {
           "id": "next",
           "label": "Next"
+        },
+        {
+          "id": "failed",
+          "label": "Failed"
         }
       ],
       "logging": {
