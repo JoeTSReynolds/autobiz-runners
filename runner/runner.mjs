@@ -49910,6 +49910,7 @@ var captions = async (job, config, tools, outputKey) => {
     const json2 = await tools.readText("run", `captions.${language}.json3`);
     const lines = parseCaptions(json2);
     if (lines.length === 0) continue;
+    if (drive && lines.at(-1).end < 180) return missing();
     const [sentences, laughs] = [sentencesOf(lines), laughTimes(json2)];
     await tools.writeText("run", WORDS_FILE, JSON.stringify({ lines, sentences, laughs }));
     const entries = unit === "sentence" ? sentences.map((sentence) => sentenceLine(sentence)) : lines.map(transcriptLine);
@@ -56685,12 +56686,14 @@ function createYouTubeDataApi(options) {
     },
     async waitForProcessing(handle, videoId) {
       const deadline = now() + processingTimeoutMs;
+      const listedBy = now() + 18e4;
       while (true) {
         let status;
         try {
           status = (await remoteVideo(handle, videoId)).video.processingDetails?.processingStatus;
         } catch (error) {
-          if (!(error instanceof TransientHttpFailure) || now() >= deadline) throw error;
+          const unlisted = error instanceof ExecutionFailure && error.message === "The video was not found on the authorised channel." && now() < listedBy;
+          if (!(error instanceof TransientHttpFailure || unlisted) || now() >= deadline) throw error;
           await sleep(pollMs);
           continue;
         }
