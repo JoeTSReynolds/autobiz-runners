@@ -47251,6 +47251,7 @@ function starterModules() {
       field("payoffTail", "Payoff tail (s)", "number", 15),
       field("archive", "Skip videos already downloaded (archive)", "boolean", true),
       field("momentsFile", "Used moments file (state, empty: off)", "string", ""),
+      field("maxPerSourcePerDay", "Most clips from one source per 24 h (0 = no cap)", "number", 0),
       field("blockedRetries", "Retries after a YouTube block", "number", 3),
       field("blockedWaitSeconds", "First wait after a block (s)", "number", 30),
       field("onlyWhen", "Run only when (key=value or key!=value)", "string", ""),
@@ -49196,6 +49197,8 @@ var DEFAULTS3 = {
   // section, sections: false stops yt-dlp's --download-archive (a video is then reusable); momentsFile, a state file name, records the used payoff and beat moments so one source can be cut many times without repeats ('' = off)
   archive: true,
   momentsFile: "",
+  maxPerSourcePerDay: 0,
+  // captions: a source with this many clips in momentsFile in the last 24 h goes to missing (0 = no cap)
   // yt-dlp calls: retries after YouTube's bot check or a 429, and the first wait (doubles each retry)
   blockedRetries: 3,
   blockedWaitSeconds: 30,
@@ -49828,6 +49831,7 @@ var captions = async (job, config, tools, outputKey) => {
   let { id, url, duration: sourceDuration } = sourceOf(job);
   const archive = isArchive(url);
   const momentsName = momentsFile(config);
+  const cap = count(config, "maxPerSourcePerDay", false, true);
   const rejected = rejectedSources(job);
   const missing = () => ({ output: { ...job, rejectedSources: [...rejected, id] }, port: "missing" });
   const drive = isDrive(url);
@@ -49916,7 +49920,9 @@ var captions = async (job, config, tools, outputKey) => {
     const entries = unit === "sentence" ? sentences.map((sentence) => sentenceLine(sentence)) : lines.map(transcriptLine);
     const transcript = entries.filter((entry) => !fromChannel || entry.start <= CHANNEL_TRANSCRIPT_SECONDS).map((entry) => entry.text).join("\n");
     await tools.writeText("run", TRANSCRIPT_FILE, transcript);
-    const usedMoments = momentsName ? { usedMoments: (await readMoments(tools, momentsName)).filter((m) => m.source === id).map(({ start, end }) => ({ start, end })).sort((a, b) => a.start - b.start) } : {};
+    const history = momentsName ? await readMoments(tools, momentsName) : [];
+    if (cap > 0 && new Set(history.filter((m) => m.source === id && Date.now() - Date.parse(m.at) < 864e5).map((m) => m.at)).size >= cap) return missing();
+    const usedMoments = momentsName ? { usedMoments: history.filter((m) => m.source === id).map(({ start, end }) => ({ start, end })).sort((a, b) => a.start - b.start) } : {};
     const output2 = { ...job, ...usedMoments, [outputKey]: { file: TRANSCRIPT_FILE, wordsFile: WORDS_FILE, language } };
     let shown;
     let voice = {};

@@ -77,8 +77,8 @@
           "id": "start",
           "moduleId": "start",
           "position": {
-            "x": 1220,
-            "y": 788
+            "x": 1515,
+            "y": 403
           },
           "config": {}
         },
@@ -86,8 +86,8 @@
           "id": "get-transcript",
           "moduleId": "media-fetch",
           "position": {
-            "x": 925,
-            "y": 587
+            "x": 1220,
+            "y": 71
           },
           "config": {
             "mode": "captions",
@@ -98,15 +98,16 @@
             "commentsToScan": 300,
             "transcriptUnit": "sentence",
             "momentsFile": "moments.json",
-            "voiceCheck": true
+            "voiceCheck": true,
+            "maxPerSourcePerDay": 2
           }
         },
         {
           "id": "pick-moment",
           "moduleId": "agent",
           "position": {
-            "x": 1220,
-            "y": 172
+            "x": 1515,
+            "y": 40
           },
           "config": {
             "prompt": "This is a paid clipping campaign; `campaign` holds its rules. `campaign.brief` and `campaign.requirements` are the brand's instructions and `campaign.checklist` is what its reviewers check before paying (it wins if they disagree). `campaign.featured` is the person the clips must feature: keep them on screen, keep their words in context and never twist what they meant. You pick the payoff of a story-style Short from the Twitch stream VOD in `source`. `hotspots` holds the parts viewers reacted to most: each `##` header gives a time range in seconds and why it is hot (viewer clip = a clip Twitch viewers made of that moment, with its title and views; campaign timestamp = a time the brand pointed at; loud moment = among the loudest audio of the stream); the lines under it are `[start-end] sentence` in seconds, and `>>` marks a speaker change. If the header says no hotspots were found, the whole transcript follows instead. Pick the single FUNNIEST or most OUTRAGEOUS moment in the stream, the one people would replay and send to a friend: a wild or ridiculous story, a savage or shocking line, an unhinged confession, a heated or absurd claim, or the streamer losing it, raging, screaming or crying laughing. Prefer viewer clips with the most views, where viewers already reacted; the clip title tells you what happens. `campaign.featured` must do most of the talking. Lines marked `(other voice)` are not `campaign.featured`: they are crew, guests or game characters. The payoff must be mostly unmarked lines; never choose a payoff made of marked lines. A window headed `streamer talking` has no viewer data, so judge it on what is said. Ignore moments that are only informative, sentimental or polite. It must make sense on its own and must not twist what he meant; avoid moments where only other people, chat text-to-speech or game audio do the talking. 12 to 25 seconds, starting at a sentence's start time and ending at a sentence's end time (use the times shown). End it only after the other person's response and any laughter or reaction have fully played out. Avoid ad reads, sponsor segments, starting-soon or BRB screens, intros, outros and stretches where music plays without talking. `usedMoments` lists moments of this stream (stream seconds) already made into clips: never pick a moment that overlaps any of them; pick a different part of the stream. If `momentOverlap` is present, your last pick overlapped a used moment; choose another. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"start\": number, \"end\": number, \"hook\": \"at most 6 words\", \"why\": \"one sentence\"}.",
@@ -134,7 +135,7 @@
           "moduleId": "video-edit",
           "position": {
             "x": 630,
-            "y": 950
+            "y": 839
           },
           "config": {
             "mode": "story",
@@ -161,17 +162,18 @@
           "id": "write-metadata",
           "moduleId": "agent",
           "position": {
-            "x": 925,
-            "y": 940
+            "x": 1220,
+            "y": 646
           },
           "config": {
-            "prompt": "This is a paid clipping campaign; `campaign` holds its rules. `campaign.brief` and `campaign.requirements` are the brand's instructions and `campaign.checklist` is what its reviewers check before paying (it wins if they disagree). `campaign.featured` is the person the clips must feature: keep them on screen, keep their words in context and never twist what they meant. Write YouTube Shorts metadata for a clip of `campaign.featured` from the Twitch stream in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. The title is short, punchy clickbait in the style of \"<featured> said WHAT about Nigerians??? 💀\": it names `campaign.featured` and the TOPIC of the moment (a person, a group, a place or a thing people know, taken from what he actually talks about) and hides WHAT happened, so people tap to find out. It must make sense on its own to someone who knows nothing about the clip; never cut a quote off mid-sentence. Good shapes: \"<featured> said WHAT about <topic>??? 💀\", \"<featured>'s <person> did WHAT??? 😭\", \"<featured> got DESTROYED by <topic>... 💀\", \"Why <featured> <does something surprising>??? 😭\", \"<featured> really thinks <topic> is...?? 💀\". Use one word in capitals (usually WHAT or the shock word), end with ??? or ?? or ... and exactly one emoji (💀 😭 😳 🤯 👀). At most 45 characters including the emoji. The title must be true to the clip: the topic is really in it, and nothing is claimed that he did not say or do. `titlePattern` is a one-word label of the shape you used (said-what, did-what, why, destroyed, thinks). Return only JSON: {\"title\": \"at most 45 characters including the emoji, no hashtags\", \"titlePattern\": \"said-what\" | \"did-what\" | \"why\" | \"destroyed\" | \"thinks\", \"description\": \"1 to 2 sentences teasing the moment; then a line crediting the source exactly as: Source: <source.title> - <source.channel>, followed by a space and <source.url> only when it is a youtube.com, youtu.be or twitch.tv link (never include any other link, such as Google Drive); then a last line exactly `campaign.disclosure`. No hashtags except #ad.\", \"hashtags\": [\"6 to 10 words without the # sign, including the featured person's name without spaces, gaming, streamer and shorts; letters and digits only\"], \"tags\": [\"5 to 8 lowercase search keywords including the featured person's name\"], \"thumbnailText\": \"at most 3 words, uppercase\"}. If `agentErrors` is present, fix those problems.",
+            "prompt": "This is a paid clipping campaign; `campaign` holds its rules. `campaign.brief` and `campaign.requirements` are the brand's instructions and `campaign.checklist` is what its reviewers check before paying (it wins if they disagree). `campaign.featured` is the person the clips must feature: keep them on screen, keep their words in context and never twist what they meant. Write YouTube Shorts metadata for a clip of `campaign.featured` from the Twitch stream in `source` (`source.title`, `source.channel`). `story.headline` is the on-screen headline and `moment.why` says why the moment was chosen. The title is short, punchy clickbait in the style of \"<featured> said WHAT about Nigerians??? 💀\": it names `campaign.featured` and the TOPIC of the moment (a person, a group, a place or a thing people know, taken from what he actually talks about) and hides WHAT happened, so people tap to find out. It must make sense on its own to someone who knows nothing about the clip; never cut a quote off mid-sentence. Good shapes: \"<featured> said WHAT about <topic>??? 💀\", \"<featured>'s <person> did WHAT??? 😭\", \"<featured> got DESTROYED by <topic>... 💀\", \"Why <featured> <does something surprising>??? 😭\", \"<featured> really thinks <topic> is...?? 💀\". Write the title in the style given in `titleStyle`; the shapes above are examples of the \"what\" style only, so do not use them for other styles. Follow the style for capitals, punctuation and emoji. At most 45 characters including the emoji. The title must be true to the clip: the topic is really in it, and nothing is claimed that he did not say or do. `titlePattern` is the first word of `titleStyle`. Return only JSON: {\"title\": \"at most 45 characters including the emoji, no hashtags\", \"titlePattern\": \"quote\" | \"statement\" | \"question\" | \"detail\" | \"what\", \"description\": \"1 to 2 sentences teasing the moment; then a line crediting the source exactly as: Source: <source.title> - <source.channel>, followed by a space and <source.url> only when it is a youtube.com, youtu.be or twitch.tv link (never include any other link, such as Google Drive); then a last line exactly `campaign.disclosure`. No hashtags except #ad.\", \"hashtags\": [\"6 to 10 words without the # sign, including the featured person's name without spaces, gaming, streamer and shorts; letters and digits only\"], \"tags\": [\"5 to 8 lowercase search keywords including the featured person's name\"], \"thumbnailText\": \"at most 3 words, uppercase\"}. If `agentErrors` is present, fix those problems.",
             "format": "json",
             "inputKeys": [
               "campaign",
               "source",
               "moment",
-              "story"
+              "story",
+              "titleStyle"
             ],
             "requiredKeys": [
               "title",
@@ -188,8 +190,8 @@
           "id": "done",
           "moduleId": "output",
           "position": {
-            "x": 1810,
-            "y": 940
+            "x": 2105,
+            "y": 804
           },
           "config": {}
         },
@@ -197,8 +199,8 @@
           "id": "failed",
           "moduleId": "error",
           "position": {
-            "x": 1810,
-            "y": 53
+            "x": 2105,
+            "y": 322
           },
           "config": {
             "message": "GamingClippyHQ run stopped: retries exhausted."
@@ -208,8 +210,8 @@
           "id": "plan-story",
           "moduleId": "agent",
           "position": {
-            "x": 1515,
-            "y": 395
+            "x": 1810,
+            "y": 697
           },
           "config": {
             "prompt": "You are editing a story-style YouTube Short (under 58 seconds) from the Twitch stream VOD in `source`, for the paid clipping campaign in `campaign`. This is a paid clipping campaign; `campaign` holds its rules. `campaign.brief` and `campaign.requirements` are the brand's instructions and `campaign.checklist` is what its reviewers check before paying (it wins if they disagree). `campaign.featured` is the person the clips must feature: keep them on screen, keep their words in context and never twist what they meant.  `moment` is the payoff already chosen as the climax (stream seconds). `transcript` is the whole stream as `[start-end] sentence` lines in seconds; `>>` marks a speaker change. There is no separate hook clip: the on-screen headline is the hook, so the Short opens straight on the intro. Build a story around the payoff that makes someone keep watching to the end: (1) intro: 3 to 7 seconds from earlier in the same transcript window as the payoff that sets the scene (what is going on or what they are about to try); (2) beats: 2 to 4 short clips of 4 to 9 seconds, from the same transcript window, before the payoff (the transcript only covers the hotspot windows, each headed by a `##` line), in stream order, that set up the payoff's topic so that each cut follows on from the previous one and the last beat leads straight into the payoff (no unrelated anecdotes); (3) payoff: the given moment, 12 to 25 seconds, ending only after the other person's response and any laughter or reaction have fully played out (it may start slightly earlier, at a sentence start). Lines marked `(other voice)` are not `campaign.featured`: use them only as brief set-up or reaction, and build the Short mostly from unmarked lines. Every clip starts at a sentence's start time and ends at a sentence's end time, using the times shown. All clips together are at most 55 seconds; use the time: aim for 45 to 55 seconds in total. First set `tone`: `light` for banter, jokes, gossip, a cringe or funny confession, a silly food or dating take, a spat over something trivial; `serious` for war, violence, death, illness, abuse, disasters, crime, or anyone describing real pain or harm. When unsure, choose `serious`. Then, for a light Short, place 3 to 6 effects on the strongest lines, at least 2 seconds apart and inside the clips: each has `at` (stream seconds, right as the line lands), `sound` (one name from the list) and `visual`: zoom (a quick punch-in, for a savage or shocking line), shake (for a loud or explosive moment), flash (for a reveal), correct (a green tick: someone is proved right, a point lands, or a claim is confirmed) , wrong (a red cross: someone is called out, corrected, caught out or says something obviously false) or none. Use correct and wrong where they fit, at most two of each; their sound is chosen automatically. Never use crowd noises. Transitions between clips are added automatically, so do not place whooshes. Available sounds (name: seconds): bass-drop: 3.91, camera-shutter: 0.32, cinematic-impact: 4.01, dramatic-hit: 3, glitch: 1.14, punch: 0.61, record-scratch: 0.72, suspense-sting: 1.19, swoosh: 1.73, correct: 1.1, wrong: 1.2. For a serious Short, place 0 to 2 effects only, with sound `cinematic-impact` or `suspense-sting` and visual `zoom` or `none`. Then, for a light Short, add emoji pop-ups through the whole Short, roughly one at least every 5 seconds (no maximum; two can come close together when the words call for it), each on a word or a reaction with an obvious, fun emoji: a concrete thing that is mentioned (a pregnant woman for 'pregnant', an umbrella for 'umbrella', a church for 'church') or a big emotion (face with tears of joy for a big laugh, exploding head for a shocking claim). Cheeky emojis are welcome in light Shorts when they fit the joke, for example a peach when someone is called thick, an eggplant for male innuendo, eyes for something sus, a hot face for flirting. A serious Short gets no emojis at all (`emojis` is []): no laughing, no jokes, and no sad or shocked faces either, because they trivialise real suffering. Examples of serious: a guest describing the war in Ukraine, a family member's death, a survivor of abuse, a disaster death toll; examples of light: a host roasting a guest's bad dating story, a laugh-out-loud confession, a fight over a silly food take. YouTube's auto-captions sometimes mishear a word, for example 'schools' when the speakers are talking about skulls. In `corrections`, list the single misheard words inside your chosen clips that you are sure about from the context, each as {\"heard\": \"the word as it appears in the transcript\", \"meant\": \"what was actually said\"}; plural and singular are separate entries; use [] when there are none. If `agentErrors` is present, your previous answer was rejected for those reasons; fix them. Return only JSON: {\"headline\": \"at most 7 words, all lower case, written like a meme caption by someone with a very low IQ: blunt, a bit dumb and funny, about what happens in the clip, e.g. \\\"bro really thought he ate this\\\" or \\\"why he say it like that\\\"; no emojis and no hashtags (a crying emoji is added automatically)\", \"tone\": \"light\" | \"serious\", \"clips\": [{\"role\": \"intro\" | \"beat\" | \"payoff\", \"start\": number, \"end\": number, \"why\": \"a few words\"}], \"effects\": [{\"at\": number, \"sound\": \"name\", \"visual\": \"zoom\" | \"shake\" | \"flash\" | \"none\"}], \"emojis\": [{\"sentenceStart\": number, \"word\": \"the exact word from that sentence\", \"glyph\": \"the emoji\", \"name\": \"its CLDR name in lowercase, e.g. umbrella, pregnant woman, face with tears of joy\", \"funny\": true | false}], \"corrections\": [{\"heard\": \"word\", \"meant\": \"word or words\"}]}.",
@@ -236,7 +238,7 @@
           "moduleId": "media-fetch",
           "position": {
             "x": 335,
-            "y": 950
+            "y": 880
           },
           "config": {
             "mode": "sections",
@@ -249,7 +251,7 @@
           "moduleId": "video-edit",
           "position": {
             "x": 40,
-            "y": 365
+            "y": 879
           },
           "config": {
             "mode": "check",
@@ -274,8 +276,8 @@
           "id": "publish",
           "moduleId": "youtube-publish",
           "position": {
-            "x": 1220,
-            "y": 940
+            "x": 1515,
+            "y": 646
           },
           "config": {
             "channelHandle": "@GamingClippyHQ",
@@ -295,8 +297,8 @@
           "id": "instagram",
           "moduleId": "instagram-publish",
           "position": {
-            "x": 1515,
-            "y": 940
+            "x": 1810,
+            "y": 504
           },
           "config": {
             "username": "gamingclippyhq",
@@ -315,8 +317,8 @@
           "id": "campaign",
           "moduleId": "campaign",
           "position": {
-            "x": 1515,
-            "y": 742
+            "x": 1810,
+            "y": 177
           },
           "config": {
             "channel": "gaming"
@@ -326,8 +328,8 @@
           "id": "skipped",
           "moduleId": "output",
           "position": {
-            "x": 1810,
-            "y": 742
+            "x": 2105,
+            "y": 94
           },
           "config": {}
         },
@@ -335,8 +337,8 @@
           "id": "instagram-fallback",
           "moduleId": "instagram-publish",
           "position": {
-            "x": 1515,
-            "y": 557
+            "x": 1810,
+            "y": 839
           },
           "config": {
             "username": "gamingclippyhq",
@@ -350,6 +352,24 @@
             "outputKey": "instagram",
             "onFailure": "port",
             "onlyWhen": ""
+          }
+        },
+        {
+          "id": "title-style",
+          "moduleId": "random",
+          "position": {
+            "x": 925,
+            "y": 839
+          },
+          "config": {
+            "options": [
+              "quote: the single most striking short line actually said in the clip, in double quotes, then a dash and a few words of context naming `campaign.featured`; no emoji, no capitalised words",
+              "statement: a plain, specific sentence about what happens, in sentence case, with no capitalised words for emphasis, no question mark and at most one emoji",
+              "question: one direct question the viewer will want answered, naming `campaign.featured`, ending in a single ?, with no capitalised words and no emoji",
+              "detail: lead with a concrete detail from the clip (a number, a place, an object or a name), then what happened, in sentence case, at most one emoji",
+              "what: the \"<featured> said WHAT about <topic>??? 💀\" shape (or did WHAT), with exactly one emoji"
+            ],
+            "outputKey": "titleStyle"
           }
         }
       ],
@@ -389,12 +409,6 @@
           "source": "retry-moment",
           "sourcePort": "exhausted",
           "target": "failed"
-        },
-        {
-          "id": "edit-short--next--write-metadata",
-          "source": "edit-short",
-          "sourcePort": "next",
-          "target": "write-metadata"
         },
         {
           "id": "write-metadata--invalid--retry-metadata",
@@ -533,6 +547,18 @@
           "source": "publish",
           "sourcePort": "next",
           "target": "instagram"
+        },
+        {
+          "id": "edit-short--next--title-style",
+          "source": "edit-short",
+          "sourcePort": "next",
+          "target": "title-style"
+        },
+        {
+          "id": "title-style--next--write-metadata",
+          "source": "title-style",
+          "sourcePort": "next",
+          "target": "write-metadata"
         }
       ],
       "operators": [
@@ -540,8 +566,8 @@
           "id": "retry-episode",
           "kind": "retry",
           "position": {
-            "x": 1254,
-            "y": 676
+            "x": 1549,
+            "y": 233
           },
           "maxRetries": 4
         },
@@ -549,8 +575,8 @@
           "id": "retry-moment",
           "kind": "retry",
           "position": {
-            "x": 1549,
-            "y": 40
+            "x": 1844,
+            "y": 55
           },
           "maxRetries": 3
         },
@@ -558,8 +584,8 @@
           "id": "retry-metadata",
           "kind": "retry",
           "position": {
-            "x": 664,
-            "y": 838
+            "x": 959,
+            "y": 550
           },
           "maxRetries": 3
         },
@@ -567,15 +593,15 @@
           "id": "retry-story",
           "kind": "retry",
           "position": {
-            "x": 1254,
-            "y": 314
+            "x": 1549,
+            "y": 986
           },
           "maxRetries": 3
         }
       ]
     },
     "createdAt": "2026-11-22T13:54:20.538Z",
-    "updatedAt": "2026-11-23T20:01:27.489Z"
+    "updatedAt": "2026-11-25T15:32:49.951Z"
   },
   "modules": [
     {
@@ -1220,6 +1246,12 @@
           "default": ""
         },
         {
+          "key": "maxPerSourcePerDay",
+          "label": "Most clips from one source per 24 h (0 = no cap)",
+          "type": "number",
+          "default": 0
+        },
+        {
           "key": "blockedRetries",
           "label": "Retries after a YouTube block",
           "type": "number",
@@ -1375,6 +1407,7 @@
         "payoffTail": 15,
         "archive": true,
         "momentsFile": "",
+        "maxPerSourcePerDay": 0,
         "blockedRetries": 3,
         "blockedWaitSeconds": 30,
         "onlyWhen": "",

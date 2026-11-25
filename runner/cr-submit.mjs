@@ -119,6 +119,7 @@ async function submitAll(env) {
   } finally {
     await browser?.close().catch(() => void 0);
     await writeFile(CR_RESULT_FILE, JSON.stringify(results));
+    for (const r of results) console.log(`${r.platform} ${r.url}: ${r.submitted ? "submitted" : `NOT submitted (${r.reason ?? "unknown"})`}`);
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
