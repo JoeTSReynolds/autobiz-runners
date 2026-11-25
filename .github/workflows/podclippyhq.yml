@@ -2,15 +2,9 @@
 name: "PodClippyHQ"
 on:
   schedule:
-    - cron: '23 8 * * *'
-      timezone: 'Europe/London'
     - cron: '23 12 * * *'
       timezone: 'Europe/London'
-    - cron: '53 15 * * *'
-      timezone: 'Europe/London'
     - cron: '23 19 * * *'
-      timezone: 'Europe/London'
-    - cron: '23 22 * * *'
       timezone: 'Europe/London'
   workflow_dispatch:
 concurrency:
