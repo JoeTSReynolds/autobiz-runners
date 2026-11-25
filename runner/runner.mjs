@@ -49128,27 +49128,31 @@ async function execute10({ input, config, settings }, capabilities = {}) {
   if (!Array.isArray(list3)) fail(`settings.${settingsKey} must be a list of campaign records`);
   const candidates2 = list3.map((record2, index2) => isObject3(record2) && record2.active === false ? void 0 : validate(record2, index2)).filter((record2) => !!record2 && record2.active === true && (channel === "" || record2.channel === channel));
   if (candidates2.length === 0) fail(`no active campaign${channel ? ` for channel "${channel}"` : ""}`);
+  const rejected = new Set(Array.isArray(input.rejectedSources) ? input.rejectedSources.filter((id) => typeof id === "string") : []);
+  const usable = (record2) => record2.sources.filter((source) => !rejected.has(source.id));
+  const withSources = candidates2.filter((record2) => usable(record2).length > 0);
+  if (withSources.length === 0) return { output: { ...input, campaignsFull: candidates2.map((record2) => ({ id: record2.id, reason: "every source was used up or rejected this run" })) }, port: "full" };
   let rooms = {};
   let roomError;
   const crId = (record2) => /\/campaigns\/([0-9a-f-]{36})/i.exec(record2.url)?.[1] ?? record2.id;
   let withdrawn = [], withdrawFailed = [], withdrawError;
   if (capabilities.contentRewards && hours > 0) try {
-    ({ withdrawn, failed: withdrawFailed } = await capabilities.contentRewards.withdrawStale(candidates2.map(crId), hours));
+    ({ withdrawn, failed: withdrawFailed } = await capabilities.contentRewards.withdrawStale(withSources.map(crId), hours));
   } catch (error) {
     withdrawError = error instanceof Error ? error.message : String(error);
   }
   const withdrawInfo = { ...withdrawn.length > 0 && { clipsWithdrawn: withdrawn }, ...withdrawFailed.length > 0 && { clipsWithdrawFailed: withdrawFailed }, ...withdrawError !== void 0 && { campaignWithdrawError: withdrawError } };
   if (capabilities.contentRewards) try {
-    rooms = await capabilities.contentRewards.intake(candidates2.map(crId));
+    rooms = await capabilities.contentRewards.intake(withSources.map(crId));
   } catch (error) {
     roomError = error instanceof Error ? error.message : String(error);
   }
   const roomOf = (record2) => rooms[crId(record2)]?.room ?? "unknown";
-  const open3 = candidates2.filter((record2) => roomOf(record2) !== "full");
-  if (open3.length === 0) return { output: { ...input, campaignsFull: candidates2.map((record2) => ({ id: record2.id, reason: rooms[crId(record2)].reason })), ...withdrawInfo }, port: "full" };
+  const open3 = withSources.filter((record2) => roomOf(record2) !== "full");
+  if (open3.length === 0) return { output: { ...input, campaignsFull: withSources.map((record2) => ({ id: record2.id, reason: rooms[crId(record2)].reason })), ...withdrawInfo }, port: "full" };
   const best = open3.some((record2) => roomOf(record2) !== "one") ? open3.filter((record2) => roomOf(record2) !== "one") : open3;
   const campaign = best[Math.floor(Math.random() * best.length)];
-  const sources = campaign.sources;
+  const sources = usable(campaign);
   return { output: { ...input, [outputKey]: { ...campaign, room: roomOf(campaign) }, [sourceKey]: sources[Math.floor(Math.random() * sources.length)], ...roomError !== void 0 && { campaignRoomError: roomError }, ...withdrawInfo }, port: "next" };
 }
 
@@ -57179,6 +57183,7 @@ function failedInMediaFetch(run2) {
   const node = run2.workflow.nodes.find(({ id }) => id === run2.checkpoint?.nodeId);
   return run2.modules.find(({ id }) => id === node?.moduleId)?.kind === "media-fetch";
 }
+var PLATFORMS = /* @__PURE__ */ new Set(["youtube", "instagram", "tiktok", "x", "twitter", "facebook"]);
 function publishedItems(run2) {
   const found = [];
   const walk = (value, title, campaign, pays) => {
@@ -57189,7 +57194,10 @@ function publishedItems(run2) {
     const here = typeof meta?.title === "string" ? meta.title : title;
     const record2 = node.campaign;
     const camp = typeof record2?.url === "string" ? record2.url : campaign;
-    const paid = typeof record2?.url === "string" ? record2.rates && typeof record2.rates === "object" ? Object.keys(record2.rates) : void 0 : pays;
+    const paid = typeof record2?.url === "string" ? (() => {
+      const keys = record2.rates && typeof record2.rates === "object" ? Object.keys(record2.rates).filter((key) => PLATFORMS.has(key)) : [];
+      return keys.length ? keys : void 0;
+    })() : pays;
     const [platform, url] = typeof node.videoId === "string" ? ["youtube", node.url] : typeof node.mediaId === "string" ? ["instagram", node.permalink] : [];
     if (platform && typeof url === "string") found.push({ platform, url, ...here && { title: here }, ...camp && { campaign: camp }, ...paid && { pays: paid } });
     for (const child of Object.values(node)) walk(child, here, camp, paid);

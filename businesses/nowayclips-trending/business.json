@@ -1287,6 +1287,12 @@
           "default": ""
         },
         {
+          "key": "maxPerSourcePerDay",
+          "label": "Most clips from one source per 24 h (0 = no cap)",
+          "type": "number",
+          "default": 0
+        },
+        {
           "key": "blockedRetries",
           "label": "Retries after a YouTube block",
           "type": "number",
@@ -1442,6 +1448,7 @@
         "payoffTail": 15,
         "archive": true,
         "momentsFile": "",
+        "maxPerSourcePerDay": 0,
         "blockedRetries": 3,
         "blockedWaitSeconds": 30,
         "onlyWhen": "",

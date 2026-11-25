@@ -53,7 +53,7 @@ def info_and_words(video_id, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     info_f = os.path.join(out_dir, f'{video_id}.info.json')
     if not os.path.exists(info_f):
-        r = ytdlp.run(['--skip-download', '--write-info-json', '--write-subs', '--write-auto-subs', '--sub-langs', 'en,en-orig,en-GB,en-US,en-CA,en-AU',
+        r = ytdlp.run(['--skip-download', '--write-info-json', '--write-subs', '--write-auto-subs', '--sub-langs', 'en-orig,en', '--sleep-subtitles', '2',  # each language is a request: six per video drew HTTP 429 on the runner
                  '--sub-format', 'json3', '--no-playlist', '-o', os.path.join(out_dir, '%(id)s.%(ext)s'),
                  f'https://www.youtube.com/watch?v={video_id}'], capture_output=True, text=True)
         if not os.path.exists(info_f):
